@@ -311,12 +311,12 @@ export function TradingPanel({
 
       {/* Direction Toggle - Only for Perpetuals */}
       {isPerpetuals && (
-        <div className="p-4 border-b border-[var(--border-subtle)]">
-          <div className="flex gap-2 p-1 rounded-xl bg-[var(--bg-secondary)]">
+        <div className="p-3 md:p-4 border-b border-[var(--border-subtle)]">
+          <div className="flex gap-1.5 md:gap-2 p-1 rounded-xl bg-[var(--bg-secondary)]">
             <button
               onClick={() => setDirection("long")}
               className={`
-                flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-sm
+                flex-1 flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3 rounded-lg font-bold text-xs md:text-sm
                 transition-all duration-200 relative overflow-hidden
                 ${direction === "long"
                   ? "bg-[var(--color-long)] text-[#050505]"
@@ -327,13 +327,13 @@ export function TradingPanel({
               {direction === "long" && (
                 <div className="absolute inset-0 bg-[var(--color-long)] animate-pulse opacity-30" />
               )}
-              <TrendingUp className="w-4 h-4 relative z-10" />
+              <TrendingUp className="w-3.5 h-3.5 md:w-4 md:h-4 relative z-10" />
               <span className="relative z-10">LONG</span>
             </button>
             <button
               onClick={() => setDirection("short")}
               className={`
-                flex-1 flex items-center justify-center gap-2 py-3 rounded-lg font-bold text-sm
+                flex-1 flex items-center justify-center gap-1.5 md:gap-2 py-2.5 md:py-3 rounded-lg font-bold text-xs md:text-sm
                 transition-all duration-200 relative overflow-hidden
                 ${direction === "short"
                   ? "bg-[var(--color-short)] text-white"
@@ -344,7 +344,7 @@ export function TradingPanel({
               {direction === "short" && (
                 <div className="absolute inset-0 bg-[var(--color-short)] animate-pulse opacity-30" />
               )}
-              <TrendingDown className="w-4 h-4 relative z-10" />
+              <TrendingDown className="w-3.5 h-3.5 md:w-4 md:h-4 relative z-10" />
               <span className="relative z-10">SHORT</span>
             </button>
           </div>
@@ -352,35 +352,34 @@ export function TradingPanel({
       )}
 
       {/* Trading Form */}
-      <div className="flex-1 p-4 space-y-5 overflow-y-auto">
+      <div className="flex-1 p-3 md:p-4 space-y-4 md:space-y-5 overflow-y-auto">
         {/* Perpetuals Amount Input */}
         {isPerpetuals && (
           <div className="space-y-3">
             {/* Amount Input with +/- buttons */}
-            <div className="flex items-center gap-2 p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+            <div className="flex items-center gap-1.5 md:gap-2 p-1.5 md:p-2 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
               <button
                 onClick={() => handleAmountChange(-100)}
-                className="w-12 h-12 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all flex-shrink-0"
               >
-                <Minus className="w-5 h-5" />
+                <Minus className="w-4 h-4 md:w-5 md:h-5" />
               </button>
 
-              <div className="flex-1 text-center">
+              <div className="flex-1 text-center min-w-0">
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-transparent text-center text-3xl font-bold text-[var(--text-primary)] focus:outline-none font-mono"
+                  className="w-full bg-transparent text-center text-2xl md:text-3xl font-bold text-[var(--text-primary)] focus:outline-none font-mono"
                   style={{ appearance: 'textfield' }}
                 />
-                <span className="text-3xl font-bold text-[var(--text-tertiary)] absolute left-1/2 -translate-x-full pointer-events-none hidden">$</span>
               </div>
 
               <button
                 onClick={() => handleAmountChange(100)}
-                className="w-12 h-12 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[var(--bg-tertiary)] flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-all flex-shrink-0"
               >
-                <Plus className="w-5 h-5" />
+                <Plus className="w-4 h-4 md:w-5 md:h-5" />
               </button>
             </div>
 
@@ -708,13 +707,13 @@ export function TradingPanel({
             </label>
 
             {/* Leverage Presets - Outlined Style */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 md:gap-2">
               {LEVERAGE_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => setLeverage(preset)}
                   className={`
-                    py-3 rounded-lg text-base font-semibold transition-all duration-150 border
+                    py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all duration-150 border
                     ${leverage === preset
                       ? "border-[var(--color-long)] text-[var(--color-long)] bg-transparent"
                       : "border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)] bg-transparent"
@@ -790,13 +789,13 @@ export function TradingPanel({
             </label>
 
             {/* Take Profit Presets - Outlined Style */}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-3 gap-1.5 md:gap-2">
               {TAKE_PROFIT_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => setTakeProfit(preset)}
                   className={`
-                    py-3 rounded-lg text-base font-semibold transition-all duration-150 border
+                    py-2.5 md:py-3 rounded-lg text-sm md:text-base font-semibold transition-all duration-150 border
                     ${takeProfit === preset
                       ? "border-[var(--color-long)] text-[var(--color-long)] bg-transparent"
                       : "border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:border-[var(--border-default)] bg-transparent"
@@ -812,76 +811,74 @@ export function TradingPanel({
 
         {/* Position Summary - Perpetuals */}
         {isPerpetuals && amount > 0 && (
-          <div className="space-y-3 animate-slide-up">
+          <div className="space-y-2 md:space-y-3 animate-slide-up">
             {/* Header */}
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
+              <span className="text-[10px] md:text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
                 POSITION SUMMARY
               </span>
-              <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-[var(--bg-secondary)]">
-                <BarChart3 className="w-3 h-3 text-[var(--accent-primary)]" />
-                <span className="text-[10px] font-bold text-[var(--text-tertiary)]">
+              <div className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg bg-[var(--bg-secondary)]">
+                <BarChart3 className="w-2.5 h-2.5 md:w-3 md:h-3 text-[var(--accent-primary)]" />
+                <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-tertiary)]">
                   R:R {computedValues.riskRewardRatio.toFixed(1)}x
                 </span>
               </div>
             </div>
 
             {/* Main Stats Grid */}
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-1.5 md:gap-2">
               {/* Position Size */}
-              <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <BarChart3 className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                  <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Size</span>
+              <div className="p-2 md:p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-1 md:gap-1.5 mb-0.5 md:mb-1">
+                  <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--accent-primary)]" />
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Size</span>
                 </div>
-                <p className="text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
+                <p className="text-base md:text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
                   {formatValue(computedValues.positionSize)} SOL
                 </p>
-                <p className="text-[10px] text-[var(--text-tertiary)] font-mono tabular-nums">
+                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)] font-mono tabular-nums">
                   ${formatValue(computedValues.positionValue, 0)}
                 </p>
               </div>
 
               {/* Entry Price */}
-              <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <div className="flex items-center gap-1.5 mb-1">
-                  <DollarSign className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                  <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Entry</span>
+              <div className="p-2 md:p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                <div className="flex items-center gap-1 md:gap-1.5 mb-0.5 md:mb-1">
+                  <DollarSign className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--text-tertiary)]" />
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Entry</span>
                 </div>
-                <p className="text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
+                <p className="text-base md:text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
                   ${formatPrice(currentPrice)}
                 </p>
-                <p className="text-[10px] text-[var(--text-tertiary)]">Market Price</p>
+                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">Market Price</p>
               </div>
             </div>
 
             {/* Liquidation - Full Width with Visual Indicator */}
-            <div className="p-3 rounded-xl bg-[var(--color-short)]/5 border border-[var(--color-short)]/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5 text-[var(--color-short)]" />
-                  <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--color-short)]">
-                    Liquidation Zone
+            <div className="p-2 md:p-3 rounded-xl bg-[var(--color-short)]/5 border border-[var(--color-short)]/20">
+              <div className="flex items-center justify-between mb-1 md:mb-2">
+                <div className="flex items-center gap-1 md:gap-1.5">
+                  <AlertTriangle className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--color-short)]" />
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-bold text-[var(--color-short)]">
+                    Liquidation
                   </span>
                 </div>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-short)]/10">
-                  <span className="text-[10px] font-bold text-[var(--color-short)] tabular-nums">
-                    {computedValues.liqDistance.toFixed(2)}% away
+                <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--color-short)]/10">
+                  <span className="text-[9px] md:text-[10px] font-bold text-[var(--color-short)] tabular-nums">
+                    {computedValues.liqDistance.toFixed(1)}% away
                   </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xl font-bold font-mono text-[var(--color-short)] tabular-nums">
+                <p className="text-lg md:text-xl font-bold font-mono text-[var(--color-short)] tabular-nums">
                   ${formatPrice(computedValues.liquidationPrice)}
                 </p>
-                <div className="text-right">
-                  <p className="text-[10px] text-[var(--text-tertiary)]">
-                    {direction === "long" ? "Price drops" : "Price rises"} to liq
-                  </p>
-                </div>
+                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">
+                  {direction === "long" ? "↓ drops" : "↑ rises"}
+                </p>
               </div>
               {/* Visual distance bar */}
-              <div className="mt-2 h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
+              <div className="mt-1.5 md:mt-2 h-1 md:h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
                 <div
                   className="h-full rounded-full bg-gradient-to-r from-[var(--color-short)] to-[var(--color-short)]/50 transition-all duration-300"
                   style={{ width: `${Math.min(computedValues.liqDistance * 10, 100)}%` }}
@@ -890,42 +887,41 @@ export function TradingPanel({
             </div>
 
             {/* Take Profit - Full Width with Potential Gain */}
-            <div className="p-3 rounded-xl bg-[var(--color-long)]/5 border border-[var(--color-long)]/20">
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center gap-1.5">
-                  <Target className="w-3.5 h-3.5 text-[var(--color-long)]" />
-                  <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--color-long)]">
-                    Take Profit Target
+            <div className="p-2 md:p-3 rounded-xl bg-[var(--color-long)]/5 border border-[var(--color-long)]/20">
+              <div className="flex items-center justify-between mb-1 md:mb-2">
+                <div className="flex items-center gap-1 md:gap-1.5">
+                  <Target className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--color-long)]" />
+                  <span className="text-[9px] md:text-[10px] uppercase tracking-wide font-bold text-[var(--color-long)]">
+                    Take Profit
                   </span>
                 </div>
-                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-long)]/10">
-                  <Trophy className="w-3 h-3 text-[var(--color-long)]" />
-                  <span className="text-[10px] font-bold text-[var(--color-long)] tabular-nums">
+                <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--color-long)]/10">
+                  <Trophy className="w-2.5 h-2.5 md:w-3 md:h-3 text-[var(--color-long)]" />
+                  <span className="text-[9px] md:text-[10px] font-bold text-[var(--color-long)] tabular-nums">
                     +{takeProfit}%
                   </span>
                 </div>
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xl font-bold font-mono text-[var(--color-long)] tabular-nums">
+                <p className="text-lg md:text-xl font-bold font-mono text-[var(--color-long)] tabular-nums">
                   ${formatPrice(computedValues.takeProfitPrice)}
                 </p>
                 <div className="text-right">
-                  <p className="text-xs font-bold text-[var(--color-long)] tabular-nums">
+                  <p className="text-[11px] md:text-xs font-bold text-[var(--color-long)] tabular-nums">
                     +${formatValue(computedValues.potentialProfit, 0)}
                   </p>
-                  <p className="text-[10px] text-[var(--text-tertiary)]">potential profit</p>
+                  <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">profit</p>
                 </div>
               </div>
             </div>
 
             {/* Fee - Compact */}
-            <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-              <div className="flex items-center gap-1.5">
-                <Percent className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                <span className="text-xs text-[var(--text-tertiary)]">Trading Fee</span>
-                <span className="text-[10px] text-[var(--text-tertiary)]">(0.05%)</span>
+            <div className="flex items-center justify-between p-2 md:p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+              <div className="flex items-center gap-1 md:gap-1.5">
+                <Percent className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--text-tertiary)]" />
+                <span className="text-[11px] md:text-xs text-[var(--text-tertiary)]">Fee (0.05%)</span>
               </div>
-              <span className="text-sm font-bold font-mono text-[var(--text-secondary)] tabular-nums">
+              <span className="text-xs md:text-sm font-bold font-mono text-[var(--text-secondary)] tabular-nums">
                 ~${formatValue(computedValues.fee)}
               </span>
             </div>
@@ -934,29 +930,29 @@ export function TradingPanel({
       </div>
 
       {/* Action Button */}
-      <div className="p-4 border-t border-[var(--border-subtle)]">
+      <div className="p-3 md:p-4 border-t border-[var(--border-subtle)]">
         {!isConnected ? (
           <button
             onClick={onConnectWallet}
-            className="w-full py-4 rounded-xl font-bold text-base group relative overflow-hidden bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white hover:shadow-[var(--shadow-glow-pink)] hover:-translate-y-0.5 transition-all duration-200"
+            className="w-full py-3 md:py-4 rounded-xl font-bold text-sm md:text-base group relative overflow-hidden bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] text-white hover:shadow-[var(--shadow-glow-pink)] hover:-translate-y-0.5 transition-all duration-200"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              <Zap className="w-5 h-5" />
+              <Zap className="w-4 h-4 md:w-5 md:h-5" />
               Connect to Trade
             </span>
           </button>
         ) : (isPerpetuals ? hasInsufficientBalance : hasInsufficientSpotBalance) ? (
           <button
             disabled
-            className="w-full py-4 rounded-xl font-bold text-base bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-tertiary)] cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 md:py-4 rounded-xl font-bold text-sm md:text-base bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-tertiary)] cursor-not-allowed flex items-center justify-center gap-2"
           >
-            <Wallet className="w-5 h-5" />
+            <Wallet className="w-4 h-4 md:w-5 md:h-5" />
             Top Up to Continue
           </button>
         ) : !isValidTrade ? (
           <button
             disabled
-            className="w-full py-4 rounded-xl font-bold text-base bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-tertiary)] cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 md:py-4 rounded-xl font-bold text-sm md:text-base bg-[var(--bg-secondary)] border border-[var(--border-subtle)] text-[var(--text-tertiary)] cursor-not-allowed flex items-center justify-center gap-2"
           >
             Enter Amount
           </button>
@@ -964,8 +960,8 @@ export function TradingPanel({
           <button
             onClick={handleTrade}
             className={`
-              w-full py-4 rounded-xl font-bold text-base transition-all duration-200
-              flex items-center justify-center gap-2 relative overflow-hidden
+              w-full py-3 md:py-4 rounded-xl font-bold text-sm md:text-base transition-all duration-200
+              flex items-center justify-center gap-1.5 md:gap-2 relative overflow-hidden
               hover:-translate-y-0.5 active:translate-y-0
               ${isPerpetuals
                 ? direction === "long"
@@ -977,12 +973,12 @@ export function TradingPanel({
           >
             {isPerpetuals ? (
               <>
-                <Rocket className="w-5 h-5" />
+                <Rocket className="w-4 h-4 md:w-5 md:h-5" />
                 {direction === "long" ? "Long" : "Short"} SOL @ {leverage}x
               </>
             ) : (
               <>
-                <Zap className="w-5 h-5" />
+                <Zap className="w-4 h-4 md:w-5 md:h-5" />
                 Swap {payToken.symbol} → {receiveToken.symbol}
               </>
             )}

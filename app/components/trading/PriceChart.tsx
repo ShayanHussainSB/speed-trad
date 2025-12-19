@@ -222,29 +222,33 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Chart Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-4">
-          {/* Token Pair Selector */}
-          <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors">
-            <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white">S</span>
+      {/* Chart Header - Compact on mobile */}
+      <div className="flex items-center justify-between px-2 md:px-4 py-2 md:py-3 border-b border-[var(--border-subtle)]">
+        <div className="flex items-center gap-2 md:gap-4">
+          {/* Token Pair Selector - Compact on mobile */}
+          <button className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--border-default)] transition-colors">
+            <div className="w-5 h-5 md:w-6 md:h-6 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
+              <span className="text-[8px] md:text-[10px] font-bold text-white">S</span>
             </div>
-            <span className="text-sm font-semibold text-[var(--text-primary)]">{symbol}</span>
-            <ChevronDown className="w-4 h-4 text-[var(--text-tertiary)]" />
+            <span className="text-xs md:text-sm font-semibold text-[var(--text-primary)]">{symbol}</span>
+            <ChevronDown className="w-3 h-3 md:w-4 md:h-4 text-[var(--text-tertiary)]" />
           </button>
 
-          {/* Price Display */}
-          <div className="flex items-center gap-3">
-            <span className="text-2xl font-bold text-[var(--text-primary)] font-mono flex items-center gap-1">
+          {/* Price Display - Smaller on mobile */}
+          <div className="flex items-center gap-1 md:gap-3">
+            <span className="text-lg md:text-2xl font-bold text-[var(--text-primary)] font-mono flex items-center gap-0.5 md:gap-1">
               <span className={isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}>
                 {isPositive ? "↗" : "↘"}
               </span>
-              ${currentPrice.toFixed(3)}
+              ${currentPrice.toFixed(2)}
+            </span>
+            {/* Change % - Inline on mobile */}
+            <span className={`text-xs md:text-sm font-medium md:hidden ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
+              {isPositive ? "+" : ""}{priceChangePercent.toFixed(1)}%
             </span>
           </div>
 
-          {/* Change Info */}
+          {/* Change Info - Desktop only */}
           <div className="hidden md:flex items-center gap-2">
             <span className="text-xs text-[var(--text-tertiary)]">Change %</span>
             <span className={`text-sm font-medium ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
@@ -253,14 +257,14 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
           </div>
         </div>
 
-        {/* Chart Type Selector */}
-        <div className="flex items-center gap-2">
+        {/* Chart Type Selector - Compact on mobile */}
+        <div className="flex items-center gap-1 md:gap-2">
           <span className="text-xs text-[var(--text-tertiary)] hidden sm:block">Chart Type</span>
-          <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-secondary)]">
+          <div className="flex items-center gap-0.5 md:gap-1 p-0.5 md:p-1 rounded-lg bg-[var(--bg-secondary)]">
             <button
               onClick={() => setChartType("live")}
               className={`
-                p-2 rounded-md transition-all
+                p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "live"
                   ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
                   : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
@@ -268,12 +272,12 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
               `}
               title="Live Line"
             >
-              <Activity className="w-4 h-4" />
+              <Activity className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             <button
               onClick={() => setChartType("line")}
               className={`
-                p-2 rounded-md transition-all
+                p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "line"
                   ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                   : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
@@ -281,12 +285,12 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
               `}
               title="Line Chart"
             >
-              <LineChart className="w-4 h-4" />
+              <LineChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
             <button
               onClick={() => setChartType("candlestick")}
               className={`
-                p-2 rounded-md transition-all
+                p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "candlestick"
                   ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                   : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
@@ -294,20 +298,20 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
               `}
               title="Candlestick"
             >
-              <CandlestickChart className="w-4 h-4" />
+              <CandlestickChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Timeframe Selector */}
-      <div className="flex items-center gap-1 px-4 py-2 border-b border-[var(--border-subtle)]">
+      {/* Timeframe Selector - Scrollable on mobile */}
+      <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1.5 md:py-2 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
         {["1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
           <button
             key={tf}
             onClick={() => setTimeframe(tf)}
             className={`
-              px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150
+              px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all duration-150 flex-shrink-0
               ${timeframe === tf
                 ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
                 : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
@@ -321,7 +325,7 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
 
       {/* Chart Container */}
       {chartType === "live" ? (
-        <div className="flex-1 min-h-[300px]">
+        <div className="flex-1 min-h-0">
           <LiveLineChart
             initialPrice={currentPrice}
             onPriceUpdate={(price) => {
@@ -335,7 +339,7 @@ export function PriceChart({ symbol = "SOL/USD" }: PriceChartProps) {
           />
         </div>
       ) : (
-        <div ref={chartContainerRef} className="flex-1 min-h-[300px]" />
+        <div ref={chartContainerRef} className="flex-1 min-h-0" />
       )}
     </div>
   );

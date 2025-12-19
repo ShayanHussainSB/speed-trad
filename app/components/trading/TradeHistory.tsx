@@ -190,7 +190,7 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll }: T
     <div className="flex flex-col h-full">
       {/* Enhanced Stats Header */}
       <div className="p-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
           {/* Total PnL */}
           <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
             totalPnl >= 0 ? "bg-[var(--color-long)]/10" : "bg-[var(--color-short)]/10"
@@ -278,9 +278,9 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll }: T
         </div>
       </div>
 
-      {/* Trade Grid */}
+      {/* Trade Grid (1 col mobile, 2 col desktop) */}
       <div className="flex-1 overflow-y-auto px-3 py-2">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filteredTrades.map((trade) => {
             const isProfit = trade.pnl >= 0;
             const isLong = trade.direction === "long";

@@ -238,9 +238,9 @@ export function PositionsList({ isConnected, onViewAll, maxVisible = 2 }: Positi
         </div>
       </div>
 
-      {/* Positions - Grid Layout */}
-      <div className="flex-1 overflow-hidden px-3 py-2">
-        <div className="grid grid-cols-2 gap-4 h-full">
+      {/* Positions - Grid Layout (1 col mobile, 2 col desktop) */}
+      <div className="flex-1 overflow-y-auto px-3 py-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
           {visiblePositions.map((position) => {
             const isProfit = position.pnl >= 0;
             const isLong = position.direction === "long";
@@ -396,7 +396,7 @@ export function PositionsList({ isConnected, onViewAll, maxVisible = 2 }: Positi
 
           {/* Empty state for filtered results */}
           {visiblePositions.length === 0 && (
-            <div className="col-span-2 flex items-center justify-center h-full">
+            <div className="col-span-1 md:col-span-2 flex items-center justify-center h-full py-8">
               <div className="text-center">
                 <p className="text-sm text-[var(--text-tertiary)]">
                   No {filter === "all" ? "" : filter} positions

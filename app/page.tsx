@@ -19,7 +19,7 @@ import { WalletModal } from "./components/wallet/WalletModal";
 import { useWalletBalance } from "./hooks/useWalletBalance";
 
 type TradingMode = "perpetuals" | "spot";
-type MobileTab = "perpetuals" | "spot" | "history" | "account";
+type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
 
 type BottomPanelTab = "positions" | "history";
 
@@ -79,7 +79,7 @@ export default function TradingPage() {
       <PriceTicker selectedSymbol="SOL" />
 
       {/* Main Content */}
-      <main className="pt-[104px] pb-10 h-screen overflow-hidden">
+      <main className="pt-[104px] pb-10 md:pb-10 h-screen overflow-hidden">
         {/* TRADE View */}
         {(
           <div className="h-[calc(100vh-104px-40px)] md:h-[calc(100vh-104px-40px)] flex flex-col">
@@ -203,16 +203,16 @@ export default function TradingPage() {
 
             {/* Mobile Layout */}
             <div className="flex md:hidden flex-1 flex-col overflow-hidden">
-              {/* Trading Views */}
+              {/* Trading Views (Perps/Spot) */}
               {(mobileTab === "perpetuals" || mobileTab === "spot") && (
-                <>
-                  {/* Chart */}
-                  <div className="flex-1 min-h-0">
+                <div className="flex flex-col h-full overflow-hidden">
+                  {/* Chart - Fixed height on mobile to prevent overlap */}
+                  <div className="h-[35vh] min-h-[180px] flex-shrink-0">
                     <PriceChart symbol="SOL-USDC" />
                   </div>
 
-                  {/* Trading Panel */}
-                  <div className="border-t border-[var(--border-subtle)] bg-[var(--bg-card)] max-h-[50vh] overflow-y-auto scrollbar-hide">
+                  {/* Trading Panel - Takes remaining space, scrollable */}
+                  <div className="flex-1 min-h-0 border-t border-[var(--border-subtle)] bg-[var(--bg-card)] overflow-y-auto scrollbar-hide pb-16">
                     <TradingPanel
                       mode={mobileTab}
                       isConnected={connected}
@@ -220,67 +220,79 @@ export default function TradingPage() {
                       balance={balance}
                     />
                   </div>
-                </>
+                </div>
               )}
 
-              {/* History View */}
-              {mobileTab === "history" && (
-                <div className="flex-1 overflow-hidden bg-[var(--bg-card)]">
+              {/* Positions View */}
+              {mobileTab === "positions" && (
+                <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
+                  <PositionsList
+                    isConnected={connected}
+                    onViewAll={() => setIsPositionsModalOpen(true)}
+                    maxVisible={10}
+                  />
+                </div>
+              )}
+
+              {/* Activity View (Trades, Orders, etc.) */}
+              {mobileTab === "activity" && (
+                <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
                   <TradeHistory isConnected={connected} onViewAll={() => setIsHistoryModalOpen(true)} />
                 </div>
               )}
 
               {/* Account View */}
               {mobileTab === "account" && (
-                <div className="flex-1 overflow-y-auto bg-[var(--bg-card)]">
+                <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] pb-16">
                   {!connected ? (
-                    <div className="flex flex-col items-center justify-center h-full py-16 px-4 text-center">
-                      <div className="w-20 h-20 rounded-2xl bg-[var(--accent-muted)] flex items-center justify-center mb-6 animate-glow-breathe">
-                        <svg className="w-10 h-10 text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <div className="flex flex-col items-center justify-center h-full px-6">
+                      <div className="w-16 h-16 rounded-2xl bg-[var(--accent-muted)] flex items-center justify-center mb-5">
+                        <svg className="w-8 h-8 text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
                         </svg>
                       </div>
-                      <h2 className="text-xl font-bold text-[var(--text-primary)] mb-2">Connect Your Wallet</h2>
-                      <p className="text-sm text-[var(--text-tertiary)] mb-6 max-w-xs">
-                        Connect your Solana wallet to start trading with up to 1000x leverage
+                      <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Connect Wallet</h2>
+                      <p className="text-xs text-[var(--text-tertiary)] mb-5 text-center">
+                        Trade with up to 1000x leverage
                       </p>
-                      <button onClick={openWalletModal} className="btn btn-primary py-3 px-8">
-                        Connect Wallet
+                      <button onClick={openWalletModal} className="btn btn-primary py-2.5 px-6 text-sm">
+                        Connect
                       </button>
                     </div>
                   ) : (
-                    <div className="p-4 space-y-4">
-                      {/* Wallet Card */}
-                      <div className="card-glow p-5">
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-sm text-[var(--text-tertiary)]">Connected Wallet</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-2 h-2 rounded-full bg-[var(--color-long)] animate-pulse" />
-                            <span className="text-xs text-[var(--color-long)]">Active</span>
-                          </div>
+                    <div className="flex flex-col">
+                      {/* Hero Balance Section */}
+                      <div className="px-5 pt-6 pb-5 border-b border-[var(--border-subtle)]">
+                        <div className="flex items-center gap-2 mb-1">
+                          <div className="w-2 h-2 rounded-full bg-[var(--color-long)]" />
+                          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Portfolio Value</span>
                         </div>
-                        <p className="font-mono text-[var(--text-primary)] text-sm truncate">{walletAddress}</p>
+                        <p className="text-4xl font-bold text-[var(--text-primary)] tracking-tight">${balanceUSD.toFixed(2)}</p>
+                        <p className="text-sm text-[var(--text-tertiary)] mt-1 font-mono">{balance.toFixed(4)} SOL</p>
                       </div>
 
-                      {/* Balance Card */}
-                      <div className="card p-5">
-                        <p className="text-sm text-[var(--text-tertiary)] mb-2">Trading Balance</p>
-                        <p className="text-3xl font-bold text-[var(--text-primary)] mb-1">{balance.toFixed(4)} SOL</p>
-                        <p className="text-sm text-[var(--text-secondary)]">≈ ${balanceUSD.toFixed(2)}</p>
-                      </div>
-
-                      {/* Quick Stats */}
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="card p-4">
-                          <p className="text-xs text-[var(--text-tertiary)] mb-1">Open Positions</p>
-                          <p className="text-xl font-bold text-[var(--text-primary)]">0</p>
+                      {/* Stats List */}
+                      <div className="divide-y divide-[var(--border-subtle)]">
+                        {/* PnL Row */}
+                        <div className="flex items-center justify-between px-5 py-4">
+                          <span className="text-sm text-[var(--text-tertiary)]">Total PnL</span>
+                          <span className="text-sm font-semibold text-[var(--color-long)]">+$21.30</span>
                         </div>
-                        <div className="card p-4">
-                          <p className="text-xs text-[var(--text-tertiary)] mb-1">Total PnL</p>
-                          <p className="text-xl font-bold text-[var(--text-secondary)]">$0.00</p>
+
+                        {/* Open Positions Row */}
+                        <div className="flex items-center justify-between px-5 py-4">
+                          <span className="text-sm text-[var(--text-tertiary)]">Open Positions</span>
+                          <span className="text-sm font-semibold text-[var(--text-primary)]">2</span>
+                        </div>
+
+                        {/* Wallet Row */}
+                        <div className="flex items-center justify-between px-5 py-4">
+                          <span className="text-sm text-[var(--text-tertiary)]">Wallet</span>
+                          <span className="text-sm font-mono text-[var(--text-secondary)]">
+                            {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
+                          </span>
                         </div>
                       </div>
-
                     </div>
                   )}
                 </div>

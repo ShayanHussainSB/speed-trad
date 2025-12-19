@@ -1,8 +1,8 @@
 "use client";
 
-import { TrendingUp, ArrowLeftRight, History, User } from "lucide-react";
+import { TrendingUp, ArrowLeftRight, BarChart3, History, User } from "lucide-react";
 
-type TabType = "perpetuals" | "spot" | "history" | "account";
+type TabType = "perpetuals" | "spot" | "positions" | "activity" | "account";
 
 interface MobileNavProps {
   activeTab: TabType;
@@ -12,14 +12,15 @@ interface MobileNavProps {
 const navItems = [
   { id: "perpetuals" as TabType, icon: TrendingUp, label: "Perps" },
   { id: "spot" as TabType, icon: ArrowLeftRight, label: "Spot" },
-  { id: "history" as TabType, icon: History, label: "History" },
+  { id: "positions" as TabType, icon: BarChart3, label: "Positions" },
+  { id: "activity" as TabType, icon: History, label: "Activity" },
   { id: "account" as TabType, icon: User, label: "Account" },
 ];
 
 export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden glass border-t border-[var(--border-subtle)]">
-      <div className="flex items-center justify-around h-16 px-2">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[var(--bg-card)]/95 backdrop-blur-xl border-t border-[var(--border-subtle)]">
+      <div className="flex items-center justify-around h-14 px-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;
           const Icon = item.icon;
@@ -29,8 +30,8 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
               key={item.id}
               onClick={() => onTabChange(item.id)}
               className={`
-                flex flex-col items-center justify-center gap-1 py-2 px-4 rounded-xl
-                transition-all duration-200 min-w-[64px]
+                flex flex-col items-center justify-center gap-0.5 py-1.5 px-2 rounded-lg
+                transition-all duration-200 min-w-0 flex-1
                 ${isActive
                   ? "text-[var(--accent-primary)]"
                   : "text-[var(--text-tertiary)] active:text-[var(--text-secondary)]"
@@ -46,7 +47,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
                   <div className="absolute inset-0 blur-md bg-[var(--accent-primary)] opacity-50 -z-10" />
                 )}
               </div>
-              <span className={`text-[10px] font-medium ${isActive ? "font-semibold" : ""}`}>
+              <span className={`text-[9px] font-medium ${isActive ? "font-semibold" : ""}`}>
                 {item.label}
               </span>
             </button>
@@ -55,7 +56,7 @@ export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
       </div>
 
       {/* Safe area for devices with home indicator */}
-      <div className="h-[env(safe-area-inset-bottom)]" />
+      <div className="h-[env(safe-area-inset-bottom)] bg-[var(--bg-card)]/95" />
     </nav>
   );
 }
