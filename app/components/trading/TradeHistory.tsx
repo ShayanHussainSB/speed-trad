@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   Maximize2,
 } from "lucide-react";
+import { getTransactionUrl } from "@/app/config/network";
+import { TradeHistorySkeleton } from "@/app/components/ui/Skeleton";
 
 type TradeFilter = "all" | "wins" | "losses";
 
@@ -79,6 +81,7 @@ interface TradeHistoryProps {
   isConnected: boolean;
   trades?: Trade[];
   onViewAll?: () => void;
+  isLoading?: boolean; // "Indexing your W's and L's..."
 }
 
 function formatTimeAgo(date: Date): string {
@@ -146,29 +149,112 @@ const getResultTier = (pnlPercent: number): { tier: string; color: string; icon:
   };
 };
 
-export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll }: TradeHistoryProps) {
+export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll, isLoading = false }: TradeHistoryProps) {
   const [filter, setFilter] = useState<TradeFilter>("all");
+
+  // Loading state - "Querying your legendary trades..."
+  if (isLoading) {
+    return <TradeHistorySkeleton count={3} />;
+  }
 
   if (!isConnected) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-16 px-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--bg-elevated)] flex items-center justify-center mb-4">
-          <Clock className="w-8 h-8 text-[var(--text-tertiary)]" />
+      <div className="flex items-center justify-center h-full py-6 px-4">
+        <div className="flex items-center gap-6">
+          {/* Animated Icon Container - Compact */}
+          <div className="relative flex-shrink-0">
+            {/* Pulsing background */}
+            <div className="absolute inset-0 w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--accent-secondary)]/20 to-[var(--accent-primary)]/20 animate-pulse" />
+            {/* Spinning dashed border */}
+            <div className="absolute -inset-1 w-18 h-18 rounded-xl border border-dashed border-[var(--accent-secondary)]/30 animate-spin" style={{ animationDuration: '20s' }} />
+
+            {/* Main icon box */}
+            <div className="relative w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-tertiary)] border border-[var(--border-subtle)] flex items-center justify-center shadow-lg">
+              <Clock className="w-7 h-7 text-[var(--accent-secondary)] animate-pulse" style={{ animationDuration: '2s' }} />
+            </div>
+
+            {/* Floating badges */}
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[var(--color-long)] flex items-center justify-center shadow-[0_0_12px_rgba(0,255,136,0.4)]">
+              <Trophy className="w-2.5 h-2.5 text-[#050505]" />
+            </div>
+            <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-[var(--color-short)] flex items-center justify-center">
+              <Skull className="w-2 h-2 text-white" />
+            </div>
+          </div>
+
+          {/* Text Content - Horizontal layout */}
+          <div className="flex flex-col">
+            <h3 className="text-base font-black text-[var(--text-primary)] mb-0.5">
+              Trade History
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] mb-3 max-w-[200px]">
+              Connect wallet to view your legendary trades.
+            </p>
+
+            {/* Stats Pills - Inline */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-long)]/10 border border-[var(--color-long)]/20">
+                <Crown className="w-2.5 h-2.5 text-[#FFD700]" />
+                <span className="text-[9px] font-bold text-[var(--color-long)]">GODLIKE</span>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-short)]/10 border border-[var(--color-short)]/20">
+                <Skull className="w-2.5 h-2.5 text-[var(--color-short)]" />
+                <span className="text-[9px] font-bold text-[var(--color-short)]">REKT</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-[var(--text-secondary)] font-medium mb-1">Trade History</p>
-        <p className="text-sm text-[var(--text-tertiary)]">Connect wallet to view your trades</p>
       </div>
     );
   }
 
   if (trades.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-16 px-4 text-center">
-        <div className="w-16 h-16 rounded-2xl bg-[var(--bg-elevated)] flex items-center justify-center mb-4">
-          <Clock className="w-8 h-8 text-[var(--text-tertiary)]" />
+      <div className="flex items-center justify-center h-full py-6 px-4">
+        <div className="flex items-center gap-6">
+          {/* Animated Icon Container - Compact */}
+          <div className="relative flex-shrink-0">
+            {/* Pulsing background */}
+            <div className="absolute inset-0 w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--accent-secondary)]/20 to-[var(--accent-primary)]/20 animate-pulse" />
+            {/* Spinning dashed border */}
+            <div className="absolute -inset-1 w-18 h-18 rounded-xl border border-dashed border-[var(--accent-secondary)]/30 animate-spin" style={{ animationDuration: '20s' }} />
+
+            {/* Main icon box */}
+            <div className="relative w-16 h-16 rounded-xl bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-tertiary)] border border-[var(--border-subtle)] flex items-center justify-center shadow-lg">
+              <Clock className="w-7 h-7 text-[var(--accent-secondary)] animate-pulse" style={{ animationDuration: '2s' }} />
+            </div>
+
+            {/* Floating badges */}
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-[var(--color-long)] flex items-center justify-center shadow-[0_0_12px_rgba(0,255,136,0.4)]">
+              <Trophy className="w-2.5 h-2.5 text-[#050505]" />
+            </div>
+            <div className="absolute -bottom-0.5 -left-0.5 w-4 h-4 rounded-full bg-[var(--color-short)] flex items-center justify-center">
+              <Skull className="w-2 h-2 text-white" />
+            </div>
+          </div>
+
+          {/* Text Content - Horizontal layout */}
+          <div className="flex flex-col">
+            <h3 className="text-base font-black text-[var(--text-primary)] mb-0.5">
+              No History Yet
+            </h3>
+            <p className="text-xs text-[var(--text-tertiary)] mb-3 max-w-[200px]">
+              Your legendary trades will be immortalized here, anon.
+            </p>
+
+            {/* Stats Pills - Inline */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-long)]/10 border border-[var(--color-long)]/20">
+                <Crown className="w-2.5 h-2.5 text-[#FFD700]" />
+                <span className="text-[9px] font-bold text-[var(--color-long)]">GODLIKE</span>
+              </div>
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--color-short)]/10 border border-[var(--color-short)]/20">
+                <Skull className="w-2.5 h-2.5 text-[var(--color-short)]" />
+                <span className="text-[9px] font-bold text-[var(--color-short)]">REKT</span>
+              </div>
+            </div>
+          </div>
         </div>
-        <p className="text-[var(--text-secondary)] font-medium mb-1">No Trades Yet</p>
-        <p className="text-sm text-[var(--text-tertiary)]">Your trade history will appear here</p>
       </div>
     );
   }
@@ -357,7 +443,7 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll }: T
                   </div>
                   {trade.txHash && (
                     <a
-                      href={`https://solscan.io/tx/${trade.txHash}`}
+                      href={getTransactionUrl(trade.txHash)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex items-center gap-0.5 text-[10px] text-[var(--accent-primary)] hover:text-[var(--accent-secondary)] transition-colors"
@@ -373,9 +459,28 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll }: T
         </div>
 
         {filteredTrades.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <p className="text-sm text-[var(--text-tertiary)]">
-              No {filter === "wins" ? "wins" : filter === "losses" ? "losses" : "trades"} found
+          <div className="flex flex-col items-center justify-center py-10 text-center">
+            <div className="relative mb-4">
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
+                filter === "wins"
+                  ? "bg-[var(--color-long)]/10 border border-[var(--color-long)]/20"
+                  : "bg-[var(--color-short)]/10 border border-[var(--color-short)]/20"
+              }`}>
+                {filter === "wins" ? (
+                  <Trophy className="w-7 h-7 text-[var(--color-long)]" />
+                ) : (
+                  <Skull className="w-7 h-7 text-[var(--color-short)]" />
+                )}
+              </div>
+            </div>
+            <p className="text-sm font-bold text-[var(--text-primary)] mb-1">
+              {filter === "wins" ? "No Ws Yet" : "Clean L Sheet"}
+            </p>
+            <p className="text-xs text-[var(--text-tertiary)] max-w-[180px]">
+              {filter === "wins"
+                ? "Stack those wins, anon. GIGACHAD status awaits."
+                : "No losses? Either god-tier or haven't traded yet."
+              }
             </p>
           </div>
         )}

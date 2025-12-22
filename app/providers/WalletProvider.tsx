@@ -5,7 +5,7 @@ import {
   ConnectionProvider,
   WalletProvider as SolanaWalletProvider,
 } from "@solana/wallet-adapter-react";
-import { WalletAdapterNetwork, WalletError } from "@solana/wallet-adapter-base";
+import { WalletError } from "@solana/wallet-adapter-base";
 import {
   PhantomWalletAdapter,
   SolflareWalletAdapter,
@@ -13,7 +13,7 @@ import {
   LedgerWalletAdapter,
   CoinbaseWalletAdapter,
 } from "@solana/wallet-adapter-wallets";
-import { clusterApiUrl } from "@solana/web3.js";
+import { getRpcEndpoint, IS_PRODUCTION, NETWORK_DISPLAY_NAME } from "@/app/config/network";
 
 // Import wallet adapter styles (we'll override with our theme)
 import "@solana/wallet-adapter-react-ui/styles.css";
@@ -22,19 +22,13 @@ interface WalletProviderProps {
   children: ReactNode;
 }
 
-// Network configuration (using mainnet by default)
-void WalletAdapterNetwork.Mainnet;
-
-// Custom RPC endpoints for better performance
-const RPC_ENDPOINTS = {
-  mainnet: process.env.NEXT_PUBLIC_RPC_ENDPOINT || clusterApiUrl("mainnet-beta"),
-  devnet: clusterApiUrl("devnet"),
-  testnet: clusterApiUrl("testnet"),
-};
-
 export const WalletProvider: FC<WalletProviderProps> = ({ children }) => {
-  // Get the RPC endpoint
-  const endpoint = useMemo(() => RPC_ENDPOINTS.mainnet, []);
+  // Get the RPC endpoint from network config
+  const endpoint = useMemo(() => {
+    const rpc = getRpcEndpoint();
+    console.log(`[Network] Connected to ${NETWORK_DISPLAY_NAME} - ${IS_PRODUCTION ? "Production" : "Development"}`);
+    return rpc;
+  }, []);
 
   // Initialize wallet adapters
   const wallets = useMemo(

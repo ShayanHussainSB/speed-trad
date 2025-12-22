@@ -5,6 +5,7 @@ import { useWallet } from "@solana/wallet-adapter-react";
 
 interface UserProfile {
   username: string;
+  avatar: string;
   walletAddress: string;
   isNewUser: boolean;
   stats: {
@@ -47,6 +48,7 @@ export function useUserProfile() {
           const parsed = JSON.parse(storedProfile);
           setProfile({
             ...parsed,
+            avatar: parsed.avatar || "pepe",
             walletAddress,
             isNewUser: false,
           });
@@ -54,6 +56,7 @@ export function useUserProfile() {
           // New user - show username modal
           setProfile({
             username: `user_${walletAddress.slice(0, 8)}`,
+            avatar: "pepe",
             walletAddress,
             isNewUser: true,
             stats: DEFAULT_STATS,
@@ -71,12 +74,13 @@ export function useUserProfile() {
     }
   }, [connected, walletAddress]);
 
-  // Save username
+  // Save username (initial setup)
   const saveUsername = useCallback((username: string) => {
     if (!walletAddress) return;
 
     const newProfile: UserProfile = {
       username,
+      avatar: profile?.avatar || "pepe",
       walletAddress,
       isNewUser: false,
       stats: profile?.stats || DEFAULT_STATS,
@@ -85,15 +89,29 @@ export function useUserProfile() {
     localStorage.setItem(`profile_${walletAddress}`, JSON.stringify(newProfile));
     setProfile(newProfile);
     setShowUsernameModal(false);
-  }, [walletAddress, profile?.stats]);
+  }, [walletAddress, profile?.stats, profile?.avatar]);
 
-  // Update username
+  // Update username only
   const updateUsername = useCallback((username: string) => {
     if (!walletAddress || !profile) return;
 
     const updatedProfile = {
       ...profile,
       username,
+    };
+
+    localStorage.setItem(`profile_${walletAddress}`, JSON.stringify(updatedProfile));
+    setProfile(updatedProfile);
+  }, [walletAddress, profile]);
+
+  // Update profile (username and avatar)
+  const updateProfile = useCallback((username: string, avatar: string) => {
+    if (!walletAddress || !profile) return;
+
+    const updatedProfile = {
+      ...profile,
+      username,
+      avatar,
     };
 
     localStorage.setItem(`profile_${walletAddress}`, JSON.stringify(updatedProfile));
@@ -130,6 +148,7 @@ export function useUserProfile() {
     showProfileModal,
     saveUsername,
     updateUsername,
+    updateProfile,
     handleDisconnect,
     openProfileModal,
     closeProfileModal,

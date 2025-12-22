@@ -1,17 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Trophy,
-  Crown,
-  Medal,
-  TrendingUp,
-  Flame,
-  Zap,
-  Target,
-  ChevronUp,
-  Sparkles,
-} from "lucide-react";
+import { Trophy, TrendingUp, ChevronUp, Sparkles } from "lucide-react";
+import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
+import { LeaderboardSkeleton } from "@/app/components/ui/Skeleton";
 
 type TimePeriod = "24h" | "7d" | "30d" | "all";
 
@@ -22,10 +14,8 @@ interface Trader {
   pnl: number;
   winRate: number;
   trades: number;
-  isYou?: boolean;
 }
 
-// Mock data with extended stats
 const MOCK_TRADERS: Record<TimePeriod, Trader[]> = {
   "24h": [
     { rank: 1, username: "speedrunner", points: 12450, pnl: 8420, winRate: 89, trades: 47 },
@@ -54,7 +44,7 @@ const MOCK_TRADERS: Record<TimePeriod, Trader[]> = {
     { rank: 6, username: "perp_god", points: 287650, pnl: 125000, winRate: 62, trades: 654 },
     { rank: 7, username: "wabo", points: 245320, pnl: 108000, winRate: 60, trades: 589 },
   ],
-  "all": [
+  all: [
     { rank: 1, username: "og_trader", points: 4892450, pnl: 2125000, winRate: 72, trades: 8924 },
     { rank: 2, username: "legend_whale", points: 3678320, pnl: 1562500, winRate: 70, trades: 7234 },
     { rank: 3, username: "taichimaster", points: 2445890, pnl: 998000, winRate: 68, trades: 5678 },
@@ -68,272 +58,187 @@ const MOCK_TRADERS: Record<TimePeriod, Trader[]> = {
 interface LeaderboardProps {
   userRank?: number;
   userPoints?: number;
-  userPnl?: number;
-  userWinRate?: number;
   walletAddress?: string;
+  userAvatar?: string;
+  username?: string;
+  isLoading?: boolean; // "Loading the hall of fame (and shame)..."
 }
 
-// Get trader tier based on points
-const getTraderTier = (points: number): { tier: string; color: string; icon: React.ReactNode } => {
-  if (points >= 1000000) return { tier: "WHALE", color: "#FFD700", icon: <Crown className="w-3 h-3" /> };
-  if (points >= 500000) return { tier: "SHARK", color: "#9945FF", icon: <Sparkles className="w-3 h-3" /> };
-  if (points >= 100000) return { tier: "DOLPHIN", color: "#00FFA3", icon: <Zap className="w-3 h-3" /> };
-  if (points >= 10000) return { tier: "FISH", color: "#00D4AA", icon: <Target className="w-3 h-3" /> };
-  return { tier: "SHRIMP", color: "#FF9966", icon: <Flame className="w-3 h-3" /> };
-};
-
-// Format large numbers
 const formatPoints = (points: number): string => {
   if (points >= 1000000) return `${(points / 1000000).toFixed(1)}M`;
   if (points >= 1000) return `${(points / 1000).toFixed(1)}K`;
   return points.toLocaleString();
 };
 
-const formatPnL = (pnl: number): string => {
-  if (pnl >= 1000000) return `$${(pnl / 1000000).toFixed(1)}M`;
-  if (pnl >= 1000) return `$${(pnl / 1000).toFixed(1)}K`;
-  return `$${pnl.toLocaleString()}`;
-};
-
 const formatRank = (rank: number): string => {
   if (rank >= 1000000) return `${Math.floor(rank / 1000000)}M+`;
   if (rank >= 1000) return `${Math.floor(rank / 1000)}K+`;
-  return rank.toLocaleString();
+  return `#${rank.toLocaleString()}`;
 };
 
 export function Leaderboard({
   userRank = 9999999,
   userPoints = 0,
-  userPnl: _userPnl = 0,
-  userWinRate: _userWinRate = 0,
   walletAddress = "0x2e50ffd0",
+  userAvatar = "pepe",
+  username,
+  isLoading = false,
 }: LeaderboardProps) {
-  // These props are for future use
-  void _userPnl;
-  void _userWinRate;
   const [period, setPeriod] = useState<TimePeriod>("7d");
-
   const traders = MOCK_TRADERS[period];
-  const top3 = traders.slice(0, 3);
-  const rest = traders.slice(3);
 
-  const truncateUsername = (name: string, maxLen: number = 12): string => {
-    if (name.length <= maxLen) return name;
-    return name.slice(0, maxLen) + "...";
-  };
+  // Loading state - "Ranking degens by PnL..."
+  if (isLoading) {
+    return <LeaderboardSkeleton count={7} />;
+  }
 
-  // Calculate progress to next rank
-  const nextRankPoints = traders.find(t => t.rank === Math.max(1, userRank - 1))?.points || 0;
+  const nextRankPoints = traders.find((t) => t.rank === Math.max(1, userRank - 1))?.points || 0;
   const progressToNext = nextRankPoints > 0 ? Math.min((userPoints / nextRankPoints) * 100, 100) : 0;
 
   return (
-    <div className="h-full flex flex-col bg-[var(--bg-card)]">
+    <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-2 mb-3">
-          <Trophy className="w-5 h-5 text-[#FFD700]" />
-          <h2 className="text-sm font-bold uppercase tracking-wide text-[var(--text-primary)]">
-            Top Traders
-          </h2>
+      <div className="px-3 py-2.5 border-b border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5">
+            <Trophy className="w-4 h-4 text-[#FFD700]" />
+            <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
+              Leaderboard
+            </h2>
+          </div>
+          <div className="flex items-center gap-1 text-[var(--color-long)]">
+            <TrendingUp className="w-3 h-3" />
+            <span className="text-[9px] font-medium">Live</span>
+          </div>
         </div>
 
-        {/* Time Period Tabs */}
-        <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg-secondary)]">
+        {/* Time Period Tabs - Compact */}
+        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[var(--bg-secondary)]">
           {(["24h", "7d", "30d", "all"] as TimePeriod[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 px-2 py-1.5 rounded-md text-[10px] font-bold uppercase transition-all ${
+              className={`flex-1 px-1.5 py-1 rounded text-[9px] font-bold uppercase transition-all ${
                 period === p
                   ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
                   : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
               }`}
             >
-              {p === "all" ? "All" : p.toUpperCase()}
+              {p === "all" ? "All" : p}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Podium - Top 3 */}
-      <div className="px-3 py-4 border-b border-[var(--border-subtle)] bg-gradient-to-b from-[var(--bg-secondary)]/50 to-transparent">
-        <div className="flex items-end justify-center gap-2">
-          {/* 2nd Place */}
-          <div className="flex flex-col items-center w-[72px]">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C0C0C0] to-[#8A8A8A] flex items-center justify-center mb-1 shadow-lg">
-              <Medal className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-[10px] font-bold text-[var(--text-primary)] truncate w-full text-center">
-              {truncateUsername(top3[1]?.username || "", 8)}
-            </p>
-            <p className="text-[9px] font-mono text-[var(--color-long)] tabular-nums">
-              {formatPoints(top3[1]?.points || 0)}
-            </p>
-            <div className="mt-1 h-12 w-full rounded-t-lg bg-[#C0C0C0]/20 border-t-2 border-[#C0C0C0] flex items-center justify-center">
-              <span className="text-lg font-black text-[#C0C0C0]">2</span>
-            </div>
-          </div>
-
-          {/* 1st Place */}
-          <div className="flex flex-col items-center w-[80px]">
-            <div className="relative">
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#FFD700] to-[#FFA500] flex items-center justify-center mb-1 shadow-lg shadow-[#FFD700]/30">
-                <Crown className="w-6 h-6 text-white" />
-              </div>
-              <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#FFD700] flex items-center justify-center animate-pulse">
-                <Sparkles className="w-2.5 h-2.5 text-white" />
-              </div>
-            </div>
-            <p className="text-xs font-bold text-[var(--text-primary)] truncate w-full text-center">
-              {truncateUsername(top3[0]?.username || "", 10)}
-            </p>
-            <p className="text-[10px] font-mono text-[var(--color-long)] font-bold tabular-nums">
-              {formatPoints(top3[0]?.points || 0)}
-            </p>
-            <div className="mt-1 h-16 w-full rounded-t-lg bg-[#FFD700]/20 border-t-2 border-[#FFD700] flex items-center justify-center">
-              <span className="text-2xl font-black text-[#FFD700]">1</span>
-            </div>
-          </div>
-
-          {/* 3rd Place */}
-          <div className="flex flex-col items-center w-[72px]">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#CD7F32] to-[#8B4513] flex items-center justify-center mb-1 shadow-lg">
-              <Medal className="w-5 h-5 text-white" />
-            </div>
-            <p className="text-[10px] font-bold text-[var(--text-primary)] truncate w-full text-center">
-              {truncateUsername(top3[2]?.username || "", 8)}
-            </p>
-            <p className="text-[9px] font-mono text-[var(--color-long)] tabular-nums">
-              {formatPoints(top3[2]?.points || 0)}
-            </p>
-            <div className="mt-1 h-8 w-full rounded-t-lg bg-[#CD7F32]/20 border-t-2 border-[#CD7F32] flex items-center justify-center">
-              <span className="text-base font-black text-[#CD7F32]">3</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Your Position Card */}
-      <div className="mx-3 my-3 p-3 rounded-xl bg-gradient-to-r from-[var(--accent-primary)]/10 to-[var(--accent-secondary)]/10 border border-[var(--accent-primary)]/30">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center">
-              <span className="text-xs font-bold text-white">
-                {walletAddress.slice(2, 4).toUpperCase()}
-              </span>
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-xs font-bold text-[var(--text-primary)]">
-                  user_{walletAddress.slice(0, 8)}
-                </span>
-                <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase bg-[var(--accent-primary)] text-white">
-                  You
-                </span>
-              </div>
-              <p className="text-[10px] text-[var(--text-tertiary)]">
-                Rank #{formatRank(userRank)}
-              </p>
-            </div>
-          </div>
-          <div className="text-right">
-            <p className="text-sm font-bold font-mono text-[var(--color-long)] tabular-nums">
-              {formatPoints(userPoints)}
-            </p>
-            <p className="text-[10px] text-[var(--text-tertiary)]">points</p>
-          </div>
-        </div>
-
-        {/* Progress to next rank */}
-        {userRank > 1 && (
-          <div>
-            <div className="flex items-center justify-between text-[9px] mb-1">
-              <span className="text-[var(--text-tertiary)]">Progress to #{userRank - 1}</span>
-              <div className="flex items-center gap-1 text-[var(--accent-primary)]">
-                <ChevronUp className="w-3 h-3" />
-                <span className="font-bold tabular-nums">{progressToNext.toFixed(0)}%</span>
-              </div>
-            </div>
-            <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] transition-all"
-                style={{ width: `${progressToNext}%` }}
-              />
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Rest of Leaderboard */}
+      {/* Trader List - Simplified */}
       <div className="flex-1 overflow-y-auto">
-        {rest.map((trader) => {
-          const tier = getTraderTier(trader.points);
-          const isProfitable = trader.pnl > 0;
+        {traders.map((trader, index) => {
+          const isTop3 = trader.rank <= 3;
+          const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
           return (
             <div
               key={trader.rank}
-              className="flex items-center gap-3 px-3 py-2.5 border-b border-[var(--border-subtle)] hover:bg-[var(--bg-secondary)]/50 transition-colors"
+              className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]/50 hover:bg-[var(--bg-secondary)]/30 transition-colors ${
+                isTop3 ? "bg-[var(--bg-secondary)]/20" : ""
+              }`}
             >
               {/* Rank */}
-              <span className="w-6 text-center text-xs font-bold text-[var(--text-tertiary)] tabular-nums">
+              <div
+                className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
+                  isTop3 ? "text-black" : "text-[var(--text-tertiary)] bg-transparent"
+                }`}
+                style={isTop3 ? { backgroundColor: rankColors[index] } : undefined}
+              >
                 {trader.rank}
-              </span>
+              </div>
 
               {/* Avatar & Name */}
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-bold text-[var(--text-primary)] truncate">
-                    {truncateUsername(trader.username)}
-                  </span>
-                  {/* Tier Badge */}
-                  <span
-                    className="flex items-center gap-0.5 px-1 py-0.5 rounded text-[8px] font-black shrink-0"
-                    style={{ backgroundColor: `${tier.color}20`, color: tier.color }}
-                  >
-                    {tier.icon}
-                    {tier.tier}
+              <div className="flex-1 min-w-0 flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shrink-0">
+                  <span className="text-[8px] font-bold text-white uppercase">
+                    {trader.username.slice(0, 2)}
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className={`text-[10px] font-mono tabular-nums ${
-                    isProfitable ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                  }`}>
-                    {isProfitable ? "+" : ""}{formatPnL(trader.pnl)}
-                  </span>
-                  <span className="text-[10px] text-[var(--text-tertiary)]">
-                    {trader.winRate}% WR
-                  </span>
-                </div>
+                <span className="text-[11px] font-medium text-[var(--text-primary)] truncate">
+                  {trader.username}
+                </span>
               </div>
 
               {/* Points */}
               <div className="text-right shrink-0">
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-[var(--color-long)]" />
-                  <span className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                    {formatPoints(trader.points)}
-                  </span>
-                </div>
-                <p className="text-[9px] text-[var(--text-tertiary)]">
-                  {trader.trades} trades
-                </p>
+                <span className="text-[11px] font-bold font-mono text-[var(--color-long)] tabular-nums">
+                  {formatPoints(trader.points)}
+                </span>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Footer Stats */}
-      <div className="px-3 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
-        <div className="flex items-center justify-between text-[10px]">
-          <span className="text-[var(--text-tertiary)]">
-            Top {period === "all" ? "All Time" : period.toUpperCase()} Traders
-          </span>
-          <div className="flex items-center gap-1 text-[var(--color-long)]">
-            <TrendingUp className="w-3 h-3" />
-            <span className="font-bold">Live Rankings</span>
+      {/* Your Position - Enhanced with glow */}
+      <div className="relative px-3 py-3 border-t-2 border-[var(--accent-primary)]">
+        {/* Glow effect background */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent-primary)]/15 via-[var(--accent-primary)]/5 to-transparent pointer-events-none" />
+        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-primary)] to-transparent shadow-[0_0_10px_var(--accent-primary)]" />
+
+        <div className="relative">
+          {/* Header with YOU badge */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              {/* Avatar with glow ring */}
+              <div className="relative">
+                <div className="w-8 h-8 rounded-lg overflow-hidden ring-2 ring-[var(--accent-primary)] shadow-[0_0_12px_rgba(var(--accent-primary-rgb),0.4)]">
+                  <AvatarIcon avatarId={userAvatar} size={32} />
+                </div>
+                {/* Online indicator */}
+                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-long)] border-2 border-[var(--bg-card)]" />
+              </div>
+
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  {/* YOU Badge */}
+                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-[var(--accent-primary)] text-white shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.5)]">
+                    YOU
+                  </span>
+                  <span className="text-[10px] font-semibold text-[var(--text-primary)] truncate max-w-[100px] sm:max-w-[80px]">
+                    {username || `user_${walletAddress.slice(2, 6)}`}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 mt-0.5">
+                  <Sparkles className="w-2.5 h-2.5 text-[var(--accent-primary)]" />
+                  <span className="text-[9px] font-bold text-[var(--text-tertiary)]">{formatRank(userRank)}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Points display */}
+            <div className="text-right">
+              <span className="text-sm font-bold font-mono text-[var(--color-long)] tabular-nums">
+                {formatPoints(userPoints)}
+              </span>
+              <span className="text-[9px] text-[var(--text-tertiary)] ml-1">pts</span>
+            </div>
           </div>
+
+          {/* Progress to next rank */}
+          {userRank > 1 && (
+            <div className="mt-2">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[8px] text-[var(--text-tertiary)] uppercase tracking-wide">Progress to next rank</span>
+                <div className="flex items-center gap-0.5 text-[var(--accent-primary)]">
+                  <ChevronUp className="w-2.5 h-2.5" />
+                  <span className="text-[9px] font-bold tabular-nums">{progressToNext.toFixed(0)}%</span>
+                </div>
+              </div>
+              <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-[0_0_6px_var(--accent-primary)]"
+                  style={{ width: `${progressToNext}%` }}
+                />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

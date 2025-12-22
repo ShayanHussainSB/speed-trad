@@ -9,18 +9,24 @@ import {
   LogOut,
   ExternalLink,
   ChevronDown,
-  User,
+  Pencil,
   Plus,
   TrendingUp,
   Trophy,
   Wifi,
+  User,
 } from "lucide-react";
 import { useWalletBalance } from "@/app/hooks/useWalletBalance";
+import { NETWORK_DISPLAY_NAME, IS_PRODUCTION, getAccountUrl } from "@/app/config/network";
+import { ProfileEditModal } from "./ProfileEditModal";
+import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
 
 interface WalletSectionProps {
   onOpenModal: () => void;
   onOpenProfile?: () => void;
   username?: string;
+  avatar?: string;
+  onUpdateProfile?: (username: string, avatar: string) => void;
 }
 
 // Solana Logo SVG Component
@@ -87,40 +93,25 @@ const formatUSD = (value: number): string => {
   return `$${value.toFixed(0)}`;
 };
 
-// Generate consistent gradient from wallet address
-const getGradientFromAddress = (address: string): string => {
-  if (!address) return "from-[#FF2E8C] to-[#9945FF]";
-  const hash = address.slice(0, 8);
-  const gradients = [
-    "from-[#FF2E8C] to-[#9945FF]",
-    "from-[#00FFA3] to-[#03E1FF]",
-    "from-[#FFD700] to-[#FF6B00]",
-    "from-[#9945FF] to-[#14F195]",
-    "from-[#FF6B6B] to-[#FF2E8C]",
-    "from-[#00D1FF] to-[#9945FF]",
-  ];
-  const index = parseInt(hash, 16) % gradients.length;
-  return gradients[index];
-};
-
 export const WalletSection: FC<WalletSectionProps> = ({
   onOpenModal,
   onOpenProfile,
   username,
+  avatar = "pepe",
+  onUpdateProfile,
 }) => {
   const { publicKey, connected, disconnect, connecting } = useWallet();
   const { balance, balanceUSD } = useWalletBalance();
   const [showDropdown, setShowDropdown] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const walletAddress = publicKey?.toBase58() || "";
   const truncatedAddress = walletAddress
     ? `${walletAddress.slice(0, 4)}...${walletAddress.slice(-4)}`
     : "";
-  const gradient = getGradientFromAddress(walletAddress);
   const displayName = username || truncatedAddress;
-  const initial = (username?.[0] || walletAddress?.[0] || "?").toUpperCase();
 
   const handleCopyAddress = useCallback(async () => {
     if (walletAddress) {
@@ -184,7 +175,17 @@ export const WalletSection: FC<WalletSectionProps> = ({
   // Connected state - Split design
   return (
     <div className="flex items-center gap-2" ref={dropdownRef}>
-      {/* Balance Pill */}
+      {/* Balance Pill - Mobile (compact) */}
+      <div className="flex sm:hidden items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+        <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center flex-shrink-0">
+          <SolanaLogo className="w-3 h-3" />
+        </div>
+        <span className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
+          {formatBalance(balance, 2)}
+        </span>
+      </div>
+
+      {/* Balance Pill - Desktop (full) */}
       <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
         {/* Solana Logo */}
         <div className="w-7 h-7 rounded-full bg-black/40 flex items-center justify-center p-1">
@@ -223,10 +224,8 @@ export const WalletSection: FC<WalletSectionProps> = ({
       >
         {/* Avatar */}
         <div className="relative">
-          <div
-            className={`w-8 h-8 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center shadow-md`}
-          >
-            <span className="text-sm font-bold text-white">{initial}</span>
+          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-md">
+            <AvatarIcon avatarId={avatar} size={32} />
           </div>
           {/* Online indicator */}
           <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--color-long)] border-2 border-[var(--bg-elevated)]" />
@@ -238,9 +237,9 @@ export const WalletSection: FC<WalletSectionProps> = ({
             {displayName}
           </span>
           <div className="flex items-center gap-1">
-            <Wifi className="w-2.5 h-2.5 text-[var(--color-long)]" />
-            <span className="text-[10px] text-[var(--text-tertiary)]">
-              Mainnet
+            <Wifi className={`w-2.5 h-2.5 ${IS_PRODUCTION ? "text-[var(--color-long)]" : "text-[#FF6B00]"}`} />
+            <span className={`text-[10px] ${IS_PRODUCTION ? "text-[var(--text-tertiary)]" : "text-[#FF6B00]"}`}>
+              {NETWORK_DISPLAY_NAME}
             </span>
           </div>
         </div>
@@ -255,15 +254,13 @@ export const WalletSection: FC<WalletSectionProps> = ({
 
       {/* Enhanced Dropdown Menu */}
       {showDropdown && (
-        <div className="absolute right-0 top-full mt-2 w-72 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-default)] shadow-2xl animate-slide-down z-50 overflow-hidden">
+        <div className="absolute right-0 sm:right-0 left-0 sm:left-auto top-full mt-2 w-auto sm:w-72 mx-2 sm:mx-0 rounded-2xl bg-[var(--bg-card)] border border-[var(--border-default)] shadow-2xl animate-slide-down z-50 overflow-hidden">
           {/* Profile Header */}
           <div className="p-4 bg-gradient-to-r from-[var(--bg-secondary)] to-[var(--bg-tertiary)]">
             <div className="flex items-center gap-3">
               {/* Large Avatar */}
-              <div
-                className={`w-12 h-12 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center shadow-lg`}
-              >
-                <span className="text-lg font-bold text-white">{initial}</span>
+              <div className="w-12 h-12 rounded-xl overflow-hidden shadow-lg">
+                <AvatarIcon avatarId={avatar} size={48} />
               </div>
 
               <div className="flex-1 min-w-0">
@@ -353,6 +350,20 @@ export const WalletSection: FC<WalletSectionProps> = ({
 
           {/* Actions */}
           <div className="p-2">
+            {/* Edit Profile Button */}
+            <button
+              onClick={() => {
+                setIsProfileModalOpen(true);
+                setShowDropdown(false);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            >
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent-muted)] flex items-center justify-center">
+                <Pencil className="w-4 h-4 text-[var(--accent-primary)]" />
+              </div>
+              <span className="flex-1 text-left">Edit Profile</span>
+            </button>
+
             {onOpenProfile && (
               <button
                 onClick={() => {
@@ -370,7 +381,7 @@ export const WalletSection: FC<WalletSectionProps> = ({
             )}
 
             <a
-              href={`https://solscan.io/account/${walletAddress}`}
+              href={getAccountUrl(walletAddress)}
               target="_blank"
               rel="noopener noreferrer"
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
@@ -395,6 +406,19 @@ export const WalletSection: FC<WalletSectionProps> = ({
           </div>
         </div>
       )}
+
+      {/* Profile Edit Modal */}
+      <ProfileEditModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        currentUsername={username || ""}
+        currentAvatar={avatar}
+        onSave={(newUsername, newAvatar) => {
+          if (onUpdateProfile) {
+            onUpdateProfile(newUsername, newAvatar);
+          }
+        }}
+      />
     </div>
   );
 };

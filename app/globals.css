@@ -58,15 +58,19 @@
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Shadows & Glows - Enhanced for Euphoria effect */
-  --shadow-glow-pink: 0 0 20px rgba(255, 45, 146, 0.3), 0 0 40px rgba(255, 45, 146, 0.15), 0 0 60px rgba(255, 45, 146, 0.05);
-  --shadow-glow-pink-intense: 0 0 30px rgba(255, 45, 146, 0.5), 0 0 60px rgba(255, 45, 146, 0.3), 0 0 100px rgba(255, 45, 146, 0.1);
-  --shadow-glow-long: 0 0 20px rgba(0, 245, 160, 0.3), 0 0 40px rgba(0, 245, 160, 0.15);
-  --shadow-glow-long-intense: 0 0 30px rgba(0, 245, 160, 0.5), 0 0 60px rgba(0, 245, 160, 0.25);
-  --shadow-glow-short: 0 0 20px rgba(255, 59, 105, 0.3), 0 0 40px rgba(255, 59, 105, 0.15);
-  --shadow-glow-short-intense: 0 0 30px rgba(255, 59, 105, 0.5), 0 0 60px rgba(255, 59, 105, 0.25);
-  --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.4);
+  /* Shadows & Glows - Optimized for performance */
+  /* Single-layer shadows are GPU-accelerated, avoid stacking too many */
+  --shadow-glow-pink: 0 0 20px rgba(255, 45, 146, 0.25);
+  --shadow-glow-pink-intense: 0 0 30px rgba(255, 45, 146, 0.4);
+  --shadow-glow-long: 0 0 15px rgba(0, 245, 160, 0.25);
+  --shadow-glow-long-intense: 0 0 25px rgba(0, 245, 160, 0.4);
+  --shadow-glow-short: 0 0 15px rgba(255, 59, 105, 0.25);
+  --shadow-glow-short-intense: 0 0 25px rgba(255, 59, 105, 0.4);
+  --shadow-elevated: 0 4px 20px rgba(0, 0, 0, 0.5);
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
+
+  /* Modal glow - subtle and elegant */
+  --shadow-modal: 0 0 0 1px rgba(255, 45, 146, 0.3), 0 0 30px rgba(255, 45, 146, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
 }
 
 /* Tailwind v4 Theme Extension */
@@ -161,47 +165,6 @@ main {
   outline-offset: 2px;
 }
 
-/* ============================================
-   EUPHORIA-STYLE GLOW EFFECTS
-   ============================================ */
-
-/* Base Glow Classes */
-.glow-pink {
-  box-shadow: var(--shadow-glow-pink);
-}
-
-.glow-pink-intense {
-  box-shadow: var(--shadow-glow-pink-intense);
-}
-
-.glow-long {
-  box-shadow: var(--shadow-glow-long);
-}
-
-.glow-long-intense {
-  box-shadow: var(--shadow-glow-long-intense);
-}
-
-.glow-short {
-  box-shadow: var(--shadow-glow-short);
-}
-
-.glow-short-intense {
-  box-shadow: var(--shadow-glow-short-intense);
-}
-
-/* Text Glow Effects */
-.text-glow-pink {
-  text-shadow: 0 0 10px var(--accent-glow), 0 0 20px rgba(255, 45, 146, 0.3), 0 0 40px rgba(255, 45, 146, 0.1);
-}
-
-.text-glow-long {
-  text-shadow: 0 0 10px var(--color-long-glow), 0 0 20px rgba(0, 245, 160, 0.3);
-}
-
-.text-glow-short {
-  text-shadow: 0 0 10px var(--color-short-glow), 0 0 20px rgba(255, 59, 105, 0.3);
-}
 
 /* ============================================
    GRADIENT BACKGROUNDS (Euphoria-inspired)
@@ -471,26 +434,6 @@ input[type="number"] {
    ============================================ */
 
 /* Keyframes */
-@keyframes pulse-pink {
-  0%, 100% {
-    box-shadow: 0 0 0 0 var(--accent-glow);
-  }
-  50% {
-    box-shadow: 0 0 0 12px transparent;
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.4;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.8;
-    transform: scale(1.02);
-  }
-}
-
 @keyframes glow-breathe {
   0%, 100% {
     box-shadow: var(--shadow-glow-pink);
@@ -542,41 +485,7 @@ input[type="number"] {
   }
 }
 
-@keyframes shimmer {
-  0% {
-    background-position: -200% 0;
-  }
-  100% {
-    background-position: 200% 0;
-  }
-}
-
-@keyframes float {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-5px);
-  }
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* Animation Classes */
-.animate-pulse-pink {
-  animation: pulse-pink 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
-}
 
 .animate-glow-breathe {
   animation: glow-breathe 3s ease-in-out infinite;
@@ -598,82 +507,127 @@ input[type="number"] {
   animation: scale-in 0.2s ease-out forwards;
 }
 
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 45, 146, 0.1) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2s infinite;
+/* Tooltip pop animation */
+@keyframes tooltip-pop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
 }
 
-.animate-float {
-  animation: float 3s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
+.animate-tooltip-pop {
+  animation: tooltip-pop 0.15s ease-out forwards;
 }
 
 /* ============================================
-   GAMIFICATION EFFECTS
+   SKELETON LOADING ANIMATIONS
+   "Loading hopium... please wait, anon"
    ============================================ */
 
-/* Success flash */
-.flash-success {
-  animation: flash-green 0.5s ease-out;
+/* Shimmer effect - the degen loading experience */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
 }
 
-@keyframes flash-green {
-  0% {
-    box-shadow: inset 0 0 0 2px var(--color-long);
+/* Pulse glow - like your portfolio pumping */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.4;
   }
   50% {
-    box-shadow: inset 0 0 30px var(--color-long-glow), 0 0 20px var(--color-long-glow);
+    opacity: 0.8;
+  }
+}
+
+/* Skeleton wave - for that wavy loading feel */
+@keyframes skeleton-wave {
+  0% {
+    background-position: -200% 0;
   }
   100% {
-    box-shadow: none;
+    background-position: 200% 0;
   }
 }
 
-/* Error flash */
-.flash-error {
-  animation: flash-red 0.5s ease-out;
+/* Hopium loader - spinning with hope */
+@keyframes hopium-spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
-@keyframes flash-red {
-  0% {
-    box-shadow: inset 0 0 0 2px var(--color-short);
+/* Float animation for loading badges */
+@keyframes float-load {
+  0%, 100% {
+    transform: translateY(0);
   }
   50% {
-    box-shadow: inset 0 0 30px var(--color-short-glow), 0 0 20px var(--color-short-glow);
-  }
-  100% {
-    box-shadow: none;
+    transform: translateY(-3px);
   }
 }
 
-/* Winning animation */
-.animate-win {
-  animation: win-pulse 0.6s ease-out;
+/* Animation classes */
+.animate-shimmer {
+  animation: shimmer 2s infinite;
 }
 
-@keyframes win-pulse {
-  0% {
-    transform: scale(1);
-  }
-  30% {
-    transform: scale(1.05);
-  }
-  60% {
-    transform: scale(0.98);
-  }
-  100% {
-    transform: scale(1);
-  }
+.animate-pulse-glow {
+  animation: pulse-glow 1.5s ease-in-out infinite;
 }
+
+.animate-skeleton-wave {
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 0%,
+    var(--bg-elevated) 50%,
+    var(--bg-tertiary) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-wave 1.5s ease-in-out infinite;
+}
+
+.animate-hopium-spin {
+  animation: hopium-spin 1s linear infinite;
+}
+
+.animate-float-load {
+  animation: float-load 1s ease-in-out infinite;
+}
+
+/* Gradient shimmer overlay */
+.shimmer-overlay {
+  position: relative;
+  overflow: hidden;
+}
+
+.shimmer-overlay::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 50%,
+    transparent 100%
+  );
+  animation: shimmer 2s infinite;
+}
+
 
 /* ============================================
    BADGE & TAG STYLES
@@ -691,19 +645,9 @@ input[type="number"] {
   letter-spacing: 0.5px;
 }
 
-.badge-pink {
-  background: var(--accent-muted);
-  color: var(--accent-primary);
-}
-
 .badge-long {
   background: var(--color-long-muted);
   color: var(--color-long);
-}
-
-.badge-short {
-  background: var(--color-short-muted);
-  color: var(--color-short);
 }
 
 /* ============================================

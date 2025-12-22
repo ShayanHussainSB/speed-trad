@@ -13,56 +13,11 @@ import {
   Clock,
   Sparkles,
   Flame,
+  RefreshCw,
 } from "lucide-react";
+import { Position } from "@/app/hooks/usePositions";
 
 type PositionFilter = "all" | "long" | "short";
-
-interface Position {
-  id: string;
-  symbol: string;
-  direction: "long" | "short";
-  size: number;
-  entryPrice: number;
-  currentPrice: number;
-  leverage: number;
-  pnl: number;
-  pnlPercent: number;
-  liquidationPrice: number;
-  takeProfitPrice: number;
-  openedAt: Date;
-}
-
-// Mock positions data
-const mockPositions: Position[] = [
-  {
-    id: "1",
-    symbol: "SOL/USD",
-    direction: "long",
-    size: 50,
-    entryPrice: 195.20,
-    currentPrice: 198.42,
-    leverage: 10,
-    pnl: 16.10,
-    pnlPercent: 16.5,
-    liquidationPrice: 177.42,
-    takeProfitPrice: 215.00,
-    openedAt: new Date(Date.now() - 1000 * 60 * 45),
-  },
-  {
-    id: "2",
-    symbol: "SOL/USD",
-    direction: "short",
-    size: 25,
-    entryPrice: 200.50,
-    currentPrice: 198.42,
-    leverage: 20,
-    pnl: 5.20,
-    pnlPercent: 10.4,
-    liquidationPrice: 210.53,
-    takeProfitPrice: 180.00,
-    openedAt: new Date(Date.now() - 1000 * 60 * 120),
-  },
-];
 
 const formatTimeAgo = (date: Date): string => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -95,21 +50,30 @@ const formatValue = (value: number, decimals: number = 2): string => {
 interface PositionsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  positions?: Position[];
+  onClosePosition?: (positionId: string) => void;
+  onReversePosition?: (position: Position) => void;
 }
 
-export function PositionsModal({ isOpen, onClose }: PositionsModalProps) {
+export function PositionsModal({
+  isOpen,
+  onClose,
+  positions = [],
+  onClosePosition,
+  onReversePosition,
+}: PositionsModalProps) {
   const [filter, setFilter] = useState<PositionFilter>("all");
 
   if (!isOpen) return null;
 
-  const filteredPositions = mockPositions.filter((p) => {
+  const filteredPositions = positions.filter((p) => {
     if (filter === "all") return true;
     return p.direction === filter;
   });
 
-  const totalPnL = mockPositions.reduce((sum, p) => sum + p.pnl, 0);
-  const longCount = mockPositions.filter((p) => p.direction === "long").length;
-  const shortCount = mockPositions.filter((p) => p.direction === "short").length;
+  const totalPnL = positions.reduce((sum, p) => sum + p.pnl, 0);
+  const longCount = positions.filter((p) => p.direction === "long").length;
+  const shortCount = positions.filter((p) => p.direction === "short").length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -120,7 +84,7 @@ export function PositionsModal({ isOpen, onClose }: PositionsModalProps) {
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-4xl max-h-[85vh] mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-scale-in">
+      <div className="relative w-full max-w-4xl max-h-[85vh] mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--accent-primary)]/30 overflow-hidden animate-scale-in" style={{ boxShadow: 'var(--shadow-modal)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-4">
@@ -136,7 +100,7 @@ export function PositionsModal({ isOpen, onClose }: PositionsModalProps) {
                     : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
                 }`}
               >
-                All ({mockPositions.length})
+                All ({positions.length})
               </button>
               <button
                 onClick={() => setFilter("long")}
@@ -191,8 +155,8 @@ export function PositionsModal({ isOpen, onClose }: PositionsModalProps) {
         </div>
 
         {/* Positions Grid */}
-        <div className="overflow-y-auto max-h-[calc(85vh-80px)] p-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="overflow-y-auto max-h-[calc(85vh-80px)] p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {filteredPositions.map((position) => {
               const isProfit = position.pnl >= 0;
               const isLong = position.direction === "long";
@@ -206,121 +170,259 @@ export function PositionsModal({ isOpen, onClose }: PositionsModalProps) {
               return (
                 <div
                   key={position.id}
-                  className={`p-4 rounded-xl border transition-all hover:border-[var(--accent-primary)]/30 ${
+                  className={`relative p-5 rounded-2xl border transition-all hover:border-[var(--accent-primary)]/40 overflow-hidden ${
                     isProfit
-                      ? "bg-[var(--color-long)]/5 border-[var(--color-long)]/20"
-                      : "bg-[var(--color-short)]/5 border-[var(--color-short)]/20"
+                      ? "bg-gradient-to-br from-[var(--color-long)]/8 to-[var(--color-long)]/3 border-[var(--color-long)]/25"
+                      : "bg-gradient-to-br from-[var(--color-short)]/8 to-[var(--color-short)]/3 border-[var(--color-short)]/25"
                   }`}
                 >
-                  {/* Header */}
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-bold ${
+                  {/* Subtle corner glow for high tier positions */}
+                  {pnlTier.tier === "LEGENDARY" || pnlTier.tier === "EPIC" ? (
+                    <div
+                      className="absolute -top-20 -right-20 w-40 h-40 rounded-full opacity-20 blur-3xl pointer-events-none"
+                      style={{ background: pnlTier.color }}
+                    />
+                  ) : null}
+
+                  {/* Row 1: Direction + Symbol + Actions */}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2.5">
+                      {/* Direction Badge - Larger, clearer */}
+                      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black tracking-wide ${
                         isLong
-                          ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                          : "bg-[var(--color-short)]/20 text-[var(--color-short)]"
+                          ? "bg-[var(--color-long)]/20 text-[var(--color-long)] border border-[var(--color-long)]/30"
+                          : "bg-[var(--color-short)]/20 text-[var(--color-short)] border border-[var(--color-short)]/30"
                       }`}>
-                        {isLong ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+                        {isLong ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
                         {position.leverage}x {isLong ? "LONG" : "SHORT"}
                       </div>
-                      <span className="font-bold text-[var(--text-primary)]">{position.symbol}</span>
-                      <span
-                        className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
-                        style={{ backgroundColor: `${pnlTier.color}20`, color: pnlTier.color }}
-                      >
-                        {pnlTier.icon}
-                        {pnlTier.tier}
-                      </span>
+                      {/* Symbol */}
+                      <span className="text-base font-bold text-[var(--text-primary)]">{position.symbol}</span>
                     </div>
-                    <div className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
-                      <Clock className="w-3 h-3" />
-                      {formatTimeAgo(position.openedAt)}
+
+                    {/* Action Buttons */}
+                    <div className="flex items-center gap-1.5">
+                      {/* Reverse Button */}
+                      {onReversePosition && (
+                        <div className="relative group/reverse">
+                          <button
+                            onClick={() => onReversePosition(position)}
+                            className={`flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--bg-tertiary)] border border-transparent transition-all duration-200 hover:-translate-y-0.5 ${
+                              isLong
+                                ? "hover:bg-[var(--color-short)] hover:border-[var(--color-short)] text-[var(--text-tertiary)] hover:text-white hover:shadow-[0_0_16px_rgba(255,59,105,0.5)]"
+                                : "hover:bg-[var(--color-long)] hover:border-[var(--color-long)] text-[var(--text-tertiary)] hover:text-[#050505] hover:shadow-[0_0_16px_rgba(0,255,136,0.5)]"
+                            }`}
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+                          {/* Custom Tooltip */}
+                          <div className={`absolute left-1/2 top-full mt-2 -translate-x-1/2 opacity-0 pointer-events-none group-hover/reverse:opacity-100 group-hover/reverse:pointer-events-auto transition-opacity z-50`}>
+                            <div className={`animate-tooltip-pop px-3 py-2 rounded-xl text-[11px] font-bold whitespace-nowrap border backdrop-blur-sm ${
+                              isLong
+                                ? "bg-[var(--color-short)]/90 border-[var(--color-short)] text-white shadow-[0_0_20px_rgba(255,59,105,0.3)]"
+                                : "bg-[var(--color-long)]/90 border-[var(--color-long)] text-[#050505] shadow-[0_0_20px_rgba(0,255,136,0.3)]"
+                            }`}>
+                              <div className="flex items-center gap-1.5">
+                                <RefreshCw className="w-3 h-3" />
+                                <span>Flip to {isLong ? "SHORT" : "LONG"}</span>
+                                {isLong ? <TrendingDown className="w-3 h-3" /> : <TrendingUp className="w-3 h-3" />}
+                              </div>
+                            </div>
+                            <div className={`absolute left-1/2 -top-1 -translate-x-1/2 w-2 h-2 rotate-45 ${
+                              isLong ? "bg-[var(--color-short)]" : "bg-[var(--color-long)]"
+                            }`} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Close Button */}
+                      <div className="relative group/close">
+                        <button
+                          onClick={() => onClosePosition?.(position.id)}
+                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-[var(--bg-tertiary)] hover:bg-[var(--color-short)] border border-transparent hover:border-[var(--color-short)] text-[var(--text-tertiary)] hover:text-white transition-all duration-200 hover:shadow-[0_0_16px_rgba(255,59,105,0.5)] hover:-translate-y-0.5"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <div className="absolute left-1/2 top-full mt-2 -translate-x-1/2 opacity-0 pointer-events-none group-hover/close:opacity-100 group-hover/close:pointer-events-auto transition-opacity z-50">
+                          <div className="animate-tooltip-pop px-3 py-2 rounded-xl bg-[var(--color-short)]/90 border border-[var(--color-short)] text-white text-[11px] font-bold whitespace-nowrap backdrop-blur-sm shadow-[0_0_20px_rgba(255,59,105,0.3)]">
+                            <div className="flex items-center gap-1.5">
+                              <Zap className="w-3 h-3" />
+                              <span>Close at Market</span>
+                            </div>
+                          </div>
+                          <div className="absolute left-1/2 -top-1 -translate-x-1/2 w-2 h-2 rotate-45 bg-[var(--color-short)]" />
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* PnL Display */}
-                  <div className="flex items-center justify-between mb-3">
-                    <p className={`text-2xl font-bold font-mono tabular-nums ${
-                      isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                    }`}>
-                      {isProfit ? "+" : ""}{formatValue(position.pnl)} USD
-                    </p>
-                    <p className={`text-xl font-bold font-mono tabular-nums ${
-                      isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                    }`}>
-                      {isProfit ? "+" : ""}{position.pnlPercent.toFixed(1)}%
-                    </p>
+                  {/* Row 2: Tier Badge + Time */}
+                  <div className="flex items-center gap-2 mb-4">
+                    <span
+                      className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-black"
+                      style={{ backgroundColor: `${pnlTier.color}15`, color: pnlTier.color, border: `1px solid ${pnlTier.color}30` }}
+                    >
+                      {pnlTier.icon}
+                      {pnlTier.tier}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-tertiary)]">
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>Opened {formatTimeAgo(position.openedAt)}</span>
+                    </div>
                   </div>
 
-                  {/* Progress Bar */}
+                  {/* PnL Section - More prominent with separator */}
+                  <div className="flex items-end justify-between py-4 border-y border-[var(--border-subtle)]/50 mb-4">
+                    <div>
+                      <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Unrealized PnL</p>
+                      <p className={`text-3xl font-black font-mono tabular-nums leading-none ${
+                        isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
+                      }`}>
+                        {isProfit ? "+" : ""}{formatValue(position.pnl)}
+                        <span className="text-lg ml-1 opacity-70">USD</span>
+                      </p>
+                    </div>
+                    <div className={`px-4 py-2 rounded-xl font-mono ${
+                      isProfit
+                        ? "bg-[var(--color-long)]/15 border border-[var(--color-long)]/30"
+                        : "bg-[var(--color-short)]/15 border border-[var(--color-short)]/30"
+                    }`}>
+                      <p className={`text-2xl font-black tabular-nums ${
+                        isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
+                      }`}>
+                        {isProfit ? "+" : ""}{position.pnlPercent.toFixed(1)}%
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar - Only when profitable */}
                   {isProfit && (
-                    <div className="mb-3">
-                      <div className="flex items-center justify-between text-[10px] mb-1">
-                        <span className="text-[var(--text-tertiary)]">Progress to TP</span>
+                    <div className="mb-4">
+                      <div className="flex items-center justify-between text-[10px] mb-1.5">
+                        <span className="text-[var(--text-tertiary)] flex items-center gap-1">
+                          <Target className="w-3 h-3 text-[var(--color-long)]" />
+                          Progress to Take Profit
+                        </span>
                         <span className="text-[var(--color-long)] font-bold tabular-nums">{progressToTP.toFixed(0)}%</span>
                       </div>
-                      <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
+                      <div className="h-2 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[var(--color-long)] to-[var(--color-long)]/50"
+                          className="h-full rounded-full bg-gradient-to-r from-[var(--color-long)] to-[var(--color-long)]/60 transition-all duration-500"
                           style={{ width: `${progressToTP}%` }}
                         />
                       </div>
                     </div>
                   )}
 
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-4 gap-2 mb-3">
-                    <div className="p-2 rounded-lg bg-[var(--bg-secondary)]/50 text-center">
-                      <p className="text-[9px] text-[var(--text-tertiary)]">SIZE</p>
-                      <p className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                        {formatValue(position.size)}
+                  {/* Stats Grid - 3 columns, cleaner */}
+                  <div className="grid grid-cols-3 gap-3 mb-3">
+                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 text-center">
+                      <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Size</p>
+                      <p className="text-sm font-bold font-mono text-[var(--text-primary)] tabular-nums">
+                        ${formatValue(position.size)}
                       </p>
                     </div>
-                    <div className="p-2 rounded-lg bg-[var(--bg-secondary)]/50 text-center">
-                      <p className="text-[9px] text-[var(--text-tertiary)]">ENTRY</p>
-                      <p className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
+                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 text-center">
+                      <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Entry</p>
+                      <p className="text-sm font-bold font-mono text-[var(--text-primary)] tabular-nums">
                         ${position.entryPrice.toFixed(2)}
                       </p>
                     </div>
-                    <div className="p-2 rounded-lg bg-[var(--bg-secondary)]/50 text-center">
-                      <p className="text-[9px] text-[var(--text-tertiary)]">MARK</p>
-                      <p className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
+                    <div className="p-3 rounded-xl bg-[var(--bg-secondary)]/60 text-center">
+                      <p className="text-[10px] text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Mark</p>
+                      <p className="text-sm font-bold font-mono text-[var(--text-primary)] tabular-nums">
                         ${position.currentPrice.toFixed(2)}
-                      </p>
-                    </div>
-                    <div className={`p-2 rounded-lg text-center ${
-                      isNearLiquidation ? "bg-[var(--color-short)]/20" : "bg-[var(--bg-secondary)]/50"
-                    }`}>
-                      <p className={`text-[9px] ${isNearLiquidation ? "text-[var(--color-short)]" : "text-[var(--text-tertiary)]"}`}>LIQ</p>
-                      <p className={`text-xs font-bold font-mono tabular-nums ${
-                        isNearLiquidation ? "text-[var(--color-short)]" : "text-[var(--text-primary)]"
-                      }`}>
-                        ${position.liquidationPrice.toFixed(2)}
                       </p>
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <button className="flex-1 py-2 rounded-lg bg-[var(--color-long)]/10 hover:bg-[var(--color-long)]/20 text-[var(--color-long)] text-xs font-bold transition-colors flex items-center justify-center gap-1">
-                      <Target className="w-3 h-3" />
-                      TP: ${position.takeProfitPrice.toFixed(0)}
-                    </button>
-                    <button className="flex-1 py-2 rounded-lg bg-[var(--color-short)]/10 hover:bg-[var(--color-short)]/20 text-[var(--color-short)] text-xs font-bold transition-colors flex items-center justify-center gap-1">
-                      <X className="w-3 h-3" />
-                      Close
-                    </button>
+                  {/* LIQ & TP Row - Full width, distinct styling */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className={`flex items-center justify-between px-3 py-2.5 rounded-xl ${
+                      isNearLiquidation
+                        ? "bg-[var(--color-short)]/15 border border-[var(--color-short)]/40 animate-pulse"
+                        : "bg-[var(--bg-secondary)]/60"
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <AlertTriangle className={`w-4 h-4 ${isNearLiquidation ? "text-[var(--color-short)]" : "text-[var(--text-tertiary)]"}`} />
+                        <span className={`text-[10px] font-bold uppercase ${isNearLiquidation ? "text-[var(--color-short)]" : "text-[var(--text-tertiary)]"}`}>
+                          Liquidation
+                        </span>
+                      </div>
+                      <span className={`text-sm font-bold font-mono tabular-nums ${isNearLiquidation ? "text-[var(--color-short)]" : "text-[var(--text-primary)]"}`}>
+                        ${position.liquidationPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between px-3 py-2.5 rounded-xl bg-[var(--color-long)]/10 border border-[var(--color-long)]/20">
+                      <div className="flex items-center gap-2">
+                        <Target className="w-4 h-4 text-[var(--color-long)]" />
+                        <span className="text-[10px] font-bold uppercase text-[var(--color-long)]">Take Profit</span>
+                      </div>
+                      <span className="text-sm font-bold font-mono text-[var(--color-long)] tabular-nums">
+                        ${position.takeProfitPrice?.toFixed(2) || "—"}
+                      </span>
+                    </div>
                   </div>
+
                 </div>
               );
             })}
           </div>
 
           {filteredPositions.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <p className="text-[var(--text-tertiary)]">
-                No {filter === "all" ? "" : filter} positions found
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              {/* Animated Icon Container */}
+              <div className="relative mb-6">
+                {/* Pulsing ring effect */}
+                <div className="absolute inset-0 w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--accent-primary)]/20 to-[var(--accent-secondary)]/20 animate-pulse" />
+                <div className="absolute -inset-2 w-32 h-32 rounded-3xl border border-dashed border-[var(--accent-primary)]/30 animate-spin" style={{ animationDuration: '20s' }} />
+
+                {/* Main icon box */}
+                <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-tertiary)] border border-[var(--border-subtle)] flex items-center justify-center shadow-lg">
+                  <Rocket className="w-12 h-12 text-[var(--accent-primary)] animate-bounce" style={{ animationDuration: '2s' }} />
+                </div>
+
+                {/* Floating badges */}
+                <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[var(--color-long)] flex items-center justify-center shadow-[0_0_20px_rgba(0,255,136,0.4)]">
+                  <Zap className="w-4 h-4 text-[#050505]" />
+                </div>
+                <div className="absolute -bottom-1 -left-1 w-6 h-6 rounded-full bg-[var(--accent-primary)] flex items-center justify-center">
+                  <Sparkles className="w-3 h-3 text-white" />
+                </div>
+              </div>
+
+              {/* Degen Text */}
+              <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">
+                {filter === "all" ? "No Positions Yet" : `No ${filter === "long" ? "Long" : "Short"} Positions`}
+              </h3>
+              <p className="text-sm text-[var(--text-tertiary)] mb-6 max-w-xs">
+                {filter === "all"
+                  ? "Time to ape in, anon. Your first 1000x is waiting."
+                  : filter === "long"
+                    ? "No longs? ngmi. Bet on the pump, fren."
+                    : "No shorts open. Sometimes you gotta short the top."
+                }
               </p>
+
+              {/* Stats Pills */}
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-long)]/10 border border-[var(--color-long)]/20">
+                  <div className="w-2 h-2 rounded-full bg-[var(--color-long)] animate-pulse" />
+                  <span className="text-xs font-bold text-[var(--color-long)]">1000x Leverage</span>
+                </div>
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20">
+                  <Flame className="w-3 h-3 text-[var(--accent-primary)]" />
+                  <span className="text-xs font-bold text-[var(--accent-primary)]">Degen Mode</span>
+                </div>
+              </div>
+
+              {/* Motivational Quote */}
+              <div className="px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] max-w-sm">
+                <p className="text-xs text-[var(--text-secondary)] italic">
+                  &quot;Fortune favors the bold. And the leveraged.&quot;
+                </p>
+                <p className="text-[10px] text-[var(--text-tertiary)] mt-1">— Anonymous Degen</p>
+              </div>
             </div>
           )}
         </div>

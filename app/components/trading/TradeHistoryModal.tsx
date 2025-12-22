@@ -18,6 +18,7 @@ import {
   Filter,
   Calendar,
 } from "lucide-react";
+import { getTransactionUrl } from "@/app/config/network";
 
 type TradeFilter = "all" | "wins" | "losses";
 
@@ -250,7 +251,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = MOCK_TRADES }: Tra
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-subtle)] shadow-2xl overflow-hidden animate-scale-in">
+      <div className="relative w-full max-w-5xl max-h-[90vh] mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--accent-primary)]/30 overflow-hidden animate-scale-in" style={{ boxShadow: 'var(--shadow-modal)' }}>
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-4">
@@ -470,7 +471,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = MOCK_TRADES }: Tra
                       <div className="flex justify-center">
                         {trade.txHash ? (
                           <a
-                            href={`https://solscan.io/tx/${trade.txHash}`}
+                            href={getTransactionUrl(trade.txHash)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center gap-1 px-2 py-1 rounded-lg text-xs text-[var(--accent-primary)] hover:bg-[var(--accent-muted)] transition-colors"
@@ -493,11 +494,63 @@ export function TradeHistoryModal({ isOpen, onClose, trades = MOCK_TRADES }: Tra
         {/* Empty State */}
         {filteredTrades.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
-            <Filter className="w-12 h-12 text-[var(--text-tertiary)] mb-4" />
-            <p className="text-[var(--text-secondary)] font-medium mb-1">No trades found</p>
-            <p className="text-sm text-[var(--text-tertiary)]">
-              {filter === "wins" ? "No winning trades yet" : filter === "losses" ? "No losing trades yet" : "Start trading to see your history"}
+            {/* Animated Icon Container */}
+            <div className="relative mb-6">
+              {/* Pulsing ring effect */}
+              <div className="absolute inset-0 w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--accent-secondary)]/20 to-[var(--accent-primary)]/20 animate-pulse" />
+              <div className="absolute -inset-2 w-32 h-32 rounded-3xl border border-dashed border-[var(--accent-secondary)]/30 animate-spin" style={{ animationDuration: '25s' }} />
+
+              {/* Main icon box */}
+              <div className="relative w-28 h-28 rounded-3xl bg-gradient-to-br from-[var(--bg-elevated)] to-[var(--bg-tertiary)] border border-[var(--border-subtle)] flex items-center justify-center shadow-lg">
+                <Calendar className="w-12 h-12 text-[var(--accent-secondary)] animate-pulse" style={{ animationDuration: '2s' }} />
+              </div>
+
+              {/* Floating badges */}
+              <div className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-[var(--color-long)] flex items-center justify-center shadow-[0_0_20px_rgba(0,255,136,0.4)]">
+                <Trophy className="w-4 h-4 text-[#050505]" />
+              </div>
+              <div className="absolute -bottom-1 -left-1 w-6 h-6 rounded-full bg-[var(--color-short)] flex items-center justify-center">
+                <Skull className="w-3 h-3 text-white" />
+              </div>
+            </div>
+
+            {/* Degen Text */}
+            <h3 className="text-2xl font-black text-[var(--text-primary)] mb-2">
+              {filter === "all"
+                ? "No History Yet"
+                : filter === "wins"
+                  ? "No Ws on Record"
+                  : "Clean L Sheet"
+              }
+            </h3>
+            <p className="text-sm text-[var(--text-tertiary)] mb-6 max-w-xs">
+              {filter === "all"
+                ? "Your legendary trades will be immortalized here. Time to make history."
+                : filter === "wins"
+                  ? "No wins recorded yet. Every legend starts somewhere, anon."
+                  : "No losses? Either you're a god or you haven't traded yet."
+              }
             </p>
+
+            {/* Stats Pills */}
+            <div className="flex items-center gap-3 mb-6">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--color-long)]/10 border border-[var(--color-long)]/20">
+                <Crown className="w-3 h-3 text-[#FFD700]" />
+                <span className="text-xs font-bold text-[var(--color-long)]">GODLIKE Awaits</span>
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[var(--accent-secondary)]/10 border border-[var(--accent-secondary)]/20">
+                <Zap className="w-3 h-3 text-[var(--accent-secondary)]" />
+                <span className="text-xs font-bold text-[var(--accent-secondary)]">Write History</span>
+              </div>
+            </div>
+
+            {/* Motivational Quote */}
+            <div className="px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] max-w-sm">
+              <p className="text-xs text-[var(--text-secondary)] italic">
+                &quot;Every trade is a story. Make yours legendary.&quot;
+              </p>
+              <p className="text-[10px] text-[var(--text-tertiary)] mt-1">— Hall of Degen Fame</p>
+            </div>
           </div>
         )}
 

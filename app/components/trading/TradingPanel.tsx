@@ -23,6 +23,7 @@ import {
   BarChart3,
   Percent,
 } from "lucide-react";
+import { Position } from "@/app/hooks/usePositions";
 
 type TradeDirection = "long" | "short";
 type TradingMode = "perpetuals" | "spot";
@@ -33,6 +34,8 @@ interface TradingPanelProps {
   onConnectWallet: () => void;
   balance?: number;
   currentPrice?: number;
+  activePosition?: Position | null;
+  onReversePosition?: (position: Position) => void;
 }
 
 interface Token {
@@ -109,7 +112,7 @@ const getRiskLevel = (leverage: number): { level: string; color: string; flames:
   };
 };
 const TAKE_PROFIT_PRESETS = [100, 300, 500] as const;
-const AMOUNT_PRESETS = [25, 50, 75, "MAX"] as const;
+const AMOUNT_PRESETS = [5, 10, 15, 20] as const;
 const MOCK_CURRENT_PRICE = 198.42;
 
 // Smart number formatting for position summary
@@ -129,7 +132,9 @@ export function TradingPanel({
   isConnected,
   onConnectWallet,
   balance = 0,
-  currentPrice = MOCK_CURRENT_PRICE
+  currentPrice = MOCK_CURRENT_PRICE,
+  activePosition,
+  onReversePosition,
 }: TradingPanelProps) {
   const [direction, setDirection] = useState<TradeDirection>("long");
   const [amount, setAmount] = useState(500);
@@ -231,13 +236,8 @@ export function TradingPanel({
     setAmount(newAmount);
   };
 
-  const handleAmountPreset = (preset: number | "MAX") => {
-    if (preset === "MAX") {
-      setAmount(Math.floor(balanceInUSD));
-    } else {
-      const percentAmount = Math.floor((balanceInUSD * preset) / 100);
-      setAmount(percentAmount > 0 ? percentAmount : preset * 10); // Fallback if no balance
-    }
+  const handleAmountPreset = (preset: number) => {
+    setAmount(preset);
   };
 
   const handleSwapTokens = () => {
@@ -288,24 +288,38 @@ export function TradingPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Balance Display */}
+      {/* Balance Display - Enhanced */}
       <div className="px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Wallet className="w-4 h-4 text-[var(--text-tertiary)]" />
             <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
-              {isPerpetuals ? "ENTER AMOUNT" : "SWAP"}
+              {isPerpetuals ? "MARGIN" : "SWAP"}
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Wallet className="w-4 h-4 text-[var(--text-tertiary)]" />
-            <span className="text-sm font-mono text-[var(--text-secondary)]">
-              ${balanceInUSD.toFixed(2)} USDC
-            </span>
-            <button className="w-5 h-5 rounded-full bg-[var(--color-long)] flex items-center justify-center hover:opacity-80 transition-opacity">
-              <Plus className="w-3 h-3 text-[#050505]" />
+
+          {/* Available Balance or Deposit CTA */}
+          {balanceInUSD > 0 ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)]">
+                <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
+                  Available
+                </span>
+                <span className="text-sm font-bold font-mono text-[var(--color-long)]">
+                  ${balanceInUSD.toFixed(2)}
+                </span>
+              </div>
+              <button className="w-7 h-7 rounded-lg bg-[var(--color-long)]/10 border border-[var(--color-long)]/30 flex items-center justify-center hover:bg-[var(--color-long)]/20 transition-all group">
+                <Plus className="w-4 h-4 text-[var(--color-long)] group-hover:scale-110 transition-transform" />
+              </button>
+            </div>
+          ) : (
+            <button className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] hover:shadow-[0_0_20px_rgba(255,45,146,0.3)] transition-all group">
+              <Wallet className="w-4 h-4 text-white" />
+              <span className="text-xs font-bold text-white">Deposit to Trade</span>
+              <Zap className="w-3.5 h-3.5 text-white group-hover:animate-pulse" />
             </button>
-          </div>
+          )}
         </div>
       </div>
 
@@ -365,13 +379,14 @@ export function TradingPanel({
                 <Minus className="w-4 h-4 md:w-5 md:h-5" />
               </button>
 
-              <div className="flex-1 text-center min-w-0">
+              <div className="flex-1 flex items-center justify-center gap-1 min-w-0">
+                <span className="text-xl md:text-2xl font-bold text-[var(--text-tertiary)]">$</span>
                 <input
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-transparent text-center text-2xl md:text-3xl font-bold text-[var(--text-primary)] focus:outline-none font-mono"
-                  style={{ appearance: 'textfield' }}
+                  className="w-full bg-transparent text-center text-2xl md:text-3xl font-bold text-[var(--text-primary)] focus:outline-none focus-visible:outline-none font-mono"
+                  style={{ outline: 'none' }}
                 />
               </div>
 
@@ -383,17 +398,39 @@ export function TradingPanel({
               </button>
             </div>
 
-            {/* Percentage Presets */}
-            <div className="grid grid-cols-4 gap-2">
+            {/* Fixed Amount Presets + MAX */}
+            <div className="flex items-center gap-1.5">
               {AMOUNT_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => handleAmountPreset(preset)}
-                  className="py-2 rounded-lg text-sm font-medium text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-colors"
+                  className={`
+                    flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 border
+                    ${amount === preset
+                      ? "border-[var(--accent-primary)] text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 shadow-[0_0_12px_rgba(255,45,146,0.2)]"
+                      : "border-[var(--border-subtle)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:border-[var(--border-default)] hover:bg-[var(--bg-tertiary)]"
+                    }
+                  `}
                 >
-                  {preset === "MAX" ? "MAX" : `${preset}%`}
+                  ${preset}
                 </button>
               ))}
+              {/* MAX Button */}
+              <button
+                onClick={() => setAmount(Math.floor(balanceInUSD))}
+                disabled={balanceInUSD <= 0}
+                className={`
+                  flex-1 py-2.5 rounded-xl text-sm font-bold transition-all duration-150 border
+                  ${balanceInUSD > 0 && amount === Math.floor(balanceInUSD)
+                    ? "border-[var(--color-long)] text-[var(--color-long)] bg-[var(--color-long)]/10 shadow-[0_0_12px_rgba(0,255,136,0.2)]"
+                    : balanceInUSD > 0
+                      ? "border-[var(--border-subtle)] text-[var(--color-long)] hover:text-[var(--color-long)] hover:border-[var(--color-long)]/50 hover:bg-[var(--color-long)]/5"
+                      : "border-[var(--border-subtle)] text-[var(--text-muted)] cursor-not-allowed opacity-50"
+                  }
+                `}
+              >
+                MAX
+              </button>
             </div>
 
             {/* Gamified Insufficient Balance Warning */}
@@ -929,8 +966,32 @@ export function TradingPanel({
         )}
       </div>
 
-      {/* Action Button */}
-      <div className="p-3 md:p-4 border-t border-[var(--border-subtle)]">
+      {/* Action Buttons */}
+      <div className="p-3 md:p-4 border-t border-[var(--border-subtle)] space-y-2">
+        {/* Reverse Position Button - Only show when there's an active position */}
+        {isPerpetuals && activePosition && onReversePosition && isConnected && (
+          <button
+            onClick={() => onReversePosition(activePosition)}
+            className={`
+              w-full py-2.5 md:py-3 rounded-xl font-bold text-xs md:text-sm transition-all duration-200
+              flex items-center justify-center gap-2 border
+              hover:-translate-y-0.5 active:translate-y-0
+              ${activePosition.direction === "long"
+                ? "bg-[var(--color-short)]/10 hover:bg-[var(--color-short)]/20 border-[var(--color-short)]/30 text-[var(--color-short)]"
+                : "bg-[var(--color-long)]/10 hover:bg-[var(--color-long)]/20 border-[var(--color-long)]/30 text-[var(--color-long)]"
+              }
+            `}
+          >
+            <RefreshCw className="w-4 h-4" />
+            Reverse to {activePosition.direction === "long" ? "Short" : "Long"}
+            {activePosition.direction === "long" ? (
+              <TrendingDown className="w-3.5 h-3.5" />
+            ) : (
+              <TrendingUp className="w-3.5 h-3.5" />
+            )}
+          </button>
+        )}
+
         {!isConnected ? (
           <button
             onClick={onConnectWallet}

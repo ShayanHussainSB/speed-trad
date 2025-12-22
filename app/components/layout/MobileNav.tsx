@@ -19,7 +19,7 @@ const navItems = [
 
 export function MobileNav({ activeTab, onTabChange }: MobileNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[var(--bg-card)]/95 backdrop-blur-xl border-t border-[var(--border-subtle)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden bg-[var(--bg-card)]/98 backdrop-blur-sm border-t border-[var(--border-subtle)]">
       <div className="flex items-center justify-around h-14 px-1">
         {navItems.map((item) => {
           const isActive = activeTab === item.id;

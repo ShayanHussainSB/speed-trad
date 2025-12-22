@@ -85,7 +85,7 @@ export const WalletModal: FC<WalletModalProps> = ({ isOpen, onClose }) => {
 
       {/* Modal */}
       <div className="relative w-full max-w-md mx-4 animate-scale-in">
-        <div className="bg-[var(--bg-card)] border border-[var(--border-default)] rounded-2xl shadow-2xl overflow-hidden">
+        <div className="bg-[var(--bg-card)] border border-[var(--accent-primary)]/30 rounded-2xl overflow-hidden" style={{ boxShadow: 'var(--shadow-modal)' }}>
           {/* Header */}
           <div className="flex items-center justify-between p-5 border-b border-[var(--border-subtle)]">
             <div>
@@ -201,9 +201,7 @@ export const WalletModal: FC<WalletModalProps> = ({ isOpen, onClose }) => {
           </div>
         </div>
 
-        {/* Glow effect */}
-        <div className="absolute -inset-1 bg-[var(--accent-primary)] rounded-2xl blur-xl opacity-10 -z-10" />
-      </div>
+              </div>
     </div>
   );
 };

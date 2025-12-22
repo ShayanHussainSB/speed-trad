@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from "react";
 interface LiveLineChartProps {
   initialPrice?: number;
   onPriceUpdate?: (price: number) => void;
-  symbol?: string;
 }
 
 interface PricePoint {
@@ -13,10 +12,12 @@ interface PricePoint {
   timestamp: number;
 }
 
-// Number of points to display - short tail like a snake head
-const MAX_POINTS = 50;
-// Update interval in ms - slower for more deliberate movement
-const UPDATE_INTERVAL = 250;
+// Number of points to display - more points for smoother curve
+const MAX_POINTS = 80;
+// Update interval in ms - faster for real-time feel
+const UPDATE_INTERVAL = 100;
+// Animation duration for smooth transitions (slightly longer than update interval)
+const ANIMATION_DURATION = 120;
 // Chart ends before the right edge (large gap like reference - ~25% of width)
 const RIGHT_GAP_PERCENT = 0.25;
 
@@ -142,38 +143,33 @@ function generateAreaPath(
 // Generate random initial price between 120 and 170
 const getRandomInitialPrice = () => 120 + Math.random() * 50;
 
-// Generate initial price history with sharp step-like fluctuations
+// Generate initial price history with smooth continuous movement
 function generateInitialHistory(startPrice: number): { history: PricePoint[]; currentPrice: number } {
   const initialHistory: PricePoint[] = [];
   let price = startPrice;
+  let velocity = 0;
   let trend = 0;
-  let holdCounter = 0;
-  let holdPrice = startPrice;
   const now = Date.now();
 
   for (let i = 0; i < MAX_POINTS; i++) {
-    // Hold price for a few ticks then make a sharp move (creates step pattern)
-    if (holdCounter > 0) {
-      holdCounter--;
-      price = holdPrice + (Math.random() - 0.5) * 0.02; // tiny noise while holding
-    } else {
-      // Time for a sharp move
-      const moveSize = (Math.random() - 0.5) * startPrice * 0.015; // ~1.5% moves
-      trend = trend * 0.6 + moveSize * 0.4;
+    // Smooth continuous movement with momentum
+    const noise = (Math.random() - 0.5) * startPrice * 0.003;
+    const momentum = velocity * 0.7;
+    velocity = momentum + noise;
 
-      // Occasional big spike (20% chance)
-      const spike = Math.random() > 0.8 ? (Math.random() - 0.5) * startPrice * 0.025 : 0;
-
-      // Mean reversion
-      const meanReversion = (startPrice - price) * 0.03;
-
-      price = price + trend + spike + meanReversion;
-      holdPrice = price;
-      holdCounter = Math.floor(Math.random() * 4) + 2; // hold for 2-5 ticks
+    // Occasional trend changes
+    if (Math.random() > 0.9) {
+      trend = (Math.random() - 0.5) * startPrice * 0.008;
     }
 
+    // Mean reversion to keep price in range
+    const meanReversion = (startPrice - price) * 0.01;
+
+    velocity += trend * 0.1;
+    price = price + velocity + meanReversion;
+
     initialHistory.push({
-      price: Math.round(price * 1000) / 1000, // Round to 3 decimals
+      price: Math.round(price * 1000) / 1000,
       timestamp: now - (MAX_POINTS - i) * UPDATE_INTERVAL,
     });
   }
@@ -220,19 +216,20 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
     return () => window.removeEventListener("resize", updateDimensions);
   }, []);
 
-  // Refs for step-like price movement
+  // Refs for smooth price movement
   const trendRef = useRef(0);
-  const holdCounterRef = useRef(0);
-  const holdPriceRef = useRef<number>(initialData.basePriceValue);
+  const velocityRef = useRef(0);
   const basePriceRef = useRef<number>(initialData.basePriceValue);
   const onPriceUpdateRef = useRef(onPriceUpdate);
+  const targetPriceRef = useRef<number>(initialData.currentPrice);
+  const displayPriceRef = useRef<number>(initialData.currentPrice);
 
   // Keep the callback ref updated
   useEffect(() => {
     onPriceUpdateRef.current = onPriceUpdate;
   }, [onPriceUpdate]);
 
-  // Start animation loop
+  // Start animation loop with smooth interpolation
   useEffect(() => {
     lastUpdateRef.current = Date.now();
 
@@ -240,39 +237,43 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
       const now = Date.now();
       const delta = now - lastUpdateRef.current;
 
+      // Smooth interpolation towards target price (runs every frame)
+      const interpolationSpeed = 0.15;
+      const priceDiff = targetPriceRef.current - displayPriceRef.current;
+      if (Math.abs(priceDiff) > 0.0001) {
+        displayPriceRef.current += priceDiff * interpolationSpeed;
+        setCurrentPrice(Math.round(displayPriceRef.current * 1000) / 1000);
+      }
+
+      // Generate new target price at UPDATE_INTERVAL
       if (delta >= UPDATE_INTERVAL) {
         lastUpdateRef.current = now;
 
         const currentPriceVal = priceRef.current;
         const meanPrice = basePriceRef.current;
-        let newPrice: number;
 
-        // Step-like movement: hold price then make sharp moves
-        if (holdCounterRef.current > 0) {
-          holdCounterRef.current--;
-          // Tiny noise while holding (simulates order book activity)
-          newPrice = holdPriceRef.current + (Math.random() - 0.5) * 0.015;
-        } else {
-          // Time for a sharp move
-          const moveSize = (Math.random() - 0.5) * currentPriceVal * 0.012;
-          trendRef.current = trendRef.current * 0.5 + moveSize * 0.5;
+        // Smooth continuous movement with momentum
+        const noise = (Math.random() - 0.5) * currentPriceVal * 0.003;
+        const momentum = velocityRef.current * 0.7;
+        const newVelocity = momentum + noise;
 
-          // Occasional big spike (15% chance)
-          const spike = Math.random() > 0.85 ? (Math.random() - 0.5) * currentPriceVal * 0.02 : 0;
-
-          // Mean reversion to keep price in range
-          const meanReversion = (meanPrice - currentPriceVal) * 0.02;
-
-          newPrice = currentPriceVal + trendRef.current + spike + meanReversion;
-          holdPriceRef.current = newPrice;
-          holdCounterRef.current = Math.floor(Math.random() * 5) + 3; // hold for 3-7 ticks
+        // Occasional trend changes (10% chance)
+        if (Math.random() > 0.9) {
+          trendRef.current = (Math.random() - 0.5) * currentPriceVal * 0.008;
         }
+
+        // Mean reversion to keep price in range
+        const meanReversion = (meanPrice - currentPriceVal) * 0.01;
+
+        velocityRef.current = newVelocity + trendRef.current * 0.1;
+
+        let newPrice = currentPriceVal + velocityRef.current + meanReversion;
 
         // Round to 3 decimal places
         newPrice = Math.round(newPrice * 1000) / 1000;
 
         priceRef.current = newPrice;
-        setCurrentPrice(newPrice);
+        targetPriceRef.current = newPrice;
 
         if (onPriceUpdateRef.current) {
           onPriceUpdateRef.current(newPrice);
@@ -421,7 +422,7 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
           <path
             d={areaPath}
             fill="url(#areaGradient)"
-            style={{ transition: "d 80ms linear" }}
+            style={{ transition: `d ${ANIMATION_DURATION}ms ease-out` }}
           />
         )}
 
@@ -438,7 +439,7 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
               strokeLinejoin="round"
               filter="url(#neonGlow)"
               opacity="0.5"
-              style={{ transition: "d 80ms linear" }}
+              style={{ transition: `d ${ANIMATION_DURATION}ms ease-out` }}
             />
             {/* Main line */}
             <path
@@ -448,7 +449,7 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
               strokeWidth="2.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              style={{ transition: "d 80ms linear" }}
+              style={{ transition: `d ${ANIMATION_DURATION}ms ease-out` }}
             />
           </>
         )}
@@ -458,7 +459,7 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
           <g
             style={{
               transform: `translate(${width - padding.right}px, ${labelY}px)`,
-              transition: "transform 80ms linear",
+              transition: `transform ${ANIMATION_DURATION}ms ease-out`,
             }}
           >
             {/* Outer glow */}
@@ -490,7 +491,7 @@ export function LiveLineChart({ initialPrice, onPriceUpdate }: LiveLineChartProp
           style={{
             right: rightGap - 75,
             top: labelY - 14,
-            transition: "top 80ms linear",
+            transition: `top ${ANIMATION_DURATION}ms ease-out`,
           }}
         >
           <SolanaLogo className="w-4 h-4" />

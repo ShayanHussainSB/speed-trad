@@ -1,6 +1,7 @@
 "use client";
 
 import { ExternalLink } from "lucide-react";
+import { NETWORK_FULL_NAME, IS_PRODUCTION } from "@/app/config/network";
 
 export function Footer() {
   return (
@@ -25,7 +26,12 @@ export function Footer() {
             <div className="w-4 h-4 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
               <span className="text-[8px] font-bold text-white">S</span>
             </div>
-            <span className="text-xs text-[var(--text-tertiary)]">Solana Mainnet</span>
+            <span className="text-xs text-[var(--text-tertiary)]">{NETWORK_FULL_NAME}</span>
+            {!IS_PRODUCTION && (
+              <span className="px-1.5 py-0.5 rounded text-[9px] font-bold uppercase bg-[#FF6B00]/20 text-[#FF6B00]">
+                Test
+              </span>
+            )}
           </div>
 
           {/* Separator */}

@@ -13,10 +13,14 @@ import { PositionsList } from "./components/trading/PositionsList";
 import { TradeHistory } from "./components/trading/TradeHistory";
 import { PositionsModal } from "./components/trading/PositionsModal";
 import { TradeHistoryModal } from "./components/trading/TradeHistoryModal";
-import { Leaderboard } from "./components/trading/Leaderboard";
+import { ReversePositionModal } from "./components/trading/ReversePositionModal";
+import { LeftPanel } from "./components/trading/LeftPanel";
 import { PriceTicker } from "./components/trading/PriceTicker";
 import { WalletModal } from "./components/wallet/WalletModal";
 import { useWalletBalance } from "./hooks/useWalletBalance";
+import { useUserProfile } from "./hooks/useUserProfile";
+import { usePositions } from "./hooks/usePositions";
+import { MobileAccountView } from "./components/mobile/MobileAccountView";
 
 type TradingMode = "perpetuals" | "spot";
 type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
@@ -35,8 +39,33 @@ export default function TradingPage() {
   // Real wallet state from Solana wallet adapter
   const { publicKey, connected } = useWallet();
   const { balance, balanceUSD } = useWalletBalance();
+  const { profile } = useUserProfile();
+
+  // Positions state
+  const {
+    positions,
+    primaryPosition,
+    totalPnL,
+    longCount,
+    shortCount,
+    isReverseModalOpen,
+    selectedPosition,
+    isProcessing,
+    openReverseModal,
+    closeReverseModal,
+    closePosition,
+    reversePosition,
+    calculateReverseRequirements,
+  } = usePositions();
 
   const walletAddress = publicKey?.toBase58() || "";
+
+  // Handle reverse confirmation
+  const handleReverseConfirm = () => {
+    if (selectedPosition) {
+      reversePosition(selectedPosition, balanceUSD);
+    }
+  };
 
   const handleMobileTabChange = (tab: MobileTab) => {
     setMobileTab(tab);
@@ -85,12 +114,14 @@ export default function TradingPage() {
           <div className="h-[calc(100vh-104px-40px)] md:h-[calc(100vh-104px-40px)] flex flex-col">
             {/* Desktop Layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
-              {/* Far Left Panel - Top Traders Leaderboard */}
-              <div className="w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)] bg-[var(--bg-card)]">
-                <Leaderboard
-                  userRank={9999999}
-                  userPoints={0}
+              {/* Far Left Panel - Leaderboard + Quests/Referrals */}
+              <div className="w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)]">
+                <LeftPanel
+                  userRank={profile?.stats?.rank || 9999999}
+                  userPoints={profile?.stats?.points || 0}
                   walletAddress={walletAddress || "0x2e50ffd0"}
+                  userAvatar={profile?.avatar || "pepe"}
+                  username={profile?.username}
                 />
               </div>
 
@@ -115,7 +146,11 @@ export default function TradingPage() {
 
                 {/* Chart */}
                 <div className="flex-1 min-h-0">
-                  <PriceChart symbol="SOL-USDC" />
+                  <PriceChart
+                    symbol="SOL-USDC"
+                    activePosition={primaryPosition}
+                    onReversePosition={openReverseModal}
+                  />
                 </div>
 
                 {/* Bottom Panel - Positions & History (Desktop) */}
@@ -179,7 +214,13 @@ export default function TradingPage() {
                       {bottomPanelTab === "positions" ? (
                         <PositionsList
                           isConnected={connected}
+                          positions={positions}
+                          totalPnL={totalPnL}
+                          longCount={longCount}
+                          shortCount={shortCount}
                           onViewAll={() => setIsPositionsModalOpen(true)}
+                          onClosePosition={closePosition}
+                          onReversePosition={openReverseModal}
                           maxVisible={2}
                         />
                       ) : (
@@ -197,6 +238,8 @@ export default function TradingPage() {
                   isConnected={connected}
                   onConnectWallet={openWalletModal}
                   balance={balance}
+                  activePosition={primaryPosition}
+                  onReversePosition={openReverseModal}
                 />
               </div>
             </div>
@@ -208,7 +251,11 @@ export default function TradingPage() {
                 <div className="flex flex-col h-full overflow-hidden">
                   {/* Chart - Fixed height on mobile to prevent overlap */}
                   <div className="h-[35vh] min-h-[180px] flex-shrink-0">
-                    <PriceChart symbol="SOL-USDC" />
+                    <PriceChart
+                      symbol="SOL-USDC"
+                      activePosition={primaryPosition}
+                      onReversePosition={openReverseModal}
+                    />
                   </div>
 
                   {/* Trading Panel - Takes remaining space, scrollable */}
@@ -218,6 +265,8 @@ export default function TradingPage() {
                       isConnected={connected}
                       onConnectWallet={openWalletModal}
                       balance={balance}
+                      activePosition={primaryPosition}
+                      onReversePosition={openReverseModal}
                     />
                   </div>
                 </div>
@@ -228,7 +277,13 @@ export default function TradingPage() {
                 <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
                   <PositionsList
                     isConnected={connected}
+                    positions={positions}
+                    totalPnL={totalPnL}
+                    longCount={longCount}
+                    shortCount={shortCount}
                     onViewAll={() => setIsPositionsModalOpen(true)}
+                    onClosePosition={closePosition}
+                    onReversePosition={openReverseModal}
                     maxVisible={10}
                   />
                 </div>
@@ -243,58 +298,17 @@ export default function TradingPage() {
 
               {/* Account View */}
               {mobileTab === "account" && (
-                <div className="flex-1 overflow-y-auto bg-[var(--bg-primary)] pb-16">
-                  {!connected ? (
-                    <div className="flex flex-col items-center justify-center h-full px-6">
-                      <div className="w-16 h-16 rounded-2xl bg-[var(--accent-muted)] flex items-center justify-center mb-5">
-                        <svg className="w-8 h-8 text-[var(--accent-primary)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <h2 className="text-lg font-bold text-[var(--text-primary)] mb-1">Connect Wallet</h2>
-                      <p className="text-xs text-[var(--text-tertiary)] mb-5 text-center">
-                        Trade with up to 1000x leverage
-                      </p>
-                      <button onClick={openWalletModal} className="btn btn-primary py-2.5 px-6 text-sm">
-                        Connect
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      {/* Hero Balance Section */}
-                      <div className="px-5 pt-6 pb-5 border-b border-[var(--border-subtle)]">
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-2 h-2 rounded-full bg-[var(--color-long)]" />
-                          <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">Portfolio Value</span>
-                        </div>
-                        <p className="text-4xl font-bold text-[var(--text-primary)] tracking-tight">${balanceUSD.toFixed(2)}</p>
-                        <p className="text-sm text-[var(--text-tertiary)] mt-1 font-mono">{balance.toFixed(4)} SOL</p>
-                      </div>
-
-                      {/* Stats List */}
-                      <div className="divide-y divide-[var(--border-subtle)]">
-                        {/* PnL Row */}
-                        <div className="flex items-center justify-between px-5 py-4">
-                          <span className="text-sm text-[var(--text-tertiary)]">Total PnL</span>
-                          <span className="text-sm font-semibold text-[var(--color-long)]">+$21.30</span>
-                        </div>
-
-                        {/* Open Positions Row */}
-                        <div className="flex items-center justify-between px-5 py-4">
-                          <span className="text-sm text-[var(--text-tertiary)]">Open Positions</span>
-                          <span className="text-sm font-semibold text-[var(--text-primary)]">2</span>
-                        </div>
-
-                        {/* Wallet Row */}
-                        <div className="flex items-center justify-between px-5 py-4">
-                          <span className="text-sm text-[var(--text-tertiary)]">Wallet</span>
-                          <span className="text-sm font-mono text-[var(--text-secondary)]">
-                            {walletAddress.slice(0, 4)}...{walletAddress.slice(-4)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                <div className="flex-1 overflow-hidden bg-[var(--bg-primary)] pb-16">
+                  <MobileAccountView
+                    isConnected={connected}
+                    onConnectWallet={openWalletModal}
+                    walletAddress={walletAddress}
+                    balance={balance}
+                    balanceUSD={balanceUSD}
+                    username={profile?.username}
+                    avatar={profile?.avatar}
+                    stats={profile?.stats}
+                  />
                 </div>
               )}
             </div>
@@ -312,12 +326,27 @@ export default function TradingPage() {
       <PositionsModal
         isOpen={isPositionsModalOpen}
         onClose={() => setIsPositionsModalOpen(false)}
+        positions={positions}
+        onClosePosition={closePosition}
+        onReversePosition={openReverseModal}
       />
 
       {/* Trade History Modal */}
       <TradeHistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+      />
+
+      {/* Reverse Position Modal */}
+      <ReversePositionModal
+        isOpen={isReverseModalOpen}
+        onClose={closeReverseModal}
+        position={selectedPosition}
+        availableBalance={balanceUSD}
+        onConfirm={handleReverseConfirm}
+        onDeposit={openWalletModal}
+        isProcessing={isProcessing}
+        calculateRequirements={calculateReverseRequirements}
       />
 
       {/* Footer */}

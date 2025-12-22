@@ -87,9 +87,7 @@ export function UsernameModal({
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-md mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--border-subtle)] shadow-2xl animate-scale-in overflow-hidden">
-        {/* Glow Effect */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-64 h-32 bg-[var(--accent-primary)] opacity-20 blur-3xl" />
+      <div className="relative w-full max-w-md mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--accent-primary)]/30 animate-scale-in overflow-hidden" style={{ boxShadow: 'var(--shadow-modal)' }}>
 
         {/* Header */}
         <div className="relative px-6 pt-6 pb-4 border-b border-[var(--border-subtle)]">
