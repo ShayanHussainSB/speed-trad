@@ -6,8 +6,11 @@ import { WalletSection } from "@/app/components/wallet/WalletSection";
 import { WalletModal } from "@/app/components/wallet/WalletModal";
 import { UsernameModal } from "@/app/components/wallet/UsernameModal";
 import { ProfileModal } from "@/app/components/wallet/ProfileModal";
+import { PointsBadge, PointsBadgeCompact } from "@/app/components/rewards/PointsBadge";
+import { RewardsModal } from "@/app/components/rewards/RewardsModal";
 import { useUserProfile } from "@/app/hooks/useUserProfile";
 import { useWalletBalance } from "@/app/hooks/useWalletBalance";
+import { useRewards } from "@/app/hooks/useRewards";
 
 export function Header() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
@@ -26,6 +29,15 @@ export function Header() {
   } = useUserProfile();
 
   const { balance, balanceUSD } = useWalletBalance();
+
+  const {
+    rewardsData,
+    tierProgress,
+    isRewardsModalOpen,
+    openRewardsModal,
+    closeRewardsModal,
+    copyReferralCode,
+  } = useRewards();
 
   return (
     <>
@@ -58,8 +70,27 @@ export function Header() {
             </div>
           </div>
 
-          {/* Right Section - Wallet */}
-          <div className="relative flex items-center gap-3">
+          {/* Right Section - Points Badge + Wallet */}
+          <div className="relative flex items-center gap-2 sm:gap-3">
+            {/* Points Badge - Desktop */}
+            <div className="hidden sm:block">
+              <PointsBadge
+                points={rewardsData.totalPoints}
+                tier={rewardsData.tier}
+                weeklyPoints={rewardsData.weeklyPoints}
+                onClick={openRewardsModal}
+                isFreshAccount={rewardsData.isFreshAccount}
+              />
+            </div>
+            {/* Points Badge - Mobile (compact) */}
+            <div className="sm:hidden">
+              <PointsBadgeCompact
+                points={rewardsData.totalPoints}
+                tier={rewardsData.tier}
+                onClick={openRewardsModal}
+                isFreshAccount={rewardsData.isFreshAccount}
+              />
+            </div>
             <WalletSection
               onOpenModal={() => setIsWalletModalOpen(true)}
               onOpenProfile={openProfileModal}
@@ -100,6 +131,15 @@ export function Header() {
           stats={profile.stats}
         />
       )}
+
+      {/* Rewards Modal - "The grind dashboard" */}
+      <RewardsModal
+        isOpen={isRewardsModalOpen}
+        onClose={closeRewardsModal}
+        rewardsData={rewardsData}
+        tierProgress={tierProgress}
+        copyReferralCode={copyReferralCode}
+      />
     </>
   );
 }

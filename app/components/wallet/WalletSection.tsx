@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useState, useCallback, useRef, useEffect } from "react";
+import { FC, useState, useCallback, useRef, useEffect, useId } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Zap,
@@ -29,41 +29,45 @@ interface WalletSectionProps {
   onUpdateProfile?: (username: string, avatar: string) => void;
 }
 
-// Solana Logo SVG Component
-const SolanaLogo = ({ className = "w-5 h-5" }: { className?: string }) => (
-  <svg
-    className={className}
-    viewBox="0 0 397 311"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <defs>
-      <linearGradient
-        id="solana-gradient"
-        x1="360.879"
-        y1="351.455"
-        x2="141.213"
-        y2="-69.2936"
-        gradientUnits="userSpaceOnUse"
-      >
-        <stop stopColor="#00FFA3" />
-        <stop offset="1" stopColor="#DC1FFF" />
-      </linearGradient>
-    </defs>
-    <path
-      d="M64.6 237.9C67.5 235 71.5 233.3 75.7 233.3H391.5C398.5 233.3 402 241.8 397 246.8L332.4 311.4C329.5 314.3 325.5 316 321.3 316H5.5C-1.5 316 -5 307.5 0 302.5L64.6 237.9Z"
-      fill="url(#solana-gradient)"
-    />
-    <path
-      d="M64.6 3.1C67.6 0.2 71.6 -1.5 75.7 -1.5H391.5C398.5 -1.5 402 7 397 12L332.4 76.6C329.5 79.5 325.5 81.2 321.3 81.2H5.5C-1.5 81.2 -5 72.7 0 67.7L64.6 3.1Z"
-      fill="url(#solana-gradient)"
-    />
-    <path
-      d="M332.4 120.1C329.5 117.2 325.5 115.5 321.3 115.5H5.5C-1.5 115.5 -5 124 0 129L64.6 193.6C67.5 196.5 71.5 198.2 75.7 198.2H391.5C398.5 198.2 402 189.7 397 184.7L332.4 120.1Z"
-      fill="url(#solana-gradient)"
-    />
-  </svg>
-);
+// Solana Logo SVG Component - using unique ID to prevent conflicts
+const SolanaLogo = ({ className = "w-5 h-5", id }: { className?: string; id?: string }) => {
+  const gradientId = id || "solana-grad";
+
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 397 311"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient
+          id={gradientId}
+          x1="360.879"
+          y1="351.455"
+          x2="141.213"
+          y2="-69.2936"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#00FFA3" />
+          <stop offset="1" stopColor="#DC1FFF" />
+        </linearGradient>
+      </defs>
+      <path
+        d="M64.6 237.9C67.5 235 71.5 233.3 75.7 233.3H391.5C398.5 233.3 402 241.8 397 246.8L332.4 311.4C329.5 314.3 325.5 316 321.3 316H5.5C-1.5 316 -5 307.5 0 302.5L64.6 237.9Z"
+        fill={`url(#${gradientId})`}
+      />
+      <path
+        d="M64.6 3.1C67.6 0.2 71.6 -1.5 75.7 -1.5H391.5C398.5 -1.5 402 7 397 12L332.4 76.6C329.5 79.5 325.5 81.2 321.3 81.2H5.5C-1.5 81.2 -5 72.7 0 67.7L64.6 3.1Z"
+        fill={`url(#${gradientId})`}
+      />
+      <path
+        d="M332.4 120.1C329.5 117.2 325.5 115.5 321.3 115.5H5.5C-1.5 115.5 -5 124 0 129L64.6 193.6C67.5 196.5 71.5 198.2 75.7 198.2H391.5C398.5 198.2 402 189.7 397 184.7L332.4 120.1Z"
+        fill={`url(#${gradientId})`}
+      />
+    </svg>
+  );
+};
 
 // Format balance to prevent UI breaking
 const formatBalance = (value: number, decimals: number = 2): string => {
@@ -178,7 +182,7 @@ export const WalletSection: FC<WalletSectionProps> = ({
       {/* Balance Pill - Mobile (compact) */}
       <div className="flex sm:hidden items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
         <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center flex-shrink-0">
-          <SolanaLogo className="w-3 h-3" />
+          <SolanaLogo className="w-3 h-3" id="sol-mobile" />
         </div>
         <span className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
           {formatBalance(balance, 2)}
@@ -189,7 +193,7 @@ export const WalletSection: FC<WalletSectionProps> = ({
       <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
         {/* Solana Logo */}
         <div className="w-7 h-7 rounded-full bg-black/40 flex items-center justify-center p-1">
-          <SolanaLogo className="w-4 h-4" />
+          <SolanaLogo className="w-4 h-4" id="sol-desktop" />
         </div>
 
         {/* Balance Info */}
@@ -291,7 +295,7 @@ export const WalletSection: FC<WalletSectionProps> = ({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-black/40 flex items-center justify-center p-0.5">
-                  <SolanaLogo className="w-4 h-4" />
+                  <SolanaLogo className="w-4 h-4" id="sol-dropdown" />
                 </div>
                 <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
                   Wallet Balance
