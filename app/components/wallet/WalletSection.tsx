@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useState, useCallback, useRef, useEffect, useId } from "react";
+import { FC, useState, useCallback, useRef, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Zap,

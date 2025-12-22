@@ -32,27 +32,3 @@ export function formatPrice(price: number): string {
   if (price >= 100) return price.toFixed(1);
   return price.toFixed(2);
 }
-
-/**
- * Format a date for display in tables/detailed views
- */
-export function formatDate(date: Date): string {
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffHours = diffMs / (1000 * 60 * 60);
-
-  if (diffHours < 24) {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  }
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-}
-
-/**
- * Generate a gradient color from a wallet address for avatars
- */
-export function getGradientFromAddress(address: string): string {
-  const hash = address.slice(0, 8);
-  const hue1 = parseInt(hash.slice(0, 4), 16) % 360;
-  const hue2 = (hue1 + 40) % 360;
-  return `linear-gradient(135deg, hsl(${hue1}, 70%, 50%), hsl(${hue2}, 70%, 40%))`;
-}

@@ -222,13 +222,6 @@ main {
   border: 1px solid var(--border-subtle);
 }
 
-.glass-accent {
-  background: rgba(255, 45, 146, 0.05);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-accent);
-}
-
 /* ============================================
    BUTTON STYLES
    ============================================ */
@@ -265,52 +258,6 @@ main {
   transform: translateY(0);
 }
 
-.btn-secondary {
-  background: var(--bg-elevated);
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-}
-
-.btn-secondary:hover {
-  border-color: var(--accent-primary);
-  background: var(--accent-muted);
-}
-
-.btn-long {
-  background: var(--color-long);
-  color: #050505;
-  font-weight: 700;
-}
-
-.btn-long:hover {
-  background: var(--color-long-dim);
-  box-shadow: var(--shadow-glow-long);
-  transform: translateY(-1px);
-}
-
-.btn-short {
-  background: var(--color-short);
-  color: white;
-  font-weight: 700;
-}
-
-.btn-short:hover {
-  background: var(--color-short-dim);
-  box-shadow: var(--shadow-glow-short);
-  transform: translateY(-1px);
-}
-
-/* Ghost button */
-.btn-ghost {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid transparent;
-}
-
-.btn-ghost:hover {
-  color: var(--text-primary);
-  background: var(--bg-elevated);
-}
 
 /* ============================================
    INPUT STYLES
@@ -342,14 +289,6 @@ main {
   color: var(--text-tertiary);
 }
 
-.input-error {
-  border-color: var(--color-short);
-}
-
-.input-error:focus {
-  border-color: var(--color-short);
-  box-shadow: 0 0 0 3px var(--color-short-muted);
-}
 
 /* Number input - hide spinners */
 input[type="number"]::-webkit-outer-spin-button,
@@ -380,12 +319,6 @@ input[type="number"] {
   box-shadow: var(--shadow-card);
 }
 
-.card-glow {
-  background: var(--bg-card);
-  border: 1px solid var(--border-accent);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-glow-pink);
-}
 
 /* ============================================
    SLIDER STYLES (Range Input)
@@ -486,10 +419,6 @@ input[type="number"] {
 }
 
 /* Animation Classes */
-
-.animate-glow-breathe {
-  animation: glow-breathe 3s ease-in-out infinite;
-}
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out forwards;
@@ -645,10 +574,6 @@ input[type="number"] {
   letter-spacing: 0.5px;
 }
 
-.badge-long {
-  background: var(--color-long-muted);
-  color: var(--color-long);
-}
 
 /* ============================================
    RESPONSIVE STYLES
