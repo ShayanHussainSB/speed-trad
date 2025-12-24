@@ -6,25 +6,23 @@ import {
   Search,
   Star,
   Clock,
-  Flame,
   ChevronDown,
   Check,
   Sparkles,
   ArrowUpDown,
   Command,
   X,
-  Coins,
-  Wallet,
-  Zap,
-  Layers,
+  Loader2,
 } from "lucide-react";
+import { useTokenList } from "@/app/hooks/useTokenList";
 
 // Token data structure
 export interface Token {
   symbol: string;
   name: string;
   address: string;
-  icon: string; // Color for the icon
+  icon: string; // Fallback color for the icon
+  image?: string; // URL to token logo image
   price: number;
   change24h: number;
   volume24h: number;
@@ -34,184 +32,7 @@ export interface Token {
   trending?: boolean;
 }
 
-// Mock token data - in production this would come from an API
-const MOCK_TOKENS: Token[] = [
-  {
-    symbol: "SOL",
-    name: "Solana",
-    address: "So11111111111111111111111111111111111111112",
-    icon: "#9945FF",
-    price: 125.987,
-    change24h: 2.4,
-    volume24h: 2400000000,
-    balance: 0.107890741,
-    balanceUSD: 13.6,
-    verified: true,
-  },
-  {
-    symbol: "USDT",
-    name: "USDT",
-    address: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
-    icon: "#26A17B",
-    price: 1.0,
-    change24h: 0.05,
-    volume24h: 5600000000,
-    balance: 100,
-    balanceUSD: 100,
-    verified: true,
-  },
-  {
-    symbol: "USDC",
-    name: "USD Coin",
-    address: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-    icon: "#2775CA",
-    price: 1.0,
-    change24h: 0.0,
-    volume24h: 4200000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "JLP",
-    name: "Jupiter Perps",
-    address: "27G8MtK7VtTcCHkpASjSDdkWWYfoqT6ggEuKidVJidD4",
-    icon: "#00D18C",
-    price: 3.45,
-    change24h: 5.2,
-    volume24h: 890000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "cbBTC",
-    name: "Coinbase Wrapped BTC",
-    address: "cbbtc...4iMij",
-    icon: "#F7931A",
-    price: 87960.1,
-    change24h: 0.98,
-    volume24h: 1200000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "jiUSDC",
-    name: "jupiter lend USDC",
-    address: "9BEcn...XPA2D",
-    icon: "#2775CA",
-    price: 1.02,
-    change24h: 0.1,
-    volume24h: 340000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "ETH",
-    name: "Ethereum",
-    address: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
-    icon: "#627EEA",
-    price: 2956.77,
-    change24h: 3.44,
-    volume24h: 1800000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "BONK",
-    name: "Bonk",
-    address: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263",
-    icon: "#FF9500",
-    price: 0.00002,
-    change24h: 45.2,
-    volume24h: 890000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-    trending: true,
-  },
-  {
-    symbol: "WIF",
-    name: "dogwifhat",
-    address: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm",
-    icon: "#B8860B",
-    price: 2.34,
-    change24h: 23.5,
-    volume24h: 456000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-    trending: true,
-  },
-  {
-    symbol: "TRUMP",
-    name: "OFFICIAL TRUMP",
-    address: "6p6xg...fGiPN",
-    icon: "#DC143C",
-    price: 42.5,
-    change24h: 156.3,
-    volume24h: 2400000000,
-    balance: 0,
-    balanceUSD: 0,
-    trending: true,
-  },
-  {
-    symbol: "RENDER",
-    name: "Render Token",
-    address: "rndrizKT3MK1iimdxRdWabcF7Zg7AR5T4nud4EkHBof",
-    icon: "#FF4F4F",
-    price: 7.82,
-    change24h: 8.3,
-    volume24h: 120000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "JTO",
-    name: "Jito",
-    address: "jtojtomepa8beP8AuQc6eXt5FriJwfFMwQx2v2f9mCL",
-    icon: "#00C853",
-    price: 3.21,
-    change24h: -2.1,
-    volume24h: 89000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-  {
-    symbol: "PYTH",
-    name: "Pyth Network",
-    address: "HZ1JovNiVvGrGNiiYvEozEVgZ58xaU3RKwX8eACQBCt3",
-    icon: "#6B4CE6",
-    price: 0.42,
-    change24h: 4.5,
-    volume24h: 67000000,
-    balance: 0,
-    balanceUSD: 0,
-    verified: true,
-  },
-];
-
-type SortOption = "volume" | "change" | "name" | "balance";
-type CategoryFilter = "all" | "sol" | "stables" | "memes" | "defi";
-
-// Category definitions for filtering
-const TOKEN_CATEGORIES: Record<string, CategoryFilter[]> = {
-  SOL: ["sol"],
-  USDT: ["stables"],
-  USDC: ["stables"],
-  WIF: ["memes"],
-  BONK: ["memes"],
-  RAY: ["defi"],
-  JUP: ["defi"],
-  ORCA: ["defi"],
-  JTO: ["defi"],
-  PYTH: ["defi"],
-};
+type SortOption = "volume" | "change" | "name";
 
 interface TokenSelectorModalProps {
   isOpen: boolean;
@@ -231,13 +52,18 @@ export function TokenSelectorModal({
   selectedToken,
   quoteToken = "USDC",
 }: TokenSelectorModalProps) {
+  // Get live token data from Bulk.trade API
+  const { tokens: liveTokens, isLoading: tokensLoading } = useTokenList();
+
+  // Use live tokens from Bulk.trade API
+  const ALL_TOKENS = liveTokens;
+
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<string[]>([]);
   const [recentTokens, setRecentTokens] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<SortOption>("volume");
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
-  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
@@ -326,15 +152,7 @@ export function TokenSelectorModal({
 
   // Filter and sort tokens
   const filteredTokens = useMemo(() => {
-    let tokens = [...MOCK_TOKENS];
-
-    // Filter by category
-    if (categoryFilter !== "all") {
-      tokens = tokens.filter((token) => {
-        const categories = TOKEN_CATEGORIES[token.symbol] || [];
-        return categories.includes(categoryFilter);
-      });
-    }
+    let tokens = [...ALL_TOKENS];
 
     // Filter by search query
     if (searchQuery) {
@@ -342,7 +160,7 @@ export function TokenSelectorModal({
       const exactMatch = searchQuery.includes('"');
       const cleanQuery = query.replace(/"/g, "");
 
-      tokens = tokens.filter((token) => {
+      tokens = tokens.filter((token: Token) => {
         if (exactMatch) {
           return (
             token.symbol.toLowerCase() === cleanQuery ||
@@ -358,7 +176,7 @@ export function TokenSelectorModal({
     }
 
     // Sort tokens
-    tokens.sort((a, b) => {
+    tokens.sort((a: Token, b: Token) => {
       switch (sortBy) {
         case "volume":
           return b.volume24h - a.volume24h;
@@ -366,30 +184,23 @@ export function TokenSelectorModal({
           return b.change24h - a.change24h;
         case "name":
           return a.name.localeCompare(b.name);
-        case "balance":
-          return (b.balanceUSD || 0) - (a.balanceUSD || 0);
         default:
           return 0;
       }
     });
 
     return tokens;
-  }, [searchQuery, sortBy, categoryFilter]);
+  }, [searchQuery, sortBy, ALL_TOKENS]);
 
   // Get tokens for different sections
   const favoriteTokens = useMemo(
-    () => MOCK_TOKENS.filter((t) => favorites.includes(t.symbol)),
-    [favorites]
+    () => ALL_TOKENS.filter((t: Token) => favorites.includes(t.symbol)),
+    [favorites, ALL_TOKENS]
   );
 
   const recentTokensList = useMemo(
-    () => recentTokens.map((s) => MOCK_TOKENS.find((t) => t.symbol === s)).filter(Boolean) as Token[],
-    [recentTokens]
-  );
-
-  const trendingTokens = useMemo(
-    () => MOCK_TOKENS.filter((t) => t.trending).sort((a, b) => b.change24h - a.change24h),
-    []
+    () => recentTokens.map((s) => ALL_TOKENS.find((t: Token) => t.symbol === s)).filter(Boolean) as Token[],
+    [recentTokens, ALL_TOKENS]
   );
 
   // Virtual list for "All Tokens" - only renders visible items
@@ -415,19 +226,6 @@ export function TokenSelectorModal({
     return `$${price.toFixed(6)}`;
   };
 
-  const formatVolume = (volume: number) => {
-    if (volume >= 1e9) return `$${(volume / 1e9).toFixed(1)}B`;
-    if (volume >= 1e6) return `$${(volume / 1e6).toFixed(0)}M`;
-    return `$${(volume / 1e3).toFixed(0)}K`;
-  };
-
-  const formatBalance = (balance: number, symbol: string) => {
-    if (balance === 0) return `0.00 ${symbol}`;
-    if (balance >= 1000) return `${balance.toLocaleString("en-US", { maximumFractionDigits: 2 })} ${symbol}`;
-    if (balance >= 1) return `${balance.toFixed(2)} ${symbol}`;
-    return `${balance.toFixed(symbol === "SOL" ? 6 : 2)} ${symbol}`;
-  };
-
   const truncateAddress = (address: string) => {
     if (address.length <= 12) return address;
     return `${address.slice(0, 4)}...${address.slice(-4)}`;
@@ -438,7 +236,6 @@ export function TokenSelectorModal({
   const sortOptions: { value: SortOption; label: string }[] = [
     { value: "volume", label: "Volume" },
     { value: "change", label: "24h Change" },
-    { value: "balance", label: "Balance" },
     { value: "name", label: "Name" },
   ];
 
@@ -507,37 +304,6 @@ export function TokenSelectorModal({
             </div>
           </div>
 
-          {/* Category Filter Pills */}
-          <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide pb-1">
-            {[
-              { value: "all" as const, label: "All", icon: Layers },
-              { value: "sol" as const, label: "SOL", icon: Coins },
-              { value: "stables" as const, label: "Stables", icon: Wallet },
-              { value: "memes" as const, label: "Memes", icon: Sparkles },
-              { value: "defi" as const, label: "DeFi", icon: Zap },
-            ].map(({ value, label, icon: Icon }) => (
-              <button
-                key={value}
-                onClick={() => setCategoryFilter(value)}
-                className={`
-                  flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold
-                  whitespace-nowrap transition-all duration-150
-                  ${categoryFilter === value
-                    ? "bg-[var(--accent-primary)] text-white shadow-[0_0_12px_rgba(255,45,146,0.4)]"
-                    : "bg-[var(--bg-tertiary)] text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-[var(--text-primary)]"
-                  }
-                `}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-
-            {/* Exact match hint */}
-            <span className="text-[10px] text-[var(--text-muted)] whitespace-nowrap ml-auto hidden sm:block">
-              Tip: Use &quot;quotes&quot; for exact match
-            </span>
-          </div>
         </div>
 
         {/* Divider */}
@@ -556,12 +322,20 @@ export function TokenSelectorModal({
                     : "border-[var(--border-subtle)] bg-[var(--bg-secondary)] hover:border-[var(--border-default)]"
                 }`}
               >
-                <div
-                  className="w-5 h-5 rounded-full flex items-center justify-center"
-                  style={{ background: token.icon }}
-                >
-                  <span className="text-[8px] font-bold text-white">{token.symbol[0]}</span>
-                </div>
+                {token.image ? (
+                  <img
+                    src={token.image}
+                    alt={token.symbol}
+                    className="w-5 h-5 rounded-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className="w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: token.icon }}
+                  >
+                    <span className="text-[8px] font-bold text-white">{token.symbol[0]}</span>
+                  </div>
+                )}
                 <span className="text-xs font-semibold text-[var(--text-primary)]">{token.symbol}</span>
               </button>
             ))}
@@ -598,39 +372,8 @@ export function TokenSelectorModal({
                     onSelect={() => handleSelectToken(token)}
                     onToggleFavorite={(e) => toggleFavorite(token.symbol, e)}
                     formatPrice={formatPrice}
-                    formatBalance={formatBalance}
                     truncateAddress={truncateAddress}
                     compact
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Trending Tokens */}
-          {trendingTokens.length > 0 && !searchQuery && (
-            <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
-              <div className="flex items-center gap-2 mb-2">
-                <Flame className="w-3.5 h-3.5 text-[#FF6B00]" />
-                <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wide">
-                  Trending
-                </span>
-              </div>
-              <div className="space-y-1">
-                {trendingTokens.slice(0, 3).map((token) => (
-                  <TokenRow
-                    key={token.symbol}
-                    token={token}
-                    quoteToken={quoteToken}
-                    isSelected={selectedToken?.symbol === token.symbol}
-                    isFavorite={favorites.includes(token.symbol)}
-                    onSelect={() => handleSelectToken(token)}
-                    onToggleFavorite={(e) => toggleFavorite(token.symbol, e)}
-                    formatPrice={formatPrice}
-                    formatBalance={formatBalance}
-                    formatVolume={formatVolume}
-                    truncateAddress={truncateAddress}
-                    showVolume
                   />
                 ))}
               </div>
@@ -640,9 +383,14 @@ export function TokenSelectorModal({
           {/* All Tokens Header */}
           <div className="px-4 py-3 border-b border-[var(--border-subtle)] sticky top-0 bg-[var(--bg-card)] z-10">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wide">
-                {searchQuery ? `Results (${filteredTokens.length})` : `All Tokens (${filteredTokens.length})`}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wide">
+                  {searchQuery ? `Results (${filteredTokens.length})` : `All Tokens (${filteredTokens.length})`}
+                </span>
+                {tokensLoading && (
+                  <Loader2 className="w-3 h-3 animate-spin text-[var(--accent-primary)]" />
+                )}
+              </div>
 
               {/* Sort Dropdown */}
               <div className="relative">
@@ -721,7 +469,6 @@ export function TokenSelectorModal({
                         onSelect={() => handleSelectToken(token)}
                         onToggleFavorite={(e) => toggleFavorite(token.symbol, e)}
                         formatPrice={formatPrice}
-                        formatBalance={formatBalance}
                         truncateAddress={truncateAddress}
                       />
                     </div>
@@ -766,26 +513,19 @@ interface TokenRowProps {
   onSelect: () => void;
   onToggleFavorite: (e: React.MouseEvent) => void;
   formatPrice: (price: number) => string;
-  formatBalance: (balance: number, symbol: string) => string;
   truncateAddress: (address: string) => string;
-  formatVolume?: (volume: number) => string;
-  showVolume?: boolean;
   compact?: boolean;
 }
 
 function TokenRow({
   token,
-  quoteToken,
   isSelected,
   isHighlighted,
   isFavorite,
   onSelect,
   onToggleFavorite,
   formatPrice,
-  formatBalance,
   truncateAddress,
-  formatVolume,
-  showVolume,
   compact,
 }: TokenRowProps) {
   const isPositive = token.change24h >= 0;
@@ -803,8 +543,20 @@ function TokenRow({
     >
       {/* Token Icon */}
       <div className="relative">
+        {token.image ? (
+          <img
+            src={token.image}
+            alt={token.symbol}
+            className="w-10 h-10 rounded-full object-cover"
+            onError={(e) => {
+              // Fallback to color circle if image fails to load
+              e.currentTarget.style.display = 'none';
+              e.currentTarget.nextElementSibling?.classList.remove('hidden');
+            }}
+          />
+        ) : null}
         <div
-          className="w-10 h-10 rounded-full flex items-center justify-center"
+          className={`w-10 h-10 rounded-full flex items-center justify-center ${token.image ? 'hidden' : ''}`}
           style={{ background: token.icon }}
         >
           <span className="text-sm font-bold text-white">{token.symbol[0]}</span>
@@ -820,12 +572,6 @@ function TokenRow({
       <div className="flex-1 min-w-0 text-left">
         <div className="flex items-center gap-2">
           <span className="text-sm font-bold text-[var(--text-primary)]">{token.symbol}</span>
-          {token.trending && (
-            <span className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[#FF6B00]/20 text-[#FF6B00]">
-              <Flame className="w-2.5 h-2.5" />
-              <span className="text-[8px] font-bold">HOT</span>
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-[var(--text-tertiary)]">{token.name}</span>
@@ -840,11 +586,11 @@ function TokenRow({
       {/* Price & Change */}
       <div className="text-right">
         <div className="flex items-center justify-end gap-2">
-          {showVolume && formatVolume && (
-            <span className="text-[10px] text-[var(--text-tertiary)]">
-              Vol: {formatVolume(token.volume24h)}
-            </span>
-          )}
+          <span className="text-sm font-mono text-[var(--text-primary)]">
+            {formatPrice(token.price)}
+          </span>
+        </div>
+        <div className="flex items-center justify-end gap-2 mt-0.5">
           <span
             className={`text-xs font-bold px-1.5 py-0.5 rounded ${
               isPositive
@@ -855,16 +601,6 @@ function TokenRow({
             {isPositive ? "+" : ""}
             {token.change24h.toFixed(1)}%
           </span>
-        </div>
-        <div className="flex items-center justify-end gap-2 mt-0.5">
-          <span className="text-sm font-mono text-[var(--text-primary)]">
-            {formatBalance(token.balance || 0, token.symbol)}
-          </span>
-          {token.balanceUSD !== undefined && token.balanceUSD > 0 && (
-            <span className="text-xs text-[var(--text-tertiary)]">
-              ${token.balanceUSD.toFixed(2)}
-            </span>
-          )}
         </div>
       </div>
 

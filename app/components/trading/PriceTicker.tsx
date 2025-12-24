@@ -11,7 +11,8 @@ interface CoinPrice {
   color: string;
 }
 
-const MOCK_PRICES: CoinPrice[] = [
+// Only tokens supported by Bulk.trade API (SOL, BTC, ETH)
+const SUPPORTED_COINS: CoinPrice[] = [
   {
     symbol: "ETH",
     name: "Ethereum",
@@ -19,9 +20,11 @@ const MOCK_PRICES: CoinPrice[] = [
     change24h: 3.44,
     color: "#627EEA",
     icon: (
-      <div className="w-5 h-5 rounded-full bg-[#627EEA] flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">E</span>
-      </div>
+      <img
+        src="https://assets.coingecko.com/coins/images/279/standard/ethereum.png"
+        alt="ETH"
+        className="w-5 h-5 rounded-full object-cover"
+      />
     ),
   },
   {
@@ -31,9 +34,11 @@ const MOCK_PRICES: CoinPrice[] = [
     change24h: 0.98,
     color: "#F7931A",
     icon: (
-      <div className="w-5 h-5 rounded-full bg-[#F7931A] flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">B</span>
-      </div>
+      <img
+        src="https://assets.coingecko.com/coins/images/1/standard/bitcoin.png"
+        alt="BTC"
+        className="w-5 h-5 rounded-full object-cover"
+      />
     ),
   },
   {
@@ -43,33 +48,11 @@ const MOCK_PRICES: CoinPrice[] = [
     change24h: 1.77,
     color: "#9945FF",
     icon: (
-      <div className="w-5 h-5 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">S</span>
-      </div>
-    ),
-  },
-  {
-    symbol: "XRP",
-    name: "Ripple",
-    price: 1.8731,
-    change24h: -0.15,
-    color: "#23292F",
-    icon: (
-      <div className="w-5 h-5 rounded-full bg-[#23292F] flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">X</span>
-      </div>
-    ),
-  },
-  {
-    symbol: "DOGE",
-    name: "Dogecoin",
-    price: 0.12872,
-    change24h: 2.12,
-    color: "#C2A633",
-    icon: (
-      <div className="w-5 h-5 rounded-full bg-[#C2A633] flex items-center justify-center">
-        <span className="text-[10px] font-bold text-white">D</span>
-      </div>
+      <img
+        src="https://assets.coingecko.com/coins/images/4128/standard/solana.png"
+        alt="SOL"
+        className="w-5 h-5 rounded-full object-cover"
+      />
     ),
   },
 ];
@@ -80,7 +63,7 @@ interface PriceTickerProps {
 }
 
 export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTickerProps) {
-  const [prices, setPrices] = useState(MOCK_PRICES);
+  const [prices, setPrices] = useState(SUPPORTED_COINS);
 
   // Simulate price updates
   useEffect(() => {
@@ -109,7 +92,7 @@ export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTicke
 
   return (
     <div className="fixed top-16 left-0 right-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)]">
-      <div className="flex items-center gap-1 px-4 py-2 overflow-x-auto scrollbar-hide">
+      <div className="flex items-center justify-center gap-1 px-4 py-2 overflow-x-auto scrollbar-hide">
         {prices.map((coin) => {
           const isSelected = coin.symbol === selectedSymbol;
           const isPositive = coin.change24h >= 0;

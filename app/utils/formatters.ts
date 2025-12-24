@@ -24,11 +24,3 @@ export function formatValue(value: number, decimals: number = 2): string {
   return value.toFixed(decimals);
 }
 
-/**
- * Format a price value with appropriate decimal places
- */
-export function formatPrice(price: number): string {
-  if (price >= 1000) return price.toFixed(0);
-  if (price >= 100) return price.toFixed(1);
-  return price.toFixed(2);
-}

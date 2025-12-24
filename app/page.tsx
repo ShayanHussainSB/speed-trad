@@ -20,6 +20,7 @@ import { WalletModal } from "./components/wallet/WalletModal";
 import { useWalletBalance } from "./hooks/useWalletBalance";
 import { useUserProfile } from "./hooks/useUserProfile";
 import { usePositions } from "./hooks/usePositions";
+import { useBinanceTicker } from "./hooks/useBinanceTicker";
 import { MobileAccountView } from "./components/mobile/MobileAccountView";
 
 type TradingMode = "perpetuals" | "spot";
@@ -35,6 +36,18 @@ export default function TradingPage() {
   const [isBottomPanelExpanded, setIsBottomPanelExpanded] = useState(true);
   const [isPositionsModalOpen, setIsPositionsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [selectedSymbol, setSelectedSymbol] = useState("SOL");
+
+  // Live market data from Binance (volume & open interest)
+  const { volume24h, openInterestValue } = useBinanceTicker(`${selectedSymbol}-USD`);
+
+  // Format large numbers (e.g., 2400000000 -> "$2.4B")
+  const formatLargeNumber = (num: number): string => {
+    if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
+    if (num >= 1e6) return `$${(num / 1e6).toFixed(0)}M`;
+    if (num >= 1e3) return `$${(num / 1e3).toFixed(0)}K`;
+    return `$${num.toFixed(0)}`;
+  };
 
   // Real wallet state from Solana wallet adapter
   const { publicKey, connected } = useWallet();
@@ -105,7 +118,7 @@ export default function TradingPage() {
       <Header />
 
       {/* Price Ticker - Below Header */}
-      <PriceTicker selectedSymbol="SOL" />
+      <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
 
       {/* Main Content */}
       <main className="pt-[104px] pb-10 md:pb-10 h-screen overflow-hidden">
@@ -134,12 +147,12 @@ export default function TradingPage() {
                   <div className="flex items-center gap-4">
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[var(--text-tertiary)]">24h Volume</span>
-                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">$2.4B</span>
+                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(volume24h)}</span>
                     </div>
                     <div className="w-px h-4 bg-[var(--border-subtle)]" />
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[var(--text-tertiary)]">Open Interest</span>
-                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">$890M</span>
+                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(openInterestValue)}</span>
                     </div>
                   </div>
                 </div>
@@ -147,7 +160,8 @@ export default function TradingPage() {
                 {/* Chart */}
                 <div className="flex-1 min-h-0">
                   <PriceChart
-                    symbol="SOL-USDC"
+                    symbol={`${selectedSymbol}-USDC`}
+                    onSymbolChange={(sym) => setSelectedSymbol(sym.split("/")[0])}
                     activePosition={primaryPosition}
                     onReversePosition={openReverseModal}
                   />
@@ -252,7 +266,8 @@ export default function TradingPage() {
                   {/* Chart - Fixed height on mobile to prevent overlap */}
                   <div className="h-[35vh] min-h-[180px] flex-shrink-0">
                     <PriceChart
-                      symbol="SOL-USDC"
+                      symbol={`${selectedSymbol}-USDC`}
+                      onSymbolChange={(sym) => setSelectedSymbol(sym.split("/")[0])}
                       activePosition={primaryPosition}
                       onReversePosition={openReverseModal}
                     />

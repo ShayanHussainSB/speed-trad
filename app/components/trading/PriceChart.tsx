@@ -2,10 +2,13 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CandlestickSeries, CandlestickData, Time, ColorType } from "lightweight-charts";
-import { CandlestickChart, ChevronDown, Activity, Command, RefreshCw, TrendingUp, TrendingDown } from "lucide-react";
+import { CandlestickChart, ChevronDown, Activity, Command, RefreshCw, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { LiveLineChart } from "./LiveLineChart";
 import { TokenSelectorModal, Token } from "./TokenSelectorModal";
 import { Position } from "@/app/hooks/usePositions";
+import { useMarketData } from "@/app/hooks/useMarketData";
+import { useLivePrice } from "@/app/hooks/useLivePrice";
+import type { ChartCandle } from "@/app/services/bulkTrade";
 
 type ChartType = "candlestick" | "live";
 
@@ -16,58 +19,111 @@ interface PriceChartProps {
   onReversePosition?: (position: Position) => void;
 }
 
-// Fixed initial values for SSR hydration (random data generated client-side only)
-const INITIAL_PRICE = 195;
-const INITIAL_CHANGE = 0;
-const INITIAL_CHANGE_PERCENT = 0;
+function toBulkSymbol(tokenSymbol: string): string {
+  const normalized = tokenSymbol.replace(/[-\/]/g, "-").toUpperCase();
+  const base = normalized.split("-")[0];
+  return `${base}-USD`;
+}
 
-// Generate realistic-looking mock data (client-side only)
-function generateMockData(): CandlestickData<Time>[] {
-  const data: CandlestickData<Time>[] = [];
-  const now = Math.floor(Date.now() / 1000);
-  let basePrice = INITIAL_PRICE;
+// Token metadata for initialization
+const TOKEN_DATA: Record<string, Token> = {
+  SOL: {
+    symbol: "SOL",
+    name: "Solana",
+    address: "So11111111111111111111111111111111111111112",
+    icon: "#9945FF",
+    image: "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
+    price: 0,
+    change24h: 0,
+    volume24h: 0,
+    verified: true,
+  },
+  BTC: {
+    symbol: "BTC",
+    name: "Bitcoin",
+    address: "3NZ9JMVBmGAqocybic2c7LQCJScmgsAZ6vQqTDzcqmJh",
+    icon: "#F7931A",
+    image: "https://assets.coingecko.com/coins/images/1/standard/bitcoin.png",
+    price: 0,
+    change24h: 0,
+    volume24h: 0,
+    verified: true,
+  },
+  ETH: {
+    symbol: "ETH",
+    name: "Ethereum",
+    address: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs",
+    icon: "#627EEA",
+    image: "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
+    price: 0,
+    change24h: 0,
+    volume24h: 0,
+    verified: true,
+  },
+};
 
-  for (let i = 200; i >= 0; i--) {
-    const time = (now - i * 300) as Time; // 5-minute candles
-    const volatility = 0.02;
-    const change = (Math.random() - 0.48) * volatility * basePrice;
-
-    const open = basePrice;
-    const close = basePrice + change;
-    const high = Math.max(open, close) + Math.random() * 0.5;
-    const low = Math.min(open, close) - Math.random() * 0.5;
-
-    data.push({
-      time,
-      open,
-      high,
-      low,
-      close,
-    });
-
-    basePrice = close;
-  }
-
-  return data;
+function getTokenFromSymbol(symbol: string): Token {
+  const base = symbol.replace(/[-\/].*/, "").toUpperCase();
+  return TOKEN_DATA[base] || TOKEN_DATA.SOL;
 }
 
 export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition, onReversePosition }: PriceChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
-  const mockDataRef = useRef<CandlestickData<Time>[] | null>(null);
-  const firstCandleOpenRef = useRef<number>(INITIAL_PRICE);
+  const chartRef = useRef<ReturnType<typeof createChart> | null>(null);
+  const seriesRef = useRef<ReturnType<ReturnType<typeof createChart>["addSeries"]> | null>(null);
+  const lastCandleCountRef = useRef<number>(0);
+  const initialDataLoadedRef = useRef<boolean>(false);
+  const isFetchingHistoryRef = useRef<boolean>(false);
+  const hasMoreHistoryRef = useRef<boolean>(true);
 
-  // Use fixed initial values for SSR, update on client
-  const [currentPrice, setCurrentPrice] = useState<number>(INITIAL_PRICE);
-  const [priceChange, setPriceChange] = useState<number>(INITIAL_CHANGE);
-  const [priceChangePercent, setPriceChangePercent] = useState<number>(INITIAL_CHANGE_PERCENT);
   const [chartType, setChartType] = useState<ChartType>("live");
   const [timeframe, setTimeframe] = useState("5m");
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
-  const [selectedToken, setSelectedToken] = useState<Token | null>(null);
 
-  // Derive display symbol from selected token or prop
-  const displaySymbol = selectedToken ? `${selectedToken.symbol}/USDC` : symbol;
-  const tokenIcon = selectedToken?.icon || "#9945FF";
+  // Initialize token from symbol prop
+  const [selectedToken, setSelectedToken] = useState<Token>(() => getTokenFromSymbol(symbol));
+
+  // Derive display symbol and Bulk.trade symbol
+  const displaySymbol = `${selectedToken.symbol}/USDC`;
+  const bulkSymbol = toBulkSymbol(displaySymbol);
+  const tokenIcon = selectedToken.icon;
+  const tokenImage = selectedToken.image;
+
+  // Fetch live price data
+  const {
+    price: livePrice,
+    priceChangePercent24h,
+    isLoading: priceLoading,
+  } = useLivePrice(bulkSymbol);
+
+  // Fetch candlestick data
+  const {
+    candles,
+    isLoading: candlesLoading,
+    isLoadingHistory,
+    error: candlesError,
+    fetchOlderCandles,
+  } = useMarketData(bulkSymbol, timeframe);
+
+  // Track current price for display (use live price or last candle close)
+  const currentPrice = livePrice > 0 ? livePrice : (candles[candles.length - 1]?.close ?? 0);
+  const isPositive = priceChangePercent24h >= 0;
+
+  // Reset chart state when symbol or timeframe changes
+  useEffect(() => {
+    lastCandleCountRef.current = 0;
+    initialDataLoadedRef.current = false;
+    isFetchingHistoryRef.current = false;
+    hasMoreHistoryRef.current = true;
+  }, [bulkSymbol, timeframe]);
+
+  // Sync selectedToken when symbol prop changes from parent (e.g., PriceTicker click)
+  useEffect(() => {
+    const newToken = getTokenFromSymbol(symbol);
+    if (newToken.symbol !== selectedToken.symbol) {
+      setSelectedToken(newToken);
+    }
+  }, [symbol, selectedToken.symbol]);
 
   // Global keyboard shortcut: Cmd/Ctrl + K
   useEffect(() => {
@@ -88,20 +144,22 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
     onSymbolChange?.(`${token.symbol}/USDC`);
   }, [onSymbolChange]);
 
-  // Initialize mock data on client only - uses recommended null-check pattern
-  // This is the standard React pattern for lazy initialization of refs
-  /* eslint-disable react-hooks/refs */
-  if (mockDataRef.current === null && typeof window !== "undefined") {
-    mockDataRef.current = generateMockData();
-    firstCandleOpenRef.current = mockDataRef.current[0].open;
-  }
-  /* eslint-enable react-hooks/refs */
+  // Convert our candles to lightweight-charts format
+  const convertToLightweightCandles = useCallback((chartCandles: ChartCandle[]): CandlestickData<Time>[] => {
+    return chartCandles.map(candle => ({
+      time: candle.time as Time,
+      open: candle.open,
+      high: candle.high,
+      low: candle.low,
+      close: candle.close,
+    }));
+  }, []);
 
+  // Setup candlestick chart
   useEffect(() => {
-    // Skip lightweight-charts setup for live chart type
-    if (chartType === "live" || !chartContainerRef.current) return;
+    if (chartType !== "candlestick" || !chartContainerRef.current) return;
 
-    // Create chart with our theme colors
+    // Create chart
     const chart = createChart(chartContainerRef.current, {
       layout: {
         background: { type: ColorType.Solid, color: "transparent" },
@@ -151,13 +209,9 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
       },
     });
 
-    // Use mock data from ref
-    const mockData = mockDataRef.current || generateMockData();
-    if (!mockDataRef.current) {
-      mockDataRef.current = mockData;
-    }
+    chartRef.current = chart;
 
-    // Create candlestick series
+    // Create candlestick series with proper price formatting
     const series = chart.addSeries(CandlestickSeries, {
       upColor: "#00F5A0",
       downColor: "#FF3B69",
@@ -165,58 +219,136 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
       borderDownColor: "#FF3B69",
       wickUpColor: "#00F5A0",
       wickDownColor: "#FF3B69",
+      priceFormat: {
+        type: "price",
+        precision: 6,
+        minMove: 0.000001,
+      },
     });
-    series.setData(mockData);
 
-    // Fit content
-    chart.timeScale().fitContent();
+    seriesRef.current = series;
 
     // Handle resize
     const handleResize = () => {
       if (chartContainerRef.current) {
-        chart.applyOptions({
-          width: chartContainerRef.current.clientWidth,
-          height: chartContainerRef.current.clientHeight,
-        });
+        const width = chartContainerRef.current.clientWidth;
+        const height = chartContainerRef.current.clientHeight;
+        if (width > 0 && height > 0) {
+          chart.applyOptions({ width, height });
+        }
       }
     };
 
     window.addEventListener("resize", handleResize);
-    handleResize();
+    // Initial size - use requestAnimationFrame to ensure DOM has painted
+    requestAnimationFrame(handleResize);
 
-    // Simulate real-time updates
-    const interval = setInterval(() => {
-      const lastData = mockData[mockData.length - 1];
-      const priceVariation = (Math.random() - 0.48) * 0.5;
-      const newClose = lastData.close + priceVariation;
+    // Subscribe to visible range changes for infinite scroll
+    const handleVisibleRangeChange = (logicalRange: { from: number; to: number } | null) => {
+      if (!logicalRange) return;
 
-      const updatedCandle: CandlestickData<Time> = {
-        ...lastData,
-        close: newClose,
-        high: Math.max(lastData.high, newClose),
-        low: Math.min(lastData.low, newClose),
-      };
+      // When user scrolls to the left edge (first ~10 bars visible), fetch more history
+      if (logicalRange.from < 10 && !isFetchingHistoryRef.current && hasMoreHistoryRef.current) {
+        isFetchingHistoryRef.current = true;
 
-      series.update(updatedCandle);
+        // Get the oldest candle time from current data
+        const currentCandles = seriesRef.current?.data() as CandlestickData<Time>[] | undefined;
+        if (currentCandles && currentCandles.length > 0) {
+          const oldestTime = currentCandles[0].time as number;
 
-      mockData[mockData.length - 1] = updatedCandle;
-      setCurrentPrice(newClose);
+          fetchOlderCandles(oldestTime).then((newCandles) => {
+            if (newCandles.length === 0) {
+              // No more history available
+              hasMoreHistoryRef.current = false;
+            }
+            isFetchingHistoryRef.current = false;
+          }).catch(() => {
+            isFetchingHistoryRef.current = false;
+          });
+        } else {
+          isFetchingHistoryRef.current = false;
+        }
+      }
+    };
 
-      const firstOpen = firstCandleOpenRef.current;
-      const totalChange = newClose - firstOpen;
-      const totalChangePercent = (totalChange / firstOpen) * 100;
-      setPriceChange(totalChange);
-      setPriceChangePercent(totalChangePercent);
-    }, 1000);
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
 
     return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
       window.removeEventListener("resize", handleResize);
-      clearInterval(interval);
       chart.remove();
+      chartRef.current = null;
+      seriesRef.current = null;
+      lastCandleCountRef.current = 0;
+      initialDataLoadedRef.current = false;
     };
-  }, [chartType]);
+  }, [chartType, fetchOlderCandles]);
 
-  const isPositive = priceChange >= 0;
+  // Update chart data when candles change
+  useEffect(() => {
+    if (chartType !== "candlestick" || !seriesRef.current || !chartRef.current || candles.length === 0) return;
+
+    const lightweightCandles = convertToLightweightCandles(candles);
+
+    if (!initialDataLoadedRef.current || lastCandleCountRef.current === 0) {
+      // Initial load
+      seriesRef.current.setData(lightweightCandles);
+      chartRef.current.timeScale().fitContent();
+      initialDataLoadedRef.current = true;
+    } else if (candles.length > lastCandleCountRef.current) {
+      // Check if new candles were added at the beginning (historical data) or end (real-time)
+      const currentData = seriesRef.current.data() as CandlestickData<Time>[];
+      const currentOldestTime = currentData.length > 0 ? currentData[0].time : null;
+      const newOldestTime = lightweightCandles[0].time;
+
+      if (currentOldestTime && newOldestTime < currentOldestTime) {
+        // Historical data prepended - save scroll position, update data, restore position
+        const visibleRange = chartRef.current.timeScale().getVisibleLogicalRange();
+        seriesRef.current.setData(lightweightCandles);
+
+        // Restore the visible range (adjusted for new data)
+        if (visibleRange) {
+          const addedCount = candles.length - lastCandleCountRef.current;
+          chartRef.current.timeScale().setVisibleLogicalRange({
+            from: visibleRange.from + addedCount,
+            to: visibleRange.to + addedCount,
+          });
+        }
+      } else {
+        // New candles at the end (real-time updates)
+        const newCandles = lightweightCandles.slice(lastCandleCountRef.current);
+        newCandles.forEach(candle => {
+          seriesRef.current?.update(candle);
+        });
+      }
+    } else if (candles.length === lastCandleCountRef.current && candles.length > 0) {
+      // Same count - just update the last candle
+      const lastCandle = lightweightCandles[lightweightCandles.length - 1];
+      seriesRef.current.update(lastCandle);
+    }
+
+    lastCandleCountRef.current = candles.length;
+  }, [chartType, candles, convertToLightweightCandles]);
+
+  // Update last candle with live price in real-time
+  // This is necessary because Bulk.trade only sends candle snapshots, not real-time candle updates
+  useEffect(() => {
+    if (chartType !== "candlestick" || !seriesRef.current || candles.length === 0 || livePrice <= 0) return;
+
+    const lastCandle = candles[candles.length - 1];
+    if (!lastCandle) return;
+
+    // Update the last candle with the live price
+    const updatedCandle: CandlestickData<Time> = {
+      time: lastCandle.time as Time,
+      open: lastCandle.open,
+      high: Math.max(lastCandle.high, livePrice),
+      low: Math.min(lastCandle.low, livePrice),
+      close: livePrice,
+    };
+
+    seriesRef.current.update(updatedCandle);
+  }, [chartType, candles, livePrice]);
 
   return (
     <div className="flex flex-col h-full">
@@ -228,14 +360,22 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             onClick={() => setIsTokenSelectorOpen(true)}
             className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 hover:bg-[var(--bg-elevated)] transition-all group"
           >
-            <div
-              className="w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center"
-              style={{ background: selectedToken ? tokenIcon : "linear-gradient(135deg, #9945FF, #14F195)" }}
-            >
-              <span className="text-[8px] md:text-[10px] font-bold text-white">
-                {selectedToken?.symbol[0] || "S"}
-              </span>
-            </div>
+            {tokenImage ? (
+              <img
+                src={tokenImage}
+                alt={selectedToken.symbol}
+                className="w-5 h-5 md:w-6 md:h-6 rounded-full object-cover"
+              />
+            ) : (
+              <div
+                className="w-5 h-5 md:w-6 md:h-6 rounded-full flex items-center justify-center"
+                style={{ background: tokenIcon }}
+              >
+                <span className="text-[8px] md:text-[10px] font-bold text-white">
+                  {selectedToken.symbol[0]}
+                </span>
+              </div>
+            )}
             <span className="text-xs md:text-sm font-semibold text-[var(--text-primary)]">{displaySymbol}</span>
             <div className="flex items-center gap-1">
               <kbd className="hidden md:flex items-center gap-0.5 px-1 py-0.5 rounded bg-[var(--bg-tertiary)] text-[8px] font-medium text-[var(--text-tertiary)] group-hover:text-[var(--text-secondary)] transition-colors">
@@ -247,23 +387,29 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
           {/* Price Display - Smaller on mobile */}
           <div className="flex items-center gap-1 md:gap-3">
-            <span className="text-lg md:text-2xl font-bold text-[var(--text-primary)] font-mono flex items-center gap-0.5 md:gap-1">
-              <span className={isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}>
-                {isPositive ? "↗" : "↘"}
-              </span>
-              ${currentPrice.toFixed(2)}
-            </span>
-            {/* Change % - Inline on mobile */}
-            <span className={`text-xs md:text-sm font-medium md:hidden ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
-              {isPositive ? "+" : ""}{priceChangePercent.toFixed(1)}%
-            </span>
+            {priceLoading && currentPrice === 0 ? (
+              <Loader2 className="w-5 h-5 animate-spin text-[var(--text-tertiary)]" />
+            ) : (
+              <>
+                <span className="text-lg md:text-2xl font-bold text-[var(--text-primary)] font-mono flex items-center gap-0.5 md:gap-1">
+                  <span className={isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}>
+                    {isPositive ? "↗" : "↘"}
+                  </span>
+                  ${currentPrice.toPrecision(6)}
+                </span>
+                {/* Change % - Inline on mobile */}
+                <span className={`text-xs md:text-sm font-medium md:hidden ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
+                  {isPositive ? "+" : ""}{priceChangePercent24h.toFixed(1)}%
+                </span>
+              </>
+            )}
           </div>
 
           {/* Change Info - Desktop only */}
           <div className="hidden md:flex items-center gap-2">
             <span className="text-xs text-[var(--text-tertiary)]">Change %</span>
             <span className={`text-sm font-medium ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
-              {isPositive ? "+" : ""}{priceChangePercent.toFixed(2)}%
+              {isPositive ? "+" : ""}{priceChangePercent24h.toFixed(2)}%
             </span>
           </div>
         </div>
@@ -329,43 +475,63 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
         </div>
       </div>
 
-      {/* Timeframe Selector - Scrollable on mobile */}
-      <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1.5 md:py-2 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
-        {["1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
-          <button
-            key={tf}
-            onClick={() => setTimeframe(tf)}
-            className={`
-              px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all duration-150 flex-shrink-0
-              ${timeframe === tf
-                ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
-                : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-              }
-            `}
-          >
-            {tf}
-          </button>
-        ))}
-      </div>
+      {/* Timeframe Selector - Only show for candlestick chart */}
+      {chartType === "candlestick" && (
+        <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1.5 md:py-2 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
+          {["1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
+            <button
+              key={tf}
+              onClick={() => setTimeframe(tf)}
+              className={`
+                px-2 md:px-3 py-1 md:py-1.5 rounded-md text-[10px] md:text-xs font-medium transition-all duration-150 flex-shrink-0
+                ${timeframe === tf
+                  ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
+                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
+                }
+              `}
+            >
+              {tf}
+            </button>
+          ))}
+        </div>
+      )}
 
       {/* Chart Container */}
       {chartType === "live" ? (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 relative">
+          {/* Live chart uses real WebSocket price data */}
           <LiveLineChart
-            initialPrice={currentPrice}
-            onPriceUpdate={(price) => {
-              setCurrentPrice(price);
-              // Calculate change from initial price reference
-              const basePrice = firstCandleOpenRef.current;
-              const change = price - basePrice;
-              const changePercent = (change / basePrice) * 100;
-              setPriceChange(change);
-              setPriceChangePercent(changePercent);
-            }}
+            livePrice={livePrice}
+            symbol={bulkSymbol}
+            tokenImage={tokenImage}
+            tokenColor={tokenIcon}
+            tokenSymbol={selectedToken.symbol}
           />
         </div>
       ) : (
-        <div ref={chartContainerRef} className="flex-1 min-h-0" />
+        <div className="flex-1 min-h-0 relative">
+          {candlesLoading && candles.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center bg-[var(--bg-primary)]/50 z-10">
+              <Loader2 className="w-8 h-8 animate-spin text-[var(--accent-primary)]" />
+            </div>
+          )}
+          {candlesError && candles.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center z-10">
+              <div className="text-center">
+                <p className="text-[var(--text-tertiary)] text-sm mb-2">Failed to load chart data</p>
+                <p className="text-[var(--text-quaternary)] text-xs">{candlesError}</p>
+              </div>
+            </div>
+          )}
+          {/* Loading indicator for historical data (infinite scroll) */}
+          {isLoadingHistory && (
+            <div className="absolute top-2 left-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)] z-10">
+              <Loader2 className="w-4 h-4 animate-spin text-[var(--accent-primary)]" />
+              <span className="text-xs text-[var(--text-secondary)]">Loading history...</span>
+            </div>
+          )}
+          <div ref={chartContainerRef} className="w-full h-full" />
+        </div>
       )}
 
       {/* Token Selector Modal */}
@@ -373,7 +539,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
         isOpen={isTokenSelectorOpen}
         onClose={() => setIsTokenSelectorOpen(false)}
         onSelectToken={handleTokenSelect}
-        selectedToken={selectedToken || undefined}
+        selectedToken={selectedToken}
         quoteToken="USDC"
       />
     </div>

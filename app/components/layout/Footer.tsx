@@ -2,20 +2,42 @@
 
 import { ExternalLink } from "lucide-react";
 import { NETWORK_FULL_NAME, IS_PRODUCTION } from "@/app/config/network";
+import { useConnectionStatus } from "@/app/hooks/useConnectionStatus";
 
 export function Footer() {
+  const { label, color, isConnected, isReconnecting } = useConnectionStatus();
+
   return (
     <footer className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--bg-card)]/95 backdrop-blur-sm border-t border-[var(--border-subtle)] hidden md:block">
       <div className="flex items-center justify-between h-10 px-6 max-w-[1800px] mx-auto">
         {/* Left side - Status & Network */}
         <div className="flex items-center gap-6">
-          {/* System Status */}
+          {/* API Connection Status */}
           <div className="flex items-center gap-2">
             <div className="relative">
-              <div className="w-2 h-2 rounded-full bg-[var(--color-long)]" />
-              <div className="absolute inset-0 w-2 h-2 rounded-full bg-[var(--color-long)] animate-ping opacity-75" />
+              <div
+                className="w-2 h-2 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              {isConnected && (
+                <div
+                  className="absolute inset-0 w-2 h-2 rounded-full animate-ping opacity-75"
+                  style={{ backgroundColor: color }}
+                />
+              )}
+              {isReconnecting && (
+                <div
+                  className="absolute inset-0 w-2 h-2 rounded-full animate-pulse opacity-75"
+                  style={{ backgroundColor: color }}
+                />
+              )}
             </div>
-            <span className="text-xs font-medium text-[var(--text-secondary)]">All Systems Operational</span>
+            <span className="text-xs font-medium text-[var(--text-secondary)]">
+              {label}
+            </span>
+            <span className="text-[10px] text-[var(--text-tertiary)]">
+              Bulk.trade
+            </span>
           </div>
 
           {/* Separator */}
@@ -37,10 +59,15 @@ export function Footer() {
           {/* Separator */}
           <div className="w-px h-4 bg-[var(--border-subtle)]" />
 
-          {/* Block time / latency indicator */}
+          {/* Connection mode indicator */}
           <div className="flex items-center gap-1.5">
-            <span className="text-xs text-[var(--text-tertiary)]">Latency:</span>
-            <span className="text-xs font-mono text-[var(--color-long)]">~45ms</span>
+            <span className="text-xs text-[var(--text-tertiary)]">Mode:</span>
+            <span
+              className="text-xs font-mono"
+              style={{ color: isConnected ? "var(--color-long)" : "#F59E0B" }}
+            >
+              {isConnected ? "WebSocket" : "REST Polling"}
+            </span>
           </div>
         </div>
 
