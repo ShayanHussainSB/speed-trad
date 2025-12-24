@@ -20,7 +20,7 @@ import { WalletModal } from "./components/wallet/WalletModal";
 import { useWalletBalance } from "./hooks/useWalletBalance";
 import { useUserProfile } from "./hooks/useUserProfile";
 import { usePositions } from "./hooks/usePositions";
-import { useBinanceTicker } from "./hooks/useBinanceTicker";
+import { useMarketTicker } from "./hooks/useMarketTicker";
 import { MobileAccountView } from "./components/mobile/MobileAccountView";
 
 type TradingMode = "perpetuals" | "spot";
@@ -38,8 +38,8 @@ export default function TradingPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("SOL");
 
-  // Live market data from Binance (volume & open interest)
-  const { volume24h, openInterestValue } = useBinanceTicker(`${selectedSymbol}-USD`);
+  // Live market data from CoinGecko (volume & market cap)
+  const { volume24h, marketCap } = useMarketTicker(`${selectedSymbol}-USD`);
 
   // Format large numbers (e.g., 2400000000 -> "$2.4B")
   const formatLargeNumber = (num: number): string => {
@@ -151,8 +151,8 @@ export default function TradingPage() {
                     </div>
                     <div className="w-px h-4 bg-[var(--border-subtle)]" />
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--text-tertiary)]">Open Interest</span>
-                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(openInterestValue)}</span>
+                      <span className="text-xs text-[var(--text-tertiary)]">Market Cap</span>
+                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(marketCap)}</span>
                     </div>
                   </div>
                 </div>

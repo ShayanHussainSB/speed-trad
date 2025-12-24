@@ -259,7 +259,7 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
   }, [bulkCandleToChartCandle]);
 
   // Fetch older candles for infinite scroll (before a given timestamp)
-  // Uses Binance Futures API for historical data since Bulk.trade doesn't support pagination
+  // Uses Kraken API for historical data since Bulk.trade doesn't support pagination
   const fetchOlderCandles = useCallback(async (
     symbol: string,
     interval: CandleInterval,
@@ -272,7 +272,7 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
       const beforeTimeMs = beforeTime * 1000;
       const limit = 200;
 
-      // Fetch candles BEFORE the oldest candle we have using Binance API
+      // Fetch candles BEFORE the oldest candle we have using Kraken API
       const bulkCandles = await bulkTradeAPI.getHistoricalKlines(symbol, interval, {
         endTime: beforeTimeMs - 1, // Exclude the oldest candle we already have
         limit,

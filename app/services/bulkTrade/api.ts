@@ -35,7 +35,7 @@ class BulkTradeAPI {
     return this.fetchProxy<BulkCandle[]>(`/api/bulk/klines?${params.toString()}`);
   }
 
-  // Fetch historical candles from Binance Futures API (for infinite scroll)
+  // Fetch historical candles from Kraken API (for infinite scroll)
   async getHistoricalKlines(
     symbol: string,
     interval: CandleInterval,
@@ -51,7 +51,7 @@ class BulkTradeAPI {
     params.append("endTime", options.endTime.toString());
     if (options.limit) params.append("limit", options.limit.toString());
 
-    return this.fetchProxy<BulkCandle[]>(`/api/binance/klines?${params.toString()}`);
+    return this.fetchProxy<BulkCandle[]>(`/api/kraken/klines?${params.toString()}`);
   }
 }
 

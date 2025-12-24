@@ -2,23 +2,21 @@
 
 import { useEffect, useState, useCallback } from "react";
 
-interface BinanceTickerData {
+interface MarketTickerData {
   volume24h: number;
-  openInterest: number;
-  openInterestValue: number;
+  marketCap: number;
   lastPrice: number;
   priceChangePercent: number;
   isLoading: boolean;
   error: string | null;
 }
 
-const REFRESH_INTERVAL = 10000; // Refresh every 10 seconds
+const REFRESH_INTERVAL = 30000; // Refresh every 30 seconds (CoinGecko rate limits)
 
-export function useBinanceTicker(symbol: string): BinanceTickerData {
-  const [data, setData] = useState<BinanceTickerData>({
+export function useMarketTicker(symbol: string): MarketTickerData {
+  const [data, setData] = useState<MarketTickerData>({
     volume24h: 0,
-    openInterest: 0,
-    openInterestValue: 0,
+    marketCap: 0,
     lastPrice: 0,
     priceChangePercent: 0,
     isLoading: true,
@@ -29,7 +27,7 @@ export function useBinanceTicker(symbol: string): BinanceTickerData {
     if (!symbol) return;
 
     try {
-      const response = await fetch(`/api/binance/ticker?symbol=${symbol}`);
+      const response = await fetch(`/api/coingecko/ticker?symbol=${symbol}`);
 
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
@@ -39,8 +37,7 @@ export function useBinanceTicker(symbol: string): BinanceTickerData {
 
       setData({
         volume24h: tickerData.volume24h || 0,
-        openInterest: tickerData.openInterest || 0,
-        openInterestValue: tickerData.openInterestValue || 0,
+        marketCap: tickerData.marketCap || 0,
         lastPrice: tickerData.lastPrice || 0,
         priceChangePercent: tickerData.priceChangePercent || 0,
         isLoading: false,
@@ -68,4 +65,4 @@ export function useBinanceTicker(symbol: string): BinanceTickerData {
   return data;
 }
 
-export default useBinanceTicker;
+export default useMarketTicker;
