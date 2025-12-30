@@ -31,8 +31,8 @@ export function LeftPanel({
         />
       </div>
 
-      {/* Bottom Half - Quests & Referrals */}
-      <div className="flex-1 min-h-0">
+      {/* Bottom Half - Quests */}
+      <div className="flex-1 min-h-0 overflow-hidden">
         <QuestsPanel />
       </div>
     </div>

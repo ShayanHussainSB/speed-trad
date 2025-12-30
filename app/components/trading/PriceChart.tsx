@@ -5,10 +5,42 @@ import { createChart, CandlestickSeries, CandlestickData, Time, ColorType } from
 import { CandlestickChart, ChevronDown, Activity, Command, RefreshCw, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
 import { LiveLineChart } from "./LiveLineChart";
 import { TokenSelectorModal, Token } from "./TokenSelectorModal";
+import { SpeedGauge } from "./SpeedGauge";
 import { Position } from "@/app/hooks/usePositions";
 import { useMarketData } from "@/app/hooks/useMarketData";
 import { useLivePrice } from "@/app/hooks/useLivePrice";
 import type { ChartCandle } from "@/app/services/bulkTrade";
+
+// Mock PnL simulation for speedometer demo
+function useMockPnL() {
+  const [pnl, setPnl] = useState({ percent: 0, dollars: 0 });
+  const [direction, setDirection] = useState<"long" | "short">("long");
+
+  useEffect(() => {
+    let time = 0;
+    const baseAmount = 500; // $500 position
+
+    const interval = setInterval(() => {
+      time += 0.05;
+      
+      // Create realistic price movement simulation
+      const wave1 = Math.sin(time * 0.8) * 60;
+      const wave2 = Math.sin(time * 2.1) * 25;
+      const wave3 = Math.sin(time * 0.3) * 80;
+      const noise = (Math.random() - 0.5) * 15;
+      const trend = Math.sin(time * 0.1) * 100;
+      
+      const percent = wave1 + wave2 + wave3 + noise + trend;
+      const dollars = (percent / 100) * baseAmount;
+
+      setPnl({ percent, dollars });
+    }, 100);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  return { ...pnl, direction };
+}
 
 type ChartType = "candlestick" | "live";
 
@@ -78,6 +110,9 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
   const [chartType, setChartType] = useState<ChartType>("live");
   const [timeframe, setTimeframe] = useState("5m");
+  
+  // Mock PnL for speedometer demo
+  const mockPnL = useMockPnL();
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
 
   // Initialize token from symbol prop
@@ -507,6 +542,17 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             tokenColor={tokenIcon}
             tokenSymbol={selectedToken.symbol}
           />
+          
+          {/* SpeedGauge Overlay - Bottom Left */}
+          <div className="absolute bottom-4 left-4 z-20 hidden md:block">
+            <SpeedGauge
+              pnlPercent={mockPnL.percent}
+              pnlDollars={mockPnL.dollars}
+              isPositionOpen={true}
+              direction={mockPnL.direction}
+              size="large"
+            />
+          </div>
         </div>
       ) : (
         <div className="flex-1 min-h-0 relative">
@@ -531,6 +577,17 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             </div>
           )}
           <div ref={chartContainerRef} className="w-full h-full" />
+          
+          {/* SpeedGauge Overlay - Bottom Left */}
+          <div className="absolute bottom-4 left-4 z-20 hidden md:block">
+            <SpeedGauge
+              pnlPercent={mockPnL.percent}
+              pnlDollars={mockPnL.dollars}
+              isPositionOpen={true}
+              direction={mockPnL.direction}
+              size="large"
+            />
+          </div>
         </div>
       )}
 
