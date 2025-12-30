@@ -42,31 +42,30 @@ export function Header() {
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 glass">
-        <div className="flex items-center justify-between h-16 px-4 md:px-6 max-w-[1800px] mx-auto">
-          {/* Logo & Tagline */}
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div className="relative group">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[var(--accent-primary)] flex items-center justify-center transition-transform group-hover:scale-105">
-                <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-white" fill="white" />
+        {/* Racing line accent at top */}
+        <div className="absolute top-0 left-0 right-0 h-[2px] racing-line opacity-60" />
+        
+        <div className="flex items-center justify-between h-14 px-6 md:px-8 max-w-[1920px] mx-auto">
+          {/* Logo - Miami Synthwave Style */}
+          <div className="flex items-center gap-4">
+            <div className="relative group cursor-pointer">
+              {/* Neon glow icon */}
+              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--warm-yellow)] to-[var(--sunset-orange)] flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 shadow-lg shadow-orange-500/30">
+                <Zap className="w-5 h-5 text-[#1a0a2e]" fill="currentColor" strokeWidth={2.5} />
               </div>
-              <div className="absolute inset-0 rounded-xl bg-[var(--accent-primary)] blur-lg opacity-30 -z-10 group-hover:opacity-50 transition-opacity" />
+              <div className="absolute inset-0 rounded-lg bg-[var(--sunset-orange)] blur-xl opacity-0 group-hover:opacity-40 transition-opacity -z-10" />
             </div>
-            {/* Mobile logo text */}
-            <div className="sm:hidden">
-              <div className="flex items-center gap-0.5">
-                <span className="text-sm font-bold tracking-tight text-white">Speed</span>
-                <span className="text-sm font-bold tracking-tight text-[var(--accent-primary)]">Trad</span>
+
+            <div className="flex flex-col -space-y-0.5">
+              <div className="flex items-center">
+                <span className="text-2xl font-bold tracking-tight text-[var(--warm-yellow)] uppercase neon-glow-yellow" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 190, 11, 0.5)' }}>up</span>
+                <span className="text-2xl font-bold tracking-tight text-[var(--hot-pink)] uppercase neon-glow-pink" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 0, 110, 0.5)' }}>dn</span>
+                <span className="text-2xl font-bold tracking-tight text-white uppercase" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)' }}>.trade</span>
               </div>
-            </div>
-            {/* Desktop logo text */}
-            <div className="hidden sm:block">
-              <div className="flex items-center gap-1.5">
-                <span className="text-lg font-bold tracking-tight text-white">Speed</span>
-                <span className="text-lg font-bold tracking-tight text-[var(--accent-primary)]">Trad</span>
+              <div className="flex items-center gap-1.5 px-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan-glow)] live-pulse shadow-sm shadow-cyan-400/50" />
+                <span className="text-[9px] font-bold text-[var(--cyan-glow)]/80 uppercase tracking-[0.25em]" style={{ fontFamily: 'var(--font-rajdhani)' }}>Mainnet Live</span>
               </div>
-              <p className="text-[10px] text-[var(--text-tertiary)] tracking-wide uppercase">
-                Built for speed, tuned for 1000x
-              </p>
             </div>
           </div>
 

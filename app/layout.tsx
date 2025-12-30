@@ -1,23 +1,37 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Rajdhani, Space_Mono, Inter } from "next/font/google";
 import { WalletProvider } from "@/app/providers/WalletProvider";
 import { MarketDataProvider } from "@/app/contexts/MarketDataContext";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Rajdhani - Primary display font (geometric, racing aesthetic)
+const rajdhani = Rajdhani({
+  variable: "--font-rajdhani",
   subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+// Inter - Body text for readability
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  display: "swap",
+});
+
+// Space Mono - Code and technical displays
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Speed Trad | Gamified Solana Trading",
-  description: "The fastest way to trade SOL. Perpetuals & Spot trading with a gamified experience.",
-  keywords: ["solana", "trading", "perpetuals", "spot", "crypto", "defi"],
+  title: "updn.trade | Race the Market",
+  description: "Trade Like You're Racing. The chart moves. You react. Up to 1000x leverage.",
+  keywords: ["solana", "trading", "perpetuals", "spot", "crypto", "defi", "speed trading"],
 };
 
 export const viewport: Viewport = {
@@ -25,7 +39,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#050505",
+  themeColor: "#3A0CA3",
 };
 
 export default function RootLayout({
@@ -36,7 +50,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${rajdhani.variable} ${inter.variable} ${spaceMono.variable} antialiased`}
       >
         <WalletProvider>
           <MarketDataProvider>

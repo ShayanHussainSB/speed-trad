@@ -1,54 +1,72 @@
 @import "tailwindcss";
 
 /* ============================================
-   SPEED TRAD - NEON PINK + PITCH BLACK THEME
-   Gamified Solana Trading Platform
-   Euphoria-inspired aesthetics
+   UPDN.TRADE - MIAMI SYNTHWAVE / OUTRUN THEME
+   "Race the Market" - Retro 80s Trading Platform
    ============================================ */
 
 :root {
-  /* Core Colors - Pitch Black Foundation */
-  --bg-primary: #050505;
-  --bg-secondary: #0a0a0a;
-  --bg-tertiary: #0f0f0f;
-  --bg-card: #111111;
-  --bg-elevated: #161616;
+  /* OutRun/Synthwave Color Palette - True Miami Vice */
+  --sunset-orange: #FF6B35;
+  --hot-pink: #FF006E;
+  --electric-purple: #8338EC;
+  --warm-yellow: #FFBE0B;
+  --deep-purple: #3A0CA3;
+  --peach: #FB5607;
+  --cyan-glow: #00F5FF;
+  --miami-teal: #00CED1;
+  --white: #FFFFFF;
+  --off-white: #FFF8F0;
 
-  /* Neon Pink Accent System */
-  --accent-primary: #FF2D92;
-  --accent-secondary: #FF5CAB;
-  --accent-tertiary: #FF85C2;
-  --accent-muted: rgba(255, 45, 146, 0.15);
-  --accent-glow: rgba(255, 45, 146, 0.5);
-  --accent-intense: rgba(255, 45, 146, 0.8);
+  /* Core Colors - Dark Foundation with OutRun Glassmorphism */
+  --bg-primary: #0a0014;
+  --bg-secondary: rgba(10, 0, 20, 0.85);
+  --bg-tertiary: rgba(15, 5, 30, 0.7);
+  --bg-card: rgba(10, 0, 20, 0.92);
+  --bg-elevated: rgba(5, 0, 15, 0.95);
 
-  /* Semantic Colors */
-  --color-long: #00F5A0;
-  --color-long-dim: #00C77F;
-  --color-long-glow: rgba(0, 245, 160, 0.4);
-  --color-long-muted: rgba(0, 245, 160, 0.1);
+  /* Accent System - OutRun Colors */
+  --accent-primary: var(--sunset-orange);
+  --accent-secondary: var(--hot-pink);
+  --accent-tertiary: var(--electric-purple);
+  --accent-muted: rgba(255, 107, 53, 0.2);
+  --accent-glow: rgba(255, 107, 53, 0.6);
+  --accent-intense: rgba(255, 107, 53, 1);
 
-  --color-short: #FF3B69;
-  --color-short-dim: #E62E57;
-  --color-short-glow: rgba(255, 59, 105, 0.4);
-  --color-short-muted: rgba(255, 59, 105, 0.1);
+  /* Semantic Colors - OutRun Theme */
+  --color-long: var(--warm-yellow);
+  --color-long-dim: #FFD700;
+  --color-long-glow: rgba(255, 190, 11, 0.6);
+  --color-long-muted: rgba(255, 190, 11, 0.25);
 
-  /* Text Hierarchy */
+  --color-short: var(--hot-pink);
+  --color-short-dim: #FF1493;
+  --color-short-glow: rgba(255, 0, 110, 0.6);
+  --color-short-muted: rgba(255, 0, 110, 0.25);
+
+  /* Text Hierarchy - Solid colors for readability on colorful backgrounds */
   --text-primary: #FFFFFF;
-  --text-secondary: #A1A1A1;
-  --text-tertiary: #6B6B6B;
-  --text-muted: #404040;
+  --text-secondary: #E8E4EC;           /* Light lavender-white - clear on dark */
+  --text-tertiary: #B8A8C8;            /* Muted lavender - visible on all backgrounds */
+  --text-muted: #8B7A9E;               /* Dusty purple - inactive but readable */
+  --text-disabled: #5E4F70;            /* Deep muted purple - clearly disabled */
+  
+  /* Inactive/Disabled State Colors - Visible on sunset gradients */
+  --inactive-text: #9A8AAD;            /* Visible muted purple for inactive text */
+  --inactive-border: #4A3D5C;          /* Subtle but visible border */
+  --inactive-bg: rgba(90, 70, 110, 0.3); /* Muted purple background */
 
-  /* Borders & Dividers */
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-default: rgba(255, 255, 255, 0.1);
-  --border-accent: rgba(255, 45, 146, 0.3);
+  /* Borders & Dividers - Neon Miami */
+  --border-subtle: rgba(255, 255, 255, 0.12);
+  --border-default: rgba(255, 255, 255, 0.25);
+  --border-accent: rgba(255, 107, 53, 0.6);
+  --border-neon: rgba(0, 245, 255, 0.4);
 
   /* Spacing & Sizing */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-xl: 16px;
   --radius-2xl: 24px;
   --radius-full: 9999px;
 
@@ -58,19 +76,49 @@
   --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-spring: 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-  /* Shadows & Glows - Optimized for performance */
-  /* Single-layer shadows are GPU-accelerated, avoid stacking too many */
-  --shadow-glow-pink: 0 0 20px rgba(255, 45, 146, 0.25);
-  --shadow-glow-pink-intense: 0 0 30px rgba(255, 45, 146, 0.4);
-  --shadow-glow-long: 0 0 15px rgba(0, 245, 160, 0.25);
-  --shadow-glow-long-intense: 0 0 25px rgba(0, 245, 160, 0.4);
-  --shadow-glow-short: 0 0 15px rgba(255, 59, 105, 0.25);
-  --shadow-glow-short-intense: 0 0 25px rgba(255, 59, 105, 0.4);
-  --shadow-elevated: 0 4px 20px rgba(0, 0, 0, 0.5);
-  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* Shadows & Glows - Neon Miami */
+  --shadow-glow-orange: 0 0 20px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.2);
+  --shadow-glow-orange-intense: 0 0 30px rgba(255, 107, 53, 0.6), 0 0 60px rgba(255, 107, 53, 0.3);
+  --shadow-glow-yellow: 0 0 15px rgba(255, 190, 11, 0.4);
+  --shadow-glow-yellow-intense: 0 0 25px rgba(255, 190, 11, 0.6);
+  --shadow-glow-pink: 0 0 15px rgba(255, 0, 110, 0.4);
+  --shadow-glow-pink-intense: 0 0 25px rgba(255, 0, 110, 0.6);
+  --shadow-glow-cyan: 0 0 20px rgba(0, 245, 255, 0.3);
+  --shadow-elevated: 0 4px 20px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.5);
 
-  /* Modal glow - subtle and elegant */
-  --shadow-modal: 0 0 0 1px rgba(255, 45, 146, 0.3), 0 0 30px rgba(255, 45, 146, 0.15), 0 25px 50px rgba(0, 0, 0, 0.5);
+  /* Modal glow - OutRun sunset theme */
+  --shadow-modal: 0 0 0 1px rgba(255, 107, 53, 0.4), 0 0 40px rgba(255, 107, 53, 0.25), 0 25px 50px rgba(0, 0, 0, 0.6);
+  
+  /* Font families */
+  --font-display: var(--font-rajdhani), 'Rajdhani', sans-serif;
+  --font-body: var(--font-inter), 'Inter', sans-serif;
+  --font-code: var(--font-space-mono), 'Space Mono', monospace;
+  
+  /* Typography Scale - Readable sizes */
+  --text-2xs: 0.6875rem;   /* 11px - minimum readable */
+  --text-xs: 0.75rem;      /* 12px - small labels */
+  --text-sm: 0.8125rem;    /* 13px - body small */
+  --text-base: 0.9375rem;  /* 15px - body default */
+  --text-lg: 1.0625rem;    /* 17px - emphasis */
+  --text-xl: 1.25rem;      /* 20px - subheadings */
+  --text-2xl: 1.5rem;      /* 24px - headings */
+  --text-3xl: 2rem;        /* 32px - display */
+  
+  /* Letter Spacing - Optimized for readability */
+  --tracking-tighter: -0.025em;  /* Tight for large display text */
+  --tracking-tight: -0.01em;     /* Slightly tight for headings */
+  --tracking-normal: 0em;        /* Default */
+  --tracking-wide: 0.025em;      /* Slightly wide for body */
+  --tracking-wider: 0.05em;      /* Wide for buttons/labels */
+  --tracking-widest: 0.1em;      /* Very wide for tiny caps */
+  
+  /* Line Heights - Readable */
+  --leading-none: 1;
+  --leading-tight: 1.2;
+  --leading-snug: 1.35;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
 }
 
 /* Tailwind v4 Theme Extension */
@@ -88,12 +136,32 @@
   --color-long: var(--color-long);
   --color-short: var(--color-short);
 
+  /* Text colors - solid colors for visibility */
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-tertiary: var(--text-tertiary);
+  --color-text-muted: var(--text-muted);
+  --color-text-disabled: var(--text-disabled);
+  
+  /* Inactive state colors */
+  --color-inactive-text: var(--inactive-text);
+  --color-inactive-border: var(--inactive-border);
+  --color-inactive-bg: var(--inactive-bg);
 
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Font families */
+  --font-display: var(--font-rajdhani);
+  --font-sans: var(--font-inter);
+  --font-mono: var(--font-space-mono);
+  
+  /* Typography scale */
+  --text-2xs: var(--text-2xs);
+  --text-xs: var(--text-xs);
+  --text-sm: var(--text-sm);
+  --text-base: var(--text-base);
+  --text-lg: var(--text-lg);
+  --text-xl: var(--text-xl);
+  --text-2xl: var(--text-2xl);
+  --text-3xl: var(--text-3xl);
 }
 
 /* ============================================
@@ -113,16 +181,187 @@ body {
 }
 
 body {
-  background: var(--bg-primary);
+  background: 
+    /* Scanlines overlay for retro CRT effect */
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0, 0, 0, 0.03) 2px,
+      rgba(0, 0, 0, 0.03) 4px
+    ),
+    /* Neon glow spots */
+    radial-gradient(ellipse 120% 60% at 50% 0%, rgba(131, 56, 236, 0.25) 0%, transparent 50%),
+    radial-gradient(ellipse 80% 50% at 20% 100%, rgba(255, 0, 110, 0.3) 0%, transparent 45%),
+    radial-gradient(ellipse 80% 50% at 80% 100%, rgba(255, 107, 53, 0.25) 0%, transparent 45%),
+    /* Main sunset gradient - Miami skyline */
+    linear-gradient(180deg, 
+      #0a0014 0%,
+      var(--deep-purple) 15%,
+      var(--electric-purple) 35%,
+      var(--hot-pink) 55%,
+      var(--sunset-orange) 75%,
+      var(--warm-yellow) 100%
+    );
+  background-attachment: fixed;
+  min-height: 100vh;
   color: var(--text-primary);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-body), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  position: relative;
+  overflow-x: hidden;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  font-style: normal;
+  animation: backgroundShift 20s ease-in-out infinite;
+}
+
+@keyframes backgroundShift {
+  0%, 100% {
+    filter: hue-rotate(0deg) brightness(1) saturate(1);
+  }
+  33% {
+    filter: hue-rotate(-3deg) brightness(1.02) saturate(1.05);
+  }
+  66% {
+    filter: hue-rotate(3deg) brightness(0.98) saturate(1.1);
+  }
+}
+
+/* Enhanced dark overlay with gradient for better text contrast */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(ellipse at top, transparent 0%, rgba(0, 0, 0, 0.1) 50%),
+    radial-gradient(ellipse at bottom, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.2) 100%);
+  pointer-events: none;
+  z-index: 0;
 }
 
 #__next,
 main {
   height: 100%;
+  position: relative;
+  z-index: 1;
+}
+
+/* ============================================
+   TYPOGRAPHY - Enhanced Readability System
+   ============================================ */
+
+/* Base text rendering for maximum clarity */
+* {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* No text shadows - clean rendering */
+p, span, div, h1, h2, h3, h4, h5, h6, label, button, input, textarea, select, td, th {
+  text-shadow: none;
+}
+
+/* Body text - Inter with readable settings */
+body {
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Headings - Rajdhani with proper tracking */
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-snug);
+}
+
+/* Small text - Minimum 11px with enhanced weight */
+.text-xs, .text-sm, [class*="text-\[9px\]"], [class*="text-\[10px\]"], [class*="text-\[11px\]"], [class*="text-\[12px\]"] {
+  font-weight: 500;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Ensure minimum font size for readability */
+.text-xs {
+  font-size: var(--text-xs) !important; /* 12px minimum */
+  line-height: 1.4;
+}
+
+/* Extra small text (use sparingly) */
+[class*="text-\[9px\]"], [class*="text-\[10px\]"] {
+  font-size: var(--text-2xs) !important; /* 11px minimum */
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Table headers and labels - medium weight for clarity */
+th {
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+}
+
+td {
+  font-weight: 500;
+}
+
+/* Button text - bold and spaced for scanability */
+button {
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+}
+
+/* Input text - clear and readable */
+input, textarea {
+  font-weight: 500;
+  letter-spacing: var(--tracking-normal);
+}
+
+/* Labels - slightly bolder */
+label {
+  font-weight: 600;
+  letter-spacing: var(--tracking-wide);
+}
+
+/* Muted text classes - use solid colors not opacity */
+.text-muted {
+  color: var(--text-muted) !important;
+  font-weight: 500;
+}
+
+.text-inactive {
+  color: var(--inactive-text) !important;
+  font-weight: 500;
+}
+
+.text-disabled {
+  color: var(--text-disabled) !important;
+  font-weight: 500;
+}
+
+/* Code/Monospace text - Space Mono with proper spacing */
+code, .font-mono, [class*="font-mono"] {
+  font-family: var(--font-code);
+  letter-spacing: -0.02em; /* Mono fonts need tighter tracking */
+  font-feature-settings: "tnum" 1; /* Tabular numbers */
+}
+
+/* Uppercase labels - always need wider tracking */
+[class*="uppercase"] {
+  letter-spacing: var(--tracking-widest) !important;
+  font-weight: 600;
 }
 
 /* ============================================
@@ -135,16 +374,18 @@ main {
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-elevated);
+  background: rgba(255, 255, 255, 0.3);
   border-radius: var(--radius-full);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-muted);
+  background: var(--sunset-orange);
+  box-shadow: 0 0 15px rgba(255, 107, 53, 0.8);
 }
 
 /* ============================================
@@ -169,6 +410,260 @@ main {
 /* ============================================
    GRADIENT BACKGROUNDS (Euphoria-inspired)
    ============================================ */
+
+/* OutRun Sunset Background Elements - Retro Miami Racing Vibe */
+.horizon-grid {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 55%;
+  background-image: 
+    /* Main grid lines */
+    linear-gradient(rgba(0, 245, 255, 0.4) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.3) 1px, transparent 1px),
+    /* Secondary grid */
+    linear-gradient(rgba(255, 0, 110, 0.2) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 0, 110, 0.15) 1px, transparent 1px);
+  background-size: 60px 60px, 60px 60px, 120px 120px, 120px 120px;
+  transform: perspective(400px) rotateX(70deg);
+  transform-origin: bottom;
+  z-index: 1;
+  animation: gridMove 2s linear infinite;
+  pointer-events: none;
+  opacity: 0.6;
+  mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0.5) 50%, transparent 100%);
+}
+
+@keyframes gridMove {
+  0% { background-position: 0 0, 0 0, 0 0, 0 0; }
+  100% { background-position: 0 60px, 0 0, 0 120px, 0 0; }
+}
+
+.sun {
+  position: fixed;
+  bottom: 18%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
+  background: 
+    /* Sun bands - classic OutRun style */
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 8px,
+      rgba(0, 0, 0, 0.3) 8px,
+      rgba(0, 0, 0, 0.3) 10px
+    ),
+    radial-gradient(circle, 
+      #FFFFFF 0%,
+      var(--warm-yellow) 20%,
+      var(--sunset-orange) 50%,
+      var(--hot-pink) 80%,
+      var(--electric-purple) 100%
+    );
+  border-radius: 50%;
+  z-index: 0;
+  box-shadow: 
+    0 0 60px rgba(255, 190, 11, 0.8),
+    0 0 120px rgba(255, 190, 11, 0.5),
+    0 0 180px rgba(255, 107, 53, 0.4),
+    0 0 240px rgba(255, 0, 110, 0.3),
+    0 0 300px rgba(131, 56, 236, 0.2);
+  animation: sunPulse 6s ease-in-out infinite;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+/* Sun reflection on water/grid */
+.sun::after {
+  content: '';
+  position: absolute;
+  bottom: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 150px;
+  background: linear-gradient(to bottom, 
+    rgba(255, 190, 11, 0.6),
+    rgba(255, 107, 53, 0.4),
+    transparent
+  );
+  filter: blur(3px);
+}
+
+@keyframes sunPulse {
+  0%, 100% { 
+    transform: translateX(-50%) scale(1);
+    opacity: 0.85;
+    filter: brightness(1);
+  }
+  50% { 
+    transform: translateX(-50%) scale(1.05);
+    opacity: 0.95;
+    filter: brightness(1.1);
+  }
+}
+
+/* Floating Neon Particles - Miami Vibes */
+@keyframes floatParticle {
+  0% {
+    transform: translateY(100vh) translateX(0) rotate(0deg);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-100px) translateX(100px) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.particle {
+  position: fixed;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+  animation: floatParticle 15s linear infinite;
+}
+
+.particle:nth-child(1) { 
+  left: 10%; 
+  background: var(--warm-yellow);
+  box-shadow: 0 0 10px var(--warm-yellow);
+  animation-delay: 0s;
+  animation-duration: 12s;
+}
+.particle:nth-child(2) { 
+  left: 20%; 
+  background: var(--sunset-orange);
+  box-shadow: 0 0 10px var(--sunset-orange);
+  animation-delay: 2s;
+  animation-duration: 14s;
+}
+.particle:nth-child(3) { 
+  left: 30%; 
+  background: var(--hot-pink);
+  box-shadow: 0 0 10px var(--hot-pink);
+  animation-delay: 4s;
+  animation-duration: 16s;
+}
+.particle:nth-child(4) { 
+  left: 40%; 
+  background: var(--electric-purple);
+  box-shadow: 0 0 10px var(--electric-purple);
+  animation-delay: 1s;
+  animation-duration: 13s;
+}
+.particle:nth-child(5) { 
+  left: 50%; 
+  background: var(--warm-yellow);
+  box-shadow: 0 0 10px var(--warm-yellow);
+  animation-delay: 3s;
+  animation-duration: 15s;
+}
+.particle:nth-child(6) { 
+  left: 60%; 
+  background: var(--sunset-orange);
+  box-shadow: 0 0 10px var(--sunset-orange);
+  animation-delay: 5s;
+  animation-duration: 17s;
+}
+.particle:nth-child(7) { 
+  left: 70%; 
+  background: var(--hot-pink);
+  box-shadow: 0 0 10px var(--hot-pink);
+  animation-delay: 2.5s;
+  animation-duration: 14s;
+}
+.particle:nth-child(8) { 
+  left: 80%; 
+  background: var(--electric-purple);
+  box-shadow: 0 0 10px var(--electric-purple);
+  animation-delay: 4.5s;
+  animation-duration: 16s;
+}
+.particle:nth-child(9) { 
+  left: 90%; 
+  background: var(--warm-yellow);
+  box-shadow: 0 0 10px var(--warm-yellow);
+  animation-delay: 1.5s;
+  animation-duration: 13s;
+}
+
+/* Palm Tree Silhouettes - Miami Vibes */
+@keyframes palmSway {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-2px) rotate(-1deg); }
+  75% { transform: translateX(2px) rotate(1deg); }
+}
+
+.palm-tree {
+  position: fixed;
+  bottom: 0;
+  width: 120px;
+  height: 200px;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.15;
+  animation: palmSway 8s ease-in-out infinite;
+}
+
+.palm-tree-left {
+  left: 5%;
+  animation-delay: 0s;
+}
+
+.palm-tree-right {
+  right: 5%;
+  animation-delay: 2s;
+}
+
+.palm-tree::before {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 120px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 100%);
+  border-radius: 4px;
+}
+
+.palm-tree::after {
+  content: '';
+  position: absolute;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 40px solid transparent;
+  border-right: 40px solid transparent;
+  border-bottom: 60px solid rgba(0, 0, 0, 0.5);
+  filter: blur(2px);
+}
+
+/* Neon Sign Glow Effect */
+@keyframes neonFlicker {
+  0%, 100% { opacity: 1; filter: brightness(1); }
+  50% { opacity: 0.95; filter: brightness(1.1); }
+}
+
+.neon-glow-effect {
+  animation: neonFlicker 3s ease-in-out infinite;
+}
+
+/* Speed lines removed for trading interface - too distracting */
 
 /* Radial Gradient from center */
 .bg-gradient-radial-pink {
@@ -205,25 +700,55 @@ main {
 }
 
 /* ============================================
-   GLASS MORPHISM
+   GLASS MORPHISM - Miami Neon Edition
    ============================================ */
 
 .glass {
-  background: rgba(17, 17, 17, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--border-subtle);
+  background: linear-gradient(135deg, rgba(10, 0, 20, 0.9) 0%, rgba(20, 5, 35, 0.85) 100%);
+  backdrop-filter: blur(24px) saturate(1.2);
+  -webkit-backdrop-filter: blur(24px) saturate(1.2);
+  border: 1px solid rgba(255, 107, 53, 0.25);
+  border-top-color: rgba(255, 190, 11, 0.3);
+  box-shadow: 
+    0 4px 24px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 107, 53, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 60px rgba(255, 0, 110, 0.08);
 }
 
 .glass-dark {
-  background: rgba(5, 5, 5, 0.9);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-subtle);
+  background: linear-gradient(180deg, rgba(5, 0, 15, 0.95) 0%, rgba(15, 0, 30, 0.92) 100%);
+  backdrop-filter: blur(32px) saturate(1.3);
+  -webkit-backdrop-filter: blur(32px) saturate(1.3);
+  border: 1px solid rgba(255, 107, 53, 0.2);
+  box-shadow: 
+    0 8px 40px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(131, 56, 236, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+/* Animated glass for special elements */
+.glass-animated {
+  background: linear-gradient(135deg, rgba(10, 0, 20, 0.9) 0%, rgba(20, 5, 35, 0.85) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  animation: neonBorderPulse 4s ease-in-out infinite;
+}
+
+@keyframes neonBorderPulse {
+  0%, 100% {
+    border-color: rgba(255, 107, 53, 0.3);
+    box-shadow: 0 0 30px rgba(255, 107, 53, 0.1);
+  }
+  50% {
+    border-color: rgba(255, 0, 110, 0.4);
+    box-shadow: 0 0 40px rgba(255, 0, 110, 0.15);
+  }
 }
 
 /* ============================================
-   BUTTON STYLES
+   BUTTON STYLES - Miami Racing Edition
    ============================================ */
 
 .btn {
@@ -231,9 +756,11 @@ main {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 12px 24px;
-  font-weight: 600;
+  padding: 14px 28px;
+  font-family: var(--font-display);
+  font-weight: 700;
   font-size: 14px;
+  letter-spacing: 0.05em;
   border-radius: var(--radius-md);
   transition: all var(--transition-fast);
   cursor: pointer;
@@ -241,52 +768,177 @@ main {
   outline: none;
   position: relative;
   overflow: hidden;
+  text-transform: uppercase;
+}
+
+/* Racing stripe animation overlay */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
 }
 
 .btn-primary {
-  background: var(--accent-primary);
-  color: white;
+  background: linear-gradient(135deg, var(--warm-yellow) 0%, var(--sunset-orange) 50%, var(--hot-pink) 100%);
+  background-size: 200% 100%;
+  color: #1a0a2e;
+  font-weight: 800;
+  box-shadow: 
+    0 4px 20px rgba(255, 107, 53, 0.5),
+    0 0 0 1px rgba(255, 190, 11, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  border: none;
+  animation: gradientFlow 3s ease-in-out infinite;
+}
+
+@keyframes gradientFlow {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
 }
 
 .btn-primary:hover {
-  background: var(--accent-secondary);
-  box-shadow: var(--shadow-glow-pink);
-  transform: translateY(-1px);
+  box-shadow: 
+    0 6px 30px rgba(255, 107, 53, 0.7),
+    0 0 0 1px rgba(255, 190, 11, 0.5),
+    0 0 40px rgba(255, 0, 110, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transform: translateY(-3px) scale(1.02);
 }
 
 .btn-primary:active {
+  transform: translateY(0) scale(0.98);
+  filter: brightness(0.95);
+}
+
+.btn-outline {
+  background: rgba(10, 0, 20, 0.8);
+  color: var(--white);
+  border: 2px solid rgba(255, 107, 53, 0.4);
+  backdrop-filter: blur(8px);
+  font-weight: 600;
+}
+
+.btn-outline:hover {
+  border-color: var(--sunset-orange);
+  background: rgba(255, 107, 53, 0.1);
+  transform: translateY(-2px);
+  box-shadow: 
+    0 4px 20px rgba(255, 107, 53, 0.3),
+    0 0 30px rgba(255, 107, 53, 0.2);
+}
+
+.btn-outline:active {
   transform: translateY(0);
+}
+
+/* Neon button variant */
+.btn-neon {
+  background: transparent;
+  color: var(--cyan-glow);
+  border: 2px solid var(--cyan-glow);
+  box-shadow: 
+    0 0 10px rgba(0, 245, 255, 0.3),
+    inset 0 0 10px rgba(0, 245, 255, 0.1);
+}
+
+.btn-neon:hover {
+  background: rgba(0, 245, 255, 0.1);
+  box-shadow: 
+    0 0 20px rgba(0, 245, 255, 0.5),
+    0 0 40px rgba(0, 245, 255, 0.3),
+    inset 0 0 15px rgba(0, 245, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Disabled/Inactive Button States - Visible on gradient backgrounds */
+.btn:disabled,
+.btn[disabled],
+.btn-disabled {
+  background: var(--inactive-bg) !important;
+  color: var(--inactive-text) !important;
+  border-color: var(--inactive-border) !important;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+  opacity: 1 !important; /* Don't use opacity - use solid colors */
+}
+
+.btn:disabled:hover,
+.btn[disabled]:hover,
+.btn-disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Ghost button for inactive tabs/options */
+.btn-ghost {
+  background: transparent;
+  color: var(--inactive-text);
+  border: 1px solid transparent;
+}
+
+.btn-ghost:hover {
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.btn-ghost.active {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--border-subtle);
 }
 
 
 /* ============================================
-   INPUT STYLES
+   INPUT STYLES - Neon Terminal Edition
    ============================================ */
 
 .input {
   width: 100%;
   padding: 14px 16px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
+  background: rgba(10, 0, 20, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 107, 53, 0.2);
   border-radius: var(--radius-md);
   color: var(--text-primary);
-  font-size: 16px;
+  font-family: var(--font-code);
+  font-size: 15px;
   font-weight: 500;
   transition: all var(--transition-fast);
 }
 
 .input:hover {
-  border-color: var(--border-default);
+  border-color: rgba(255, 107, 53, 0.4);
+  background: rgba(15, 0, 30, 0.9);
+  box-shadow: 0 0 20px rgba(255, 107, 53, 0.15);
 }
 
 .input:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px var(--accent-muted);
+  border-color: var(--sunset-orange);
+  box-shadow: 
+    0 0 0 2px rgba(255, 107, 53, 0.3),
+    0 0 30px rgba(255, 107, 53, 0.2);
   outline: none;
+  background: rgba(5, 0, 15, 0.95);
 }
 
 .input::placeholder {
-  color: var(--text-tertiary);
+  color: var(--text-muted);
+  font-family: var(--font-body);
 }
 
 
@@ -299,24 +951,57 @@ input[type="number"]::-webkit-inner-spin-button {
 
 input[type="number"] {
   -moz-appearance: textfield;
+  appearance: none;
 }
 
 /* ============================================
-   CARD STYLES
+   CARD STYLES - Miami Glass Panels
    ============================================ */
 
 .card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
+  background: linear-gradient(145deg, rgba(15, 0, 30, 0.9) 0%, rgba(10, 0, 20, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 107, 53, 0.15);
+  border-top-color: rgba(255, 190, 11, 0.2);
   border-radius: var(--radius-lg);
   padding: 20px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  position: relative;
+}
+
+/* Neon edge highlight */
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 190, 11, 0.4), transparent);
 }
 
 .card-elevated {
-  background: var(--bg-elevated);
-  border: 1px solid var(--border-default);
+  background: linear-gradient(180deg, rgba(20, 5, 40, 0.95) 0%, rgba(10, 0, 20, 0.98) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 107, 53, 0.2);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-card);
+  box-shadow: 
+    0 12px 40px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(255, 0, 110, 0.05);
+}
+
+/* Neon accent card */
+.card-neon {
+  background: rgba(10, 0, 20, 0.9);
+  border: 1px solid rgba(0, 245, 255, 0.3);
+  border-radius: var(--radius-lg);
+  box-shadow: 
+    0 0 20px rgba(0, 245, 255, 0.1),
+    inset 0 0 30px rgba(0, 245, 255, 0.03);
 }
 
 
@@ -340,26 +1025,27 @@ input[type="number"] {
   appearance: none;
   width: 20px;
   height: 20px;
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--warm-yellow), var(--sunset-orange));
   border-radius: 50%;
   cursor: pointer;
   transition: all var(--transition-fast);
-  box-shadow: 0 0 10px var(--accent-glow);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
 }
 
 .slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: var(--shadow-glow-pink);
+  box-shadow: var(--shadow-glow-orange);
 }
 
 .slider::-moz-range-thumb {
   width: 20px;
   height: 20px;
-  background: var(--accent-primary);
+  background: linear-gradient(135deg, var(--warm-yellow), var(--sunset-orange));
   border-radius: 50%;
   cursor: pointer;
   border: none;
   transition: all var(--transition-fast);
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
 }
 
 /* ============================================
@@ -368,11 +1054,14 @@ input[type="number"] {
 
 /* Keyframes */
 @keyframes glow-breathe {
-  0%, 100% {
-    box-shadow: var(--shadow-glow-pink);
+
+  0%,
+  100% {
+    box-shadow: var(--shadow-glow-orange);
   }
+
   50% {
-    box-shadow: var(--shadow-glow-pink-intense);
+    box-shadow: var(--shadow-glow-orange-intense);
   }
 }
 
@@ -381,6 +1070,7 @@ input[type="number"] {
     opacity: 0;
     transform: translateY(10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -392,6 +1082,7 @@ input[type="number"] {
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -402,6 +1093,7 @@ input[type="number"] {
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
@@ -412,6 +1104,7 @@ input[type="number"] {
     opacity: 0;
     transform: scale(0.95);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -442,6 +1135,7 @@ input[type="number"] {
     opacity: 0;
     transform: translateX(-50%) translateY(4px) scale(0.9);
   }
+
   100% {
     opacity: 1;
     transform: translateX(-50%) translateY(0) scale(1);
@@ -462,6 +1156,7 @@ input[type="number"] {
   0% {
     transform: translateX(-100%);
   }
+
   100% {
     transform: translateX(100%);
   }
@@ -469,9 +1164,12 @@ input[type="number"] {
 
 /* Pulse glow - like your portfolio pumping */
 @keyframes pulse-glow {
-  0%, 100% {
+
+  0%,
+  100% {
     opacity: 0.4;
   }
+
   50% {
     opacity: 0.8;
   }
@@ -482,6 +1180,7 @@ input[type="number"] {
   0% {
     background-position: -200% 0;
   }
+
   100% {
     background-position: 200% 0;
   }
@@ -492,6 +1191,7 @@ input[type="number"] {
   0% {
     transform: rotate(0deg);
   }
+
   100% {
     transform: rotate(360deg);
   }
@@ -499,9 +1199,12 @@ input[type="number"] {
 
 /* Float animation for loading badges */
 @keyframes float-load {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: translateY(0);
   }
+
   50% {
     transform: translateY(-3px);
   }
@@ -517,12 +1220,10 @@ input[type="number"] {
 }
 
 .animate-skeleton-wave {
-  background: linear-gradient(
-    90deg,
-    var(--bg-tertiary) 0%,
-    var(--bg-elevated) 50%,
-    var(--bg-tertiary) 100%
-  );
+  background: linear-gradient(90deg,
+      var(--bg-tertiary) 0%,
+      var(--bg-elevated) 50%,
+      var(--bg-tertiary) 100%);
   background-size: 200% 100%;
   animation: skeleton-wave 1.5s ease-in-out infinite;
 }
@@ -548,12 +1249,10 @@ input[type="number"] {
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.03) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.03) 50%,
+      transparent 100%);
   animation: shimmer 2s infinite;
 }
 
@@ -567,11 +1266,34 @@ input[type="number"] {
   align-items: center;
   justify-content: center;
   padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 700;
   border-radius: var(--radius-full);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: var(--tracking-widest);
+}
+
+/* Inactive badge variant */
+.badge-inactive {
+  background: var(--inactive-bg);
+  color: var(--inactive-text);
+  border: 1px solid var(--inactive-border);
+}
+
+/* Active state indicator classes */
+.state-active {
+  color: var(--text-primary);
+  opacity: 1;
+}
+
+.state-inactive {
+  color: var(--inactive-text);
+}
+
+.state-disabled {
+  color: var(--text-disabled);
+  pointer-events: none;
 }
 
 
@@ -580,19 +1302,46 @@ input[type="number"] {
    ============================================ */
 
 @media (max-width: 768px) {
+  /* Mobile typography scale - slightly larger for touch screens */
+  :root {
+    --text-2xs: 0.75rem;    /* 12px - minimum on mobile */
+    --text-xs: 0.8125rem;   /* 13px */
+    --text-sm: 0.875rem;    /* 14px */
+    --text-base: 1rem;      /* 16px - prevents iOS zoom */
+    --text-lg: 1.125rem;    /* 18px */
+  }
+  
   .btn {
     padding: 14px 20px;
-    font-size: 15px;
+    font-size: var(--text-base);
+    font-weight: 700;
   }
 
   .input {
     padding: 16px;
-    font-size: 16px; /* Prevents iOS zoom */
+    font-size: 16px; /* Must be 16px to prevent iOS zoom */
+    font-weight: 600;
   }
 
   .card {
     padding: 16px;
     border-radius: var(--radius-md);
+  }
+
+  /* Ensure minimum readable sizes on mobile */
+  .text-xs {
+    font-size: var(--text-xs) !important;
+    font-weight: 500;
+  }
+
+  [class*="text-\[9px\]"], [class*="text-\[10px\]"] {
+    font-size: var(--text-2xs) !important;
+    font-weight: 600;
+  }
+  
+  /* Labels need extra clarity on mobile */
+  .label, .label-sm {
+    font-weight: 700;
   }
 }
 
@@ -613,6 +1362,7 @@ input[type="number"] {
 
 /* Reduce motion for accessibility */
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -650,4 +1400,357 @@ input[type="number"] {
 
 .safe-area-top {
   padding-top: env(safe-area-inset-top);
+}
+
+/* Panel background utility - Miami Synthwave Panels */
+.panel-bg {
+  background: linear-gradient(180deg, rgba(15, 0, 30, 0.92) 0%, rgba(10, 0, 20, 0.95) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 107, 53, 0.12);
+  box-shadow: 
+    0 4px 30px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.02);
+}
+
+.panel-bg-dark {
+  background: linear-gradient(180deg, rgba(10, 0, 20, 0.96) 0%, rgba(5, 0, 12, 0.98) 100%);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 107, 53, 0.08);
+  box-shadow: 
+    0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+/* ============================================
+   NEON TEXT EFFECTS - Miami Vice Typography
+   ============================================ */
+
+.neon-glow-orange {
+  text-shadow: 
+    0 0 5px rgba(255, 107, 53, 0.9),
+    0 0 10px rgba(255, 107, 53, 0.7),
+    0 0 20px rgba(255, 107, 53, 0.5),
+    0 0 40px rgba(255, 107, 53, 0.3);
+}
+
+.neon-glow-yellow {
+  text-shadow: 
+    0 0 5px rgba(255, 190, 11, 0.9),
+    0 0 10px rgba(255, 190, 11, 0.7),
+    0 0 20px rgba(255, 190, 11, 0.5),
+    0 0 40px rgba(255, 190, 11, 0.3);
+}
+
+.neon-glow-pink {
+  text-shadow: 
+    0 0 5px rgba(255, 0, 110, 0.9),
+    0 0 10px rgba(255, 0, 110, 0.7),
+    0 0 20px rgba(255, 0, 110, 0.5),
+    0 0 40px rgba(255, 0, 110, 0.3);
+}
+
+.neon-glow-cyan {
+  text-shadow: 
+    0 0 5px rgba(0, 245, 255, 0.9),
+    0 0 10px rgba(0, 245, 255, 0.7),
+    0 0 20px rgba(0, 245, 255, 0.5),
+    0 0 40px rgba(0, 245, 255, 0.3);
+}
+
+/* Display font utility - Rajdhani for headers */
+.font-display {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+}
+
+/* Heading hierarchy with optimized readability */
+h1, .heading-1 {
+  font-family: var(--font-display);
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tighter);
+  line-height: var(--leading-tight);
+}
+
+h2, .heading-2 {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--leading-tight);
+}
+
+h3, .heading-3 {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-normal);
+  line-height: var(--leading-snug);
+}
+
+/* Label/caption styles - clear and readable */
+.label {
+  font-family: var(--font-display);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
+.label-sm {
+  font-family: var(--font-display);
+  font-size: var(--text-2xs);
+  font-weight: 600;
+  letter-spacing: var(--tracking-widest);
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Value display - for prices, amounts */
+.value {
+  font-family: var(--font-code);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+}
+
+.value-lg {
+  font-family: var(--font-code);
+  font-size: var(--text-xl);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-feature-settings: "tnum" 1;
+}
+
+.value-sm {
+  font-family: var(--font-code);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  font-feature-settings: "tnum" 1;
+}
+
+/* Chrome text effect for logos/headings */
+.chrome-text {
+  background: linear-gradient(180deg, 
+    #FFFFFF 0%, 
+    #E0E0E0 25%, 
+    #FFFFFF 50%, 
+    #B0B0B0 75%, 
+    #FFFFFF 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+}
+
+/* Gradient text - sunset */
+.gradient-text-sunset {
+  background: linear-gradient(135deg, var(--warm-yellow), var(--sunset-orange), var(--hot-pink));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Racing Stripes Effect - 80s Miami */
+.racing-stripe {
+  position: relative;
+  overflow: hidden;
+}
+
+.racing-stripe::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 190, 11, 0.3),
+    transparent
+  );
+  animation: racingStripe 3s linear infinite;
+}
+
+@keyframes racingStripe {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+/* Neon Border Glow - Retro Miami */
+.neon-border {
+  border: 2px solid var(--sunset-orange);
+  box-shadow: 
+    0 0 10px rgba(255, 107, 53, 0.5),
+    0 0 20px rgba(255, 107, 53, 0.3),
+    inset 0 0 10px rgba(255, 107, 53, 0.2);
+}
+
+.neon-border-yellow {
+  border: 2px solid var(--warm-yellow);
+  box-shadow: 
+    0 0 10px rgba(255, 190, 11, 0.5),
+    0 0 20px rgba(255, 190, 11, 0.3),
+    inset 0 0 10px rgba(255, 190, 11, 0.2);
+}
+
+.neon-border-pink {
+  border: 2px solid var(--hot-pink);
+  box-shadow: 
+    0 0 10px rgba(255, 0, 110, 0.5),
+    0 0 20px rgba(255, 0, 110, 0.3),
+    inset 0 0 10px rgba(255, 0, 110, 0.2);
+}
+
+/* Speed Lines Animation - Fast & Furious */
+@keyframes speedLines {
+  0% {
+    transform: translateX(-100%);
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+.speed-lines-effect {
+  position: relative;
+  overflow: hidden;
+}
+
+.speed-lines-effect::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 200%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 190, 11, 0.6),
+    transparent
+  );
+  animation: speedLines 2s linear infinite;
+}
+
+/* ============================================
+   RACING LINE VISUALIZATION
+   Signature element from design.md
+   ============================================ */
+
+.racing-line {
+  position: relative;
+  height: 4px;
+  background: linear-gradient(90deg, 
+    var(--warm-yellow) 0%, 
+    var(--sunset-orange) 25%, 
+    var(--hot-pink) 50%, 
+    var(--electric-purple) 75%, 
+    var(--warm-yellow) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-full);
+  box-shadow: 
+    0 0 10px rgba(255, 107, 53, 0.5),
+    0 0 20px rgba(255, 107, 53, 0.3);
+  animation: racingLineGradient 3s linear infinite;
+}
+
+@keyframes racingLineGradient {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+/* ============================================
+   MIAMI VICE UTILITIES
+   ============================================ */
+
+/* Vaporwave gradient border */
+.border-gradient-miami {
+  border: 2px solid transparent;
+  background: 
+    linear-gradient(var(--bg-primary), var(--bg-primary)) padding-box,
+    linear-gradient(135deg, var(--warm-yellow), var(--hot-pink), var(--electric-purple)) border-box;
+}
+
+/* Retro scanlines overlay */
+.scanlines::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0px,
+    transparent 1px,
+    rgba(0, 0, 0, 0.05) 1px,
+    rgba(0, 0, 0, 0.05) 2px
+  );
+  pointer-events: none;
+}
+
+/* CRT screen glow effect */
+.crt-glow {
+  box-shadow: 
+    inset 0 0 60px rgba(131, 56, 236, 0.15),
+    inset 0 0 120px rgba(255, 0, 110, 0.08);
+}
+
+/* Pulse animation for live indicators */
+@keyframes livePulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.5;
+    transform: scale(1.2);
+  }
+}
+
+.live-pulse {
+  animation: livePulse 1.5s ease-in-out infinite;
+}
+
+/* Neon underline effect */
+.neon-underline {
+  position: relative;
+}
+
+.neon-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--sunset-orange), var(--hot-pink));
+  box-shadow: 0 0 10px rgba(255, 107, 53, 0.5);
+  border-radius: var(--radius-full);
+}
+
+/* Miami hover effect */
+.miami-hover {
+  transition: all 0.3s ease;
+}
+
+.miami-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(255, 107, 53, 0.3),
+    0 0 40px rgba(255, 0, 110, 0.15);
 }

@@ -546,7 +546,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = MOCK_TRADES }: Tra
 
             {/* Motivational Quote */}
             <div className="px-4 py-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] max-w-sm">
-              <p className="text-xs text-[var(--text-secondary)] italic">
+              <p className="text-xs text-[var(--text-secondary)]">
                 &quot;Every trade is a story. Make yours legendary.&quot;
               </p>
               <p className="text-[10px] text-[var(--text-tertiary)] mt-1">— Hall of Degen Fame</p>

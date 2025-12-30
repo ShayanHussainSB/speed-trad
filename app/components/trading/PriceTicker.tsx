@@ -91,8 +91,11 @@ export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTicke
   };
 
   return (
-    <div className="fixed top-16 left-0 right-0 z-40 bg-[var(--bg-primary)] border-b border-[var(--border-subtle)]">
-      <div className="flex items-center justify-center gap-1 px-4 py-2 overflow-x-auto scrollbar-hide">
+    <div className="fixed top-14 left-0 right-0 z-40 glass-dark">
+      {/* Scanline effect overlay */}
+      <div className="absolute inset-0 pointer-events-none opacity-30 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(0,0,0,0.1)_2px,rgba(0,0,0,0.1)_4px)]" />
+      
+      <div className="flex items-center justify-center gap-8 h-11 px-6 overflow-x-auto scrollbar-hide relative">
         {prices.map((coin) => {
           const isSelected = coin.symbol === selectedSymbol;
           const isPositive = coin.change24h >= 0;
@@ -102,23 +105,55 @@ export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTicke
               key={coin.symbol}
               onClick={() => onSelectCoin?.(coin.symbol)}
               className={`
-                flex items-center gap-2 px-3 py-1.5 rounded-lg whitespace-nowrap transition-all
-                ${isSelected
-                  ? "bg-[var(--bg-elevated)] border border-[var(--border-default)]"
-                  : "hover:bg-[var(--bg-secondary)]"
+                group flex items-center gap-3 py-1.5 px-2 relative transition-all duration-300 rounded-lg
+                ${isSelected 
+                  ? "opacity-100 bg-white/[0.03]" 
+                  : "opacity-50 hover:opacity-90 hover:bg-white/[0.02]"
                 }
               `}
             >
-              {coin.icon}
-              <span className="text-sm font-semibold text-[var(--text-primary)]">
-                {coin.symbol}
-              </span>
-              <span className={`text-sm font-medium ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
-                {isPositive ? "+" : ""}{coin.change24h.toFixed(2)}%
-              </span>
-              <span className="text-sm font-mono text-[var(--text-secondary)]">
-                {formatPrice(coin.price)}
-              </span>
+              <div className={`w-6 h-6 rounded-full overflow-hidden border-2 transition-all duration-300 ${
+                isSelected 
+                  ? "border-[var(--sunset-orange)]/60 shadow-lg shadow-orange-500/20" 
+                  : "border-white/10 group-hover:border-[var(--sunset-orange)]/30"
+              }`}>
+                {coin.icon}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span 
+                  className="text-sm font-bold text-white tracking-wide uppercase"
+                  style={{ fontFamily: 'var(--font-rajdhani)' }}
+                >
+                  {coin.symbol}
+                </span>
+                <span className="text-sm font-bold font-mono text-white tabular-nums">
+                  {formatPrice(coin.price)}
+                </span>
+                <span 
+                  className={`text-[11px] font-bold font-mono px-1.5 py-0.5 rounded-md ${
+                    isPositive 
+                      ? "bg-[var(--color-long)]/15 text-[var(--color-long)]" 
+                      : "bg-[var(--color-short)]/15 text-[var(--color-short)]"
+                  }`}
+                  style={{ 
+                    boxShadow: isPositive 
+                      ? '0 0 10px rgba(255, 190, 11, 0.15)' 
+                      : '0 0 10px rgba(255, 0, 110, 0.15)'
+                  }}
+                >
+                  {isPositive ? "+" : ""}{coin.change24h.toFixed(1)}%
+                </span>
+              </div>
+
+              {isSelected && (
+                <div 
+                  className="absolute -bottom-[1px] left-2 right-2 h-[2px] rounded-full"
+                  style={{
+                    background: 'linear-gradient(90deg, var(--warm-yellow), var(--sunset-orange), var(--hot-pink))',
+                    boxShadow: '0 0 12px rgba(255, 107, 53, 0.6)'
+                  }}
+                />
+              )}
             </button>
           );
         })}

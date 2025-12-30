@@ -23,6 +23,10 @@ export function useWalletBalance(solPrice: number = MOCK_SOL_PRICE): WalletBalan
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Demo Balance: $100 for disconnected users
+  const DEMO_USD = 100;
+  const isDemo = !connected || !publicKey;
+
   const fetchBalance = useCallback(async () => {
     if (!publicKey || !connected) {
       setBalance(0);
@@ -77,8 +81,8 @@ export function useWalletBalance(solPrice: number = MOCK_SOL_PRICE): WalletBalan
   }, [connection, publicKey, connected]);
 
   return {
-    balance,
-    balanceUSD: balance * solPrice,
+    balance: isDemo ? DEMO_USD / solPrice : balance,
+    balanceUSD: isDemo ? DEMO_USD : balance * solPrice,
     isLoading,
     error,
     refetch: fetchBalance,

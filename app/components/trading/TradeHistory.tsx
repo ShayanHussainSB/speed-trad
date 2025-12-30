@@ -273,100 +273,59 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll, isL
   });
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Enhanced Stats Header */}
-      <div className="p-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
-        <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
-          {/* Total PnL */}
-          <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg ${
-            totalPnl >= 0 ? "bg-[var(--color-long)]/10" : "bg-[var(--color-short)]/10"
-          }`}>
-            {totalPnl >= 0 ? (
-              <TrendingUp className="w-4 h-4 text-[var(--color-long)]" />
-            ) : (
-              <TrendingDown className="w-4 h-4 text-[var(--color-short)]" />
-            )}
-            <span className="text-xs font-bold text-[var(--text-tertiary)]">Total</span>
-            <span className={`text-sm font-bold font-mono tabular-nums ${
-              totalPnl >= 0 ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-            }`}>
-              {totalPnl >= 0 ? "+" : ""}${totalPnl.toFixed(2)}
+    <div className="flex flex-col h-full bg-black/40">
+      {/* Control Strip - Sharp & Minimal */}
+      <div className="flex items-center justify-between px-6 py-2 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex flex-wrap items-center gap-6">
+          {/* Total Performance */}
+          <div className="flex items-center gap-3">
+            <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Aggregate</span>
+            <span className={`text-[13px] font-black font-mono tracking-tighter ${totalPnl >= 0 ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
+              {totalPnl >= 0 ? "+" : ""}${totalPnl.toLocaleString()}
             </span>
           </div>
 
-          {/* Filter Tabs + View All */}
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg-tertiary)]">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
-                  filter === "all"
-                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                }`}
-              >
-                All ({trades.length})
-              </button>
-              <button
-                onClick={() => setFilter("wins")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
-                  filter === "wins"
-                    ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--color-long)]"
-                }`}
-              >
-                <TrendingUp className="w-2.5 h-2.5" />
-                Ws ({winningTrades})
-              </button>
-              <button
-                onClick={() => setFilter("losses")}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[10px] font-bold transition-all ${
-                  filter === "losses"
-                    ? "bg-[var(--color-short)]/20 text-[var(--color-short)]"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--color-short)]"
-                }`}
-              >
-                <TrendingDown className="w-2.5 h-2.5" />
-                Ls ({losingTrades})
-              </button>
+          {/* Win Rate Bar - Minimal */}
+          <div className="flex items-center gap-3">
+            <div className="w-24 h-1 rounded-full bg-white/5 overflow-hidden flex">
+              <div className="h-full bg-[var(--color-long)]" style={{ width: `${winRate}%` }} />
+              <div className="h-full bg-[var(--color-short)]" style={{ width: `${100 - winRate}%` }} />
             </div>
-
-            {/* View All Button */}
-            {onViewAll && trades.length > 0 && (
-              <button
-                onClick={onViewAll}
-                className="flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-bold text-[var(--accent-primary)] hover:bg-[var(--accent-muted)] transition-colors"
-              >
-                <Maximize2 className="w-3 h-3" />
-                View All
-              </button>
-            )}
+            <span className="text-[10px] font-black font-mono text-white/40">{winRate.toFixed(0)}% WIN</span>
           </div>
         </div>
 
-        {/* Win Rate Bar */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <div className="h-2 rounded-full bg-[var(--bg-tertiary)] overflow-hidden flex">
-              <div
-                className="h-full bg-gradient-to-r from-[var(--color-long)] to-[var(--color-long)]/70 transition-all"
-                style={{ width: `${winRate}%` }}
-              />
-              <div
-                className="h-full bg-gradient-to-r from-[var(--color-short)]/70 to-[var(--color-short)] transition-all"
-                style={{ width: `${100 - winRate}%` }}
-              />
-            </div>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1">
+            {["all", "wins", "losses"].map((f) => (
+              <button
+                key={f}
+                onClick={() => setFilter(f as TradeFilter)}
+                className={`
+                  px-3 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all
+                  ${filter === f
+                    ? f === 'wins' ? "text-[var(--color-long)] bg-[var(--color-long)]/10" :
+                      f === 'losses' ? "text-[var(--color-short)] bg-[var(--color-short)]/10" :
+                        "text-white bg-white/10"
+                    : "text-white/30 hover:text-white"
+                  }
+                `}
+              >
+                {f}
+              </button>
+            ))}
           </div>
-          <span className="text-xs font-bold font-mono tabular-nums text-[var(--text-primary)] shrink-0">
-            {winRate.toFixed(0)}% WR
-          </span>
+          {onViewAll && trades.length > 0 && (
+            <button onClick={onViewAll} className="text-white/20 hover:text-white transition-colors">
+              <Maximize2 className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Trade Grid (1 col mobile, 2 col desktop) */}
-      <div className="flex-1 overflow-y-auto px-3 py-2">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Trade History Feed */}
+      <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-hide">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {filteredTrades.map((trade) => {
             const isProfit = trade.pnl >= 0;
             const isLong = trade.direction === "long";
@@ -375,83 +334,62 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll, isL
             return (
               <div
                 key={trade.id}
-                className={`p-3 rounded-xl border transition-all hover:border-[var(--accent-primary)]/30 ${
-                  isProfit
-                    ? "bg-[var(--color-long)]/5 border-[var(--color-long)]/20"
-                    : "bg-[var(--color-short)]/5 border-[var(--color-short)]/20"
-                } ${tier.glow || ""}`}
+                className={`group relative p-4 rounded bg-white/[0.02] border transition-all overflow-hidden ${isProfit ? "border-[var(--color-long)]/10 hover:border-[var(--color-long)]/30" : "border-[var(--color-short)]/10 hover:border-[var(--color-short)]/30"
+                  }`}
               >
-                {/* Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-1.5">
-                    <div className={`flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold ${
-                      isLong
-                        ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                        : "bg-[var(--color-short)]/20 text-[var(--color-short)]"
-                    }`}>
-                      {isLong ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                      {trade.leverage}x
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-1 h-6 rounded-full ${isLong ? "bg-[var(--color-long)]" : "bg-[var(--color-short)]"}`} />
+                      <div className="flex flex-col">
+                        <div className="flex items-center gap-2">
+                          <span className="text-[12px] font-black text-white uppercase tracking-wider">{trade.symbol}</span>
+                          <span className={`text-[8px] font-black px-1 rounded-sm border ${isLong ? "text-[var(--color-long)] border-[var(--color-long)]/30" : "text-[var(--color-short)] border-[var(--color-short)]/30"}`}>
+                            {trade.leverage}X {trade.direction.toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                    <span className="text-xs font-bold text-[var(--text-primary)]">{trade.symbol}</span>
+
+                    <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-white/5 bg-white/5">
+                      <span className="text-[8px] font-black tracking-widest uppercase" style={{ color: tier.color }}>{tier.tier}</span>
+                    </div>
                   </div>
 
-                  {/* Degen Tier Badge */}
-                  <span
-                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-black"
-                    style={{ backgroundColor: `${tier.color}20`, color: tier.color }}
-                  >
-                    {tier.icon}
-                    {tier.tier}
-                  </span>
-                </div>
-
-                {/* PnL Display */}
-                <div className="flex items-baseline justify-between mb-2">
-                  <p className={`text-lg font-bold font-mono tabular-nums ${
-                    isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                  }`}>
-                    {isProfit ? "+" : ""}${trade.pnl.toFixed(2)}
-                  </p>
-                  <p className={`text-sm font-bold font-mono tabular-nums ${
-                    isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                  }`}>
-                    {isProfit ? "+" : ""}{trade.pnlPercent.toFixed(1)}%
-                  </p>
-                </div>
-
-                {/* Stats Row */}
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  <div className="p-1.5 rounded-lg bg-[var(--bg-secondary)]/50 text-center">
-                    <p className="text-[8px] text-[var(--text-tertiary)]">ENTRY → EXIT</p>
-                    <p className="text-[10px] font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                      ${trade.entryPrice.toFixed(2)} → ${trade.exitPrice.toFixed(2)}
-                    </p>
+                  <div className="grid grid-cols-2 gap-4 py-3 border-y border-white/5">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Performance</span>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className={`text-[16px] font-black font-mono tracking-tighter ${isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
+                          {isProfit ? "+" : ""}${Math.abs(trade.pnl).toLocaleString()}
+                        </span>
+                        <span className={`text-[10px] font-black font-mono ${isProfit ? "text-[var(--color-long)]/40" : "text-[var(--color-short)]/40"}`}>
+                          {isProfit ? "+" : ""}{trade.pnlPercent.toFixed(1)}%
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end">
+                      <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em]">Execution</span>
+                      <span className="text-[14px] font-black font-mono text-white/40 tracking-tighter mt-1">${trade.entryPrice.toLocaleString()} → ${trade.exitPrice.toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div className="p-1.5 rounded-lg bg-[var(--bg-secondary)]/50 text-center">
-                    <p className="text-[8px] text-[var(--text-tertiary)]">SIZE</p>
-                    <p className="text-[10px] font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                      {trade.size} SOL
-                    </p>
-                  </div>
-                </div>
 
-                {/* Footer */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1 text-[10px] text-[var(--text-tertiary)]">
-                    <Clock className="w-2.5 h-2.5" />
-                    {formatTimeAgo(trade.timestamp)}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[9px] font-black text-white/30 uppercase tracking-widest">{trade.size} SOL SIZE</span>
+                      <span className="text-[9px] font-black text-white/10 uppercase tracking-widest">{formatTimeAgo(trade.timestamp)}</span>
+                    </div>
+                    {trade.txHash && (
+                      <a
+                        href={getTransactionUrl(trade.txHash)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1 text-[9px] font-black text-[var(--accent-primary)]/40 hover:text-[var(--accent-primary)] transition-all uppercase tracking-widest"
+                      >
+                        EXPLORE <ExternalLink className="w-2.5 h-2.5" />
+                      </a>
+                    )}
                   </div>
-                  {trade.txHash && (
-                    <a
-                      href={getTransactionUrl(trade.txHash)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center gap-0.5 text-[10px] text-[var(--accent-primary)] hover:text-[var(--accent-secondary)] transition-colors"
-                    >
-                      <span className="font-mono">{trade.txHash}</span>
-                      <ExternalLink className="w-2.5 h-2.5" />
-                    </a>
-                  )}
                 </div>
               </div>
             );
@@ -461,11 +399,10 @@ export function TradeHistory({ isConnected, trades = MOCK_TRADES, onViewAll, isL
         {filteredTrades.length === 0 && (
           <div className="flex flex-col items-center justify-center py-10 text-center">
             <div className="relative mb-4">
-              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${
-                filter === "wins"
-                  ? "bg-[var(--color-long)]/10 border border-[var(--color-long)]/20"
-                  : "bg-[var(--color-short)]/10 border border-[var(--color-short)]/20"
-              }`}>
+              <div className={`w-14 h-14 rounded-xl flex items-center justify-center ${filter === "wins"
+                ? "bg-[var(--color-long)]/10 border border-[var(--color-long)]/20"
+                : "bg-[var(--color-short)]/10 border border-[var(--color-short)]/20"
+                }`}>
                 {filter === "wins" ? (
                   <Trophy className="w-7 h-7 text-[var(--color-long)]" />
                 ) : (

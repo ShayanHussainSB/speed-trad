@@ -8,7 +8,10 @@ export function Footer() {
   const { label, color, isConnected, isReconnecting } = useConnectionStatus();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-30 bg-[var(--bg-card)]/95 backdrop-blur-sm border-t border-[var(--border-subtle)] hidden md:block">
+    <footer className="fixed bottom-0 left-0 right-0 z-30 glass-dark hidden md:block">
+      {/* Top neon accent line */}
+      <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--hot-pink)]/30 to-transparent" />
+      
       <div className="flex items-center justify-between h-10 px-6 max-w-[1800px] mx-auto">
         {/* Left side - Status & Network */}
         <div className="flex items-center gap-6">
@@ -17,7 +20,10 @@ export function Footer() {
             <div className="relative">
               <div
                 className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: color }}
+                style={{ 
+                  backgroundColor: color,
+                  boxShadow: `0 0 8px ${color}`
+                }}
               />
               {isConnected && (
                 <div
@@ -32,10 +38,10 @@ export function Footer() {
                 />
               )}
             </div>
-            <span className="text-xs font-medium text-[var(--text-secondary)]">
+            <span className="text-xs font-medium text-[var(--text-secondary)]" style={{ fontFamily: 'var(--font-rajdhani)' }}>
               {label}
             </span>
-            <span className="text-[10px] text-[var(--text-tertiary)]">
+            <span className="text-[10px] text-[var(--text-muted)] font-mono">
               Bulk.trade
             </span>
           </div>

@@ -11,6 +11,7 @@ import { PriceChart } from "./components/trading/PriceChart";
 import { TradingPanel } from "./components/trading/TradingPanel";
 import { PositionsList } from "./components/trading/PositionsList";
 import { TradeHistory } from "./components/trading/TradeHistory";
+import { OrdersList } from "./components/trading/OrdersList";
 import { PositionsModal } from "./components/trading/PositionsModal";
 import { TradeHistoryModal } from "./components/trading/TradeHistoryModal";
 import { ReversePositionModal } from "./components/trading/ReversePositionModal";
@@ -26,7 +27,7 @@ import { MobileAccountView } from "./components/mobile/MobileAccountView";
 type TradingMode = "perpetuals" | "spot";
 type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
 
-type BottomPanelTab = "positions" | "history";
+type BottomPanelTab = "positions" | "orders" | "history";
 
 export default function TradingPage() {
   const [tradingMode, setTradingMode] = useState<TradingMode>("perpetuals");
@@ -57,6 +58,7 @@ export default function TradingPage() {
   // Positions state
   const {
     positions,
+    orders,
     primaryPosition,
     totalPnL,
     longCount,
@@ -69,6 +71,9 @@ export default function TradingPage() {
     closePosition,
     reversePosition,
     calculateReverseRequirements,
+    openPosition,
+    placeOrder,
+    cancelOrder,
   } = usePositions();
 
   const walletAddress = publicKey?.toBase58() || "";
@@ -91,44 +96,51 @@ export default function TradingPage() {
   const closeWalletModal = () => setIsWalletModalOpen(false);
 
   return (
-    <div className="h-screen overflow-hidden bg-[var(--bg-primary)]">
-      {/* Background Effects - Euphoria-inspired */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        {/* Main spotlight */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-gradient-spotlight-intense opacity-40" />
+    <div className="h-screen overflow-hidden relative">
+      {/* OutRun/Synthwave Background - Retro Miami Vibe */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        {/* Enhanced Horizon Grid */}
+        <div className="horizon-grid" />
 
-        {/* Mesh gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-mesh opacity-50" />
-
-        {/* Subtle grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.02]"
-          style={{
-            backgroundImage: `linear-gradient(var(--accent-primary) 1px, transparent 1px), linear-gradient(90deg, var(--accent-primary) 1px, transparent 1px)`,
-            backgroundSize: "60px 60px",
-          }}
-        />
-
-        {/* Corner accents */}
-        <div className="absolute top-0 left-0 w-96 h-96 bg-gradient-radial-pink opacity-20" />
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-gradient-radial-pink opacity-10" />
+        {/* Enhanced Sun Disc with More Glow */}
+        <div className="sun" />
+        
+        {/* Floating Neon Particles - Miami Vibes */}
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        <div className="particle" />
+        
+        {/* Palm Tree Silhouettes */}
+        <div className="palm-tree palm-tree-left" />
+        <div className="palm-tree palm-tree-right" />
+        
+        {/* Additional gradient overlay for better focus */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/25" />
       </div>
 
       {/* Header */}
-      <Header />
+      <div className="relative z-50">
+        <Header />
+      </div>
 
       {/* Price Ticker - Below Header */}
       <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
 
       {/* Main Content */}
-      <main className="pt-[104px] pb-10 md:pb-10 h-screen overflow-hidden">
+      <main className="relative z-10 pt-[104px] pb-10 md:pb-10 h-screen overflow-hidden">
         {/* TRADE View */}
         {(
           <div className="h-[calc(100vh-104px-40px)] md:h-[calc(100vh-104px-40px)] flex flex-col">
             {/* Desktop Layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
               {/* Far Left Panel - Leaderboard + Quests/Referrals */}
-              <div className="w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)]">
+              <div className="w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)] bg-[var(--bg-card)] backdrop-blur-xl">
                 <LeftPanel
                   userRank={profile?.stats?.rank || 9999999}
                   userPoints={profile?.stats?.points || 0}
@@ -139,9 +151,9 @@ export default function TradingPage() {
               </div>
 
               {/* Center Panel - Chart & Positions */}
-              <div className="flex-1 flex flex-col">
+              <div className="flex-1 flex flex-col bg-[var(--bg-card)] backdrop-blur-xl">
                 {/* Tabs & Stats Bar */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] backdrop-blur-md">
                   <TradingTabs activeMode={tradingMode} onModeChange={setTradingMode} />
 
                   <div className="flex items-center gap-4">
@@ -168,38 +180,50 @@ export default function TradingPage() {
                 </div>
 
                 {/* Bottom Panel - Positions & History (Desktop) */}
-                <div className={`border-t border-[var(--border-subtle)] bg-[var(--bg-card)] transition-all duration-300 ${
-                  isBottomPanelExpanded ? "h-[280px]" : "h-[48px]"
-                }`}>
+                <div className={`border-t border-[var(--border-subtle)] bg-[var(--bg-card)] backdrop-blur-xl transition-all duration-300 ${isBottomPanelExpanded ? "h-[280px]" : "h-[48px]"
+                  }`}>
                   {/* Panel Header with Tabs */}
-                  <div className="flex items-center justify-between px-4 h-[48px] border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
+                  <div className="flex items-center justify-between px-4 h-[48px] border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] backdrop-blur-md">
                     {/* Tabs */}
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => setBottomPanelTab("positions")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          bottomPanelTab === "positions"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "positions"
                             ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
                             : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-                        }`}
+                          }`}
                       >
                         <BarChart3 className="w-3.5 h-3.5" />
                         Positions
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                          bottomPanelTab === "positions"
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "positions"
                             ? "bg-[var(--accent-primary)] text-white"
                             : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
-                        }`}>
+                          }`}>
                           2
                         </span>
                       </button>
                       <button
-                        onClick={() => setBottomPanelTab("history")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                          bottomPanelTab === "history"
+                        onClick={() => setBottomPanelTab("orders")}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "orders"
                             ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
                             : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-                        }`}
+                          }`}
+                      >
+                        <Clock className="w-3.5 h-3.5" />
+                        Orders
+                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "orders"
+                            ? "bg-[var(--accent-primary)] text-white"
+                            : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
+                          }`}>
+                          {orders.filter(o => o.status === "open").length}
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => setBottomPanelTab("history")}
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "history"
+                            ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
+                            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
+                          }`}
                       >
                         <Clock className="w-3.5 h-3.5" />
                         History
@@ -235,7 +259,14 @@ export default function TradingPage() {
                           onViewAll={() => setIsPositionsModalOpen(true)}
                           onClosePosition={closePosition}
                           onReversePosition={openReverseModal}
-                          maxVisible={2}
+                          maxVisible={10}
+                        />
+                      ) : bottomPanelTab === "orders" ? (
+                        <OrdersList
+                          isConnected={connected}
+                          orders={orders}
+                          onCancelOrder={cancelOrder}
+                          onViewAll={() => { }}
                         />
                       ) : (
                         <TradeHistory isConnected={connected} onViewAll={() => setIsHistoryModalOpen(true)} />
@@ -246,7 +277,7 @@ export default function TradingPage() {
               </div>
 
               {/* Right Panel - Trading */}
-              <div className="w-[380px] flex-shrink-0 bg-[var(--bg-card)] border-l border-[var(--border-subtle)]">
+              <div className="w-[380px] flex-shrink-0 bg-[var(--bg-card)] border-l border-[var(--border-subtle)] backdrop-blur-xl">
                 <TradingPanel
                   mode={tradingMode}
                   isConnected={connected}
@@ -254,6 +285,8 @@ export default function TradingPage() {
                   balance={balance}
                   activePosition={primaryPosition}
                   onReversePosition={openReverseModal}
+                  onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
+                  onPlaceOrder={(direction, amount, trigger, leverage, type) => placeOrder({ direction, size: amount, triggerPrice: trigger, leverage, type, symbol: `${selectedSymbol}/USD` })}
                 />
               </div>
             </div>

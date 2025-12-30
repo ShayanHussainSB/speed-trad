@@ -17,6 +17,18 @@ export interface Position {
   openedAt: Date;
 }
 
+export interface Order {
+  id: string;
+  symbol: string;
+  direction: "long" | "short";
+  size: number;
+  triggerPrice: number;
+  leverage: number;
+  type: "limit" | "stop";
+  status: "open" | "filled" | "cancelled";
+  createdAt: Date;
+}
+
 // Mock positions data - in production this would come from API/blockchain
 const MOCK_POSITIONS: Position[] = [
   {
@@ -33,26 +45,27 @@ const MOCK_POSITIONS: Position[] = [
     takeProfitPrice: 215.0,
     openedAt: new Date(Date.now() - 1000 * 60 * 45),
   },
+];
+
+const MOCK_ORDERS: Order[] = [
   {
-    id: "2",
+    id: "o1",
     symbol: "SOL/USD",
-    direction: "short",
-    size: 25,
-    entryPrice: 200.5,
-    currentPrice: 198.42,
-    leverage: 500,
-    pnl: 5.2,
-    pnlPercent: 10.4,
-    liquidationPrice: 210.53,
-    takeProfitPrice: 180.0,
-    openedAt: new Date(Date.now() - 1000 * 60 * 120),
-  },
+    direction: "long",
+    size: 20,
+    triggerPrice: 190.0,
+    leverage: 100,
+    type: "limit",
+    status: "open",
+    createdAt: new Date(Date.now() - 1000 * 60 * 10),
+  }
 ];
 
 const MINIMUM_MARGIN = 5; // $5 minimum order
 
 export function usePositions() {
   const [positions, setPositions] = useState<Position[]>(MOCK_POSITIONS);
+  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS);
   const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -86,6 +99,54 @@ export function usePositions() {
     () => positions.filter((p) => p.direction === "short").length,
     [positions]
   );
+
+  // Open a new position (Market Order)
+  const openPosition = useCallback((data: Partial<Position>) => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      const newPos: Position = {
+        id: Math.random().toString(36).substr(2, 9),
+        symbol: data.symbol || "SOL/USD",
+        direction: data.direction || "long",
+        size: data.size || 10,
+        entryPrice: data.entryPrice || 198.42,
+        currentPrice: data.entryPrice || 198.42,
+        leverage: data.leverage || 100,
+        pnl: 0,
+        pnlPercent: 0,
+        liquidationPrice: (data.entryPrice || 198.42) * (data.direction === "long" ? 0.8 : 1.2),
+        takeProfitPrice: (data.entryPrice || 198.42) * (data.direction === "long" ? 1.5 : 0.5),
+        openedAt: new Date(),
+      };
+      setPositions(prev => [newPos, ...prev]);
+      setIsProcessing(false);
+    }, 600);
+  }, []);
+
+  // Place a limit order
+  const placeOrder = useCallback((data: Partial<Order>) => {
+    setIsProcessing(true);
+    setTimeout(() => {
+      const newOrder: Order = {
+        id: Math.random().toString(36).substr(2, 9),
+        symbol: data.symbol || "SOL/USD",
+        direction: data.direction || "long",
+        size: data.size || 10,
+        triggerPrice: data.triggerPrice || 190,
+        leverage: data.leverage || 100,
+        type: data.type || "limit",
+        status: "open",
+        createdAt: new Date(),
+      };
+      setOrders(prev => [newOrder, ...prev]);
+      setIsProcessing(false);
+    }, 600);
+  }, []);
+
+  // Cancel an order
+  const cancelOrder = useCallback((orderId: string) => {
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+  }, []);
 
   // Open reverse modal for a position
   const openReverseModal = useCallback((position: Position) => {
@@ -193,6 +254,7 @@ export function usePositions() {
   return {
     // State
     positions,
+    orders,
     hasActivePosition,
     primaryPosition,
     totalPnL,
@@ -211,6 +273,9 @@ export function usePositions() {
     closePosition,
     reversePosition,
     calculateReverseRequirements,
+    openPosition,
+    placeOrder,
+    cancelOrder,
 
     // Constants
     MINIMUM_MARGIN,

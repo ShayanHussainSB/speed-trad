@@ -96,144 +96,135 @@ export function Leaderboard({
   const progressToNext = nextRankPoints > 0 ? Math.min((userPoints / nextRankPoints) * 100, 100) : 0;
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-3 py-2.5 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5">
-            <Trophy className="w-4 h-4 text-[#FFD700]" />
-            <h2 className="text-xs font-bold uppercase tracking-wide text-[var(--text-primary)]">
-              Leaderboard
-            </h2>
+    <div className="flex flex-col h-full bg-black/40">
+      {/* Control Strip - Sharp & Technical Technical Mode */}
+      <div className="flex flex-col border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-4 py-2 opacity-50">
+          <div className="flex items-center gap-2">
+            <Trophy className="w-3 h-3 text-white" />
+            <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">RANKING_SYSTEM</span>
           </div>
-          <div className="flex items-center gap-1 text-[var(--color-long)]">
-            <TrendingUp className="w-3 h-3" />
-            <span className="text-[9px] font-medium">Live</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1 h-1 rounded-full bg-[var(--color-long)] animate-pulse" />
+            <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">LIVE_FEED</span>
           </div>
         </div>
 
-        {/* Time Period Tabs - Compact */}
-        <div className="flex items-center gap-0.5 p-0.5 rounded-md bg-[var(--bg-secondary)]">
+        {/* Time Period Strips - Minimal & Compact */}
+        <div className="flex items-center px-2 pb-2 gap-1">
           {(["24h", "7d", "30d", "all"] as TimePeriod[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 px-1.5 py-1 rounded text-[9px] font-bold uppercase transition-all ${
-                period === p
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-              }`}
+              className={`
+                flex-1 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-all
+                ${period === p
+                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary)]/10"
+                  : "text-white/30 hover:text-white"
+                }
+              `}
             >
-              {p === "all" ? "All" : p}
+              {p}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Trader List - Simplified */}
-      <div className="flex-1 overflow-y-auto">
-        {traders.map((trader, index) => {
+      {/* Hall of Fame Feed */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide py-1">
+        {traders.map((trader) => {
           const isTop3 = trader.rank <= 3;
-          const rankColors = ["#FFD700", "#C0C0C0", "#CD7F32"];
 
           return (
             <div
               key={trader.rank}
-              className={`flex items-center gap-2 px-3 py-2 border-b border-[var(--border-subtle)]/50 hover:bg-[var(--bg-secondary)]/30 transition-colors ${
-                isTop3 ? "bg-[var(--bg-secondary)]/20" : ""
-              }`}
+              className="group flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-white/[0.02]"
             >
-              {/* Rank */}
-              <div
-                className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-bold ${
-                  isTop3 ? "text-black" : "text-[var(--text-tertiary)] bg-transparent"
-                }`}
-                style={isTop3 ? { backgroundColor: rankColors[index] } : undefined}
-              >
-                {trader.rank}
+              {/* Rank Position */}
+              <div className="w-6 shrink-0 flex justify-center">
+                <span className={`text-[12px] font-black font-mono tracking-tighter ${isTop3 ? "text-white" : "text-white/20"}`}>
+                  {trader.rank.toString().padStart(2, '0')}
+                </span>
               </div>
 
-              {/* Avatar & Name */}
-              <div className="flex-1 min-w-0 flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center shrink-0">
-                  <span className="text-[8px] font-bold text-white uppercase">
+              {/* Identity Module */}
+              <div className="flex-1 min-w-0 flex items-center gap-3">
+                <div className="w-7 h-7 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[var(--accent-primary)]/40 transition-all">
+                  <span className="text-[9px] font-black text-white/40 uppercase">
                     {trader.username.slice(0, 2)}
                   </span>
                 </div>
-                <span className="text-[11px] font-medium text-[var(--text-primary)] truncate">
-                  {trader.username}
-                </span>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[12px] font-black text-white uppercase tracking-wider truncate group-hover:text-[var(--accent-primary)] transition-colors">
+                    {trader.username}
+                  </span>
+                  <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mt-0.5">
+                    {trader.trades} TRADES
+                  </span>
+                </div>
               </div>
 
-              {/* Points */}
+              {/* Performance Metrics */}
               <div className="text-right shrink-0">
-                <span className="text-[11px] font-bold font-mono text-[var(--color-long)] tabular-nums">
-                  {formatPoints(trader.points)}
-                </span>
+                <div className="flex flex-col">
+                  <span className="text-[12px] font-black font-mono text-[var(--color-long)] tracking-tighter">
+                    {formatPoints(trader.points)}
+                  </span>
+                  <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-0.5">
+                    {trader.winRate}% WR
+                  </span>
+                </div>
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Your Position - Enhanced with glow */}
-      <div className="relative px-3 py-3 border-t-2 border-[var(--accent-primary)]">
-        {/* Glow effect background */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[var(--accent-primary)]/15 via-[var(--accent-primary)]/5 to-transparent pointer-events-none" />
-        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-primary)] to-transparent shadow-[0_0_10px_var(--accent-primary)]" />
-
-        <div className="relative">
-          {/* Header with YOU badge */}
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-2">
-              {/* Avatar with glow ring */}
+      {/* User Terminal Section */}
+      <div className="mt-auto border-t border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/[0.03]">
+        <div className="p-4">
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div className="flex items-center gap-4">
               <div className="relative">
-                <div className="w-8 h-8 rounded-lg overflow-hidden ring-2 ring-[var(--accent-primary)] shadow-[0_0_12px_rgba(var(--accent-primary-rgb),0.4)]">
-                  <AvatarIcon avatarId={userAvatar} size={32} />
+                <div className="w-10 h-10 rounded-sm bg-black border border-[var(--accent-primary)]/50 overflow-hidden">
+                  <AvatarIcon avatarId={userAvatar} size={40} />
                 </div>
-                {/* Online indicator */}
-                <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-long)] border-2 border-[var(--bg-card)]" />
+                <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[var(--color-long)] border-2 border-black" />
               </div>
 
               <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  {/* YOU Badge */}
-                  <span className="px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-wider bg-[var(--accent-primary)] text-white shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.5)]">
-                    YOU
-                  </span>
-                  <span className="text-[10px] font-semibold text-[var(--text-primary)] truncate max-w-[100px] sm:max-w-[80px]">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-black text-white uppercase tracking-wider">
                     {username || `user_${walletAddress.slice(2, 6)}`}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 mt-0.5">
-                  <Sparkles className="w-2.5 h-2.5 text-[var(--accent-primary)]" />
-                  <span className="text-[9px] font-bold text-[var(--text-tertiary)]">{formatRank(userRank)}</span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">GLOBAL_RANK</span>
+                  <span className="text-[11px] font-black font-mono text-white tracking-tighter">
+                    {formatRank(userRank)}
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Points display */}
             <div className="text-right">
-              <span className="text-sm font-bold font-mono text-[var(--color-long)] tabular-nums">
+              <span className="text-[18px] font-black font-mono text-[var(--color-long)] tracking-tighter block leading-none">
                 {formatPoints(userPoints)}
               </span>
-              <span className="text-[9px] text-[var(--text-tertiary)] ml-1">pts</span>
+              <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mt-1 block">AGGREGATE_POINTS</span>
             </div>
           </div>
 
-          {/* Progress to next rank */}
+          {/* Advancement Protocol */}
           {userRank > 1 && (
-            <div className="mt-2">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[8px] text-[var(--text-tertiary)] uppercase tracking-wide">Progress to next rank</span>
-                <div className="flex items-center gap-0.5 text-[var(--accent-primary)]">
-                  <ChevronUp className="w-2.5 h-2.5" />
-                  <span className="text-[9px] font-bold tabular-nums">{progressToNext.toFixed(0)}%</span>
-                </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">ADVANCEMENT_PROTOCOL</span>
+                <span className="text-[10px] font-black font-mono text-[var(--accent-primary)] tracking-tighter">{progressToNext.toFixed(1)}%</span>
               </div>
-              <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
+              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-[0_0_6px_var(--accent-primary)]"
+                  className="h-full bg-[var(--accent-primary)] shadow-[0_0_10px_rgba(0,245,160,0.5)]"
                   style={{ width: `${progressToNext}%` }}
                 />
               </div>
