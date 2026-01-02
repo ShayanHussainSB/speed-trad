@@ -21,7 +21,6 @@ import {
   AlertTriangle,
   Trophy,
   BarChart3,
-  Percent,
 } from "lucide-react";
 import { Position } from "@/app/hooks/usePositions";
 
@@ -88,33 +87,8 @@ const SLIPPAGE_PRESETS = [0.1, 0.5, 1.0] as const;
 
 const LEVERAGE_PRESETS = [500, 750, 1000] as const;
 
-// Risk level based on leverage
-const getRiskLevel = (leverage: number): { level: string; color: string; flames: number; message: string } => {
-  if (leverage >= 1000) {
-    return {
-      level: "DEGEN MODE",
-      color: "var(--color-short)",
-      flames: 3,
-      message: "Maximum risk. One wrong move = rekt"
-    };
-  }
-  if (leverage >= 750) {
-    return {
-      level: "HIGH RISK",
-      color: "#FF6B00",
-      flames: 2,
-      message: "Playing with fire. Stay sharp"
-    };
-  }
-  return {
-    level: "ELEVATED",
-    color: "#FFD700",
-    flames: 1,
-    message: "High leverage active. Watch your liq price"
-  };
-};
 const TAKE_PROFIT_PRESETS = [100, 300, 500] as const;
-const AMOUNT_PRESETS = [5, 10, 15, 20] as const;
+const AMOUNT_PRESETS = [5, 10, 20] as const;
 const MOCK_CURRENT_PRICE = 198.42;
 
 // Smart number formatting for position summary
@@ -337,7 +311,7 @@ export function TradingPanel({
             >
               <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-long)] transition-all duration-300 shadow-[0_0_10px_var(--color-long)] ${direction === "long" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`} />
               <TrendingUp className={`w-4 h-4 transition-transform duration-500 ${direction === "long" ? "rotate-0 scale-110" : "-rotate-12 scale-90"}`} />
-              <span className="text-xs uppercase tracking-[0.2em]">Long</span>
+              <span className="text-xs uppercase tracking-[0.2em]">Up</span>
             </button>
             <div className="w-[1px] h-4 my-auto bg-[var(--border-subtle)]" />
             <button
@@ -349,7 +323,7 @@ export function TradingPanel({
             >
               <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-short)] transition-all duration-300 shadow-[0_0_10px_var(--color-short)] ${direction === "short" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`} />
               <TrendingDown className={`w-4 h-4 transition-transform duration-500 ${direction === "short" ? "rotate-0 scale-110" : "rotate-12 scale-90"}`} />
-              <span className="text-xs uppercase tracking-[0.2em]">Short</span>
+              <span className="text-xs uppercase tracking-[0.2em]">Down</span>
             </button>
           </div>
         </div>
@@ -364,7 +338,7 @@ export function TradingPanel({
             <div className="relative group">
               <div className="absolute inset-x-0 bottom-0 h-px bg-white/5 group-focus-within:bg-[var(--accent-primary)] transition-colors" />
               <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Amount (USD)</span>
+                <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Your Margin</span>
                 <span className="text-[11px] font-black text-white/60 font-mono">≈ {(amount / currentPrice).toFixed(4)} SOL</span>
               </div>
 
@@ -398,7 +372,7 @@ export function TradingPanel({
             </div>
 
             {/* Sharp Presets */}
-            <div className="grid grid-cols-5 gap-1.5">
+            <div className="grid grid-cols-4 gap-1.5">
               {AMOUNT_PRESETS.map((preset) => (
                 <button
                   key={preset}
@@ -729,12 +703,12 @@ export function TradingPanel({
         {isPerpetuals && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">Leverage_Protocol</span>
-              <span className="text-[12px] font-black font-mono text-white tracking-widest">{leverage}X_MULT</span>
+              <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Choose Leverage</span>
+              <span className="text-[12px] font-black font-mono text-white tracking-widest">{leverage}X</span>
             </div>
 
-            <div className="grid grid-cols-5 gap-1.5">
-              {[10, 50, 100, 500, 1000].map((preset) => (
+            <div className="grid grid-cols-3 gap-1.5">
+              {LEVERAGE_PRESETS.map((preset) => (
                 <button
                   key={preset}
                   onClick={() => setLeverage(preset)}
@@ -750,28 +724,6 @@ export function TradingPanel({
                 </button>
               ))}
             </div>
-
-            {/* Risk Protocol - Sharp Mode */}
-            {leverage >= 500 && (() => {
-              const risk = getRiskLevel(leverage);
-              return (
-                <div className="p-3 bg-white/[0.02] border border-white/10 rounded overflow-hidden">
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <div className={`w-1 h-1 rounded-full animate-ping`} style={{ backgroundColor: risk.color }} />
-                        <span className="text-[11px] font-black uppercase tracking-wider" style={{ color: risk.color }}>
-                          {risk.level}
-                        </span>
-                      </div>
-                      <p className="text-[10px] font-black text-white/20 uppercase tracking-widest mt-1">
-                        {risk.message}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
           </div>
         )}
 
@@ -779,8 +731,8 @@ export function TradingPanel({
         {isPerpetuals && (
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-white/40 uppercase tracking-[0.2em]">Exit_Threshold</span>
-              <span className="text-[12px] font-black font-mono text-white tracking-widest">+{takeProfit}%_ROI</span>
+              <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Take Profit</span>
+              <span className="text-[12px] font-black font-mono text-white tracking-widest">+{takeProfit}%</span>
             </div>
 
             <div className="grid grid-cols-3 gap-1.5">
@@ -796,7 +748,7 @@ export function TradingPanel({
                     }
                   `}
                 >
-                  {preset}%_TP
+                  {preset}%
                 </button>
               ))}
             </div>
@@ -909,16 +861,6 @@ export function TradingPanel({
               </div>
             </div>
 
-            {/* Fee - Compact */}
-            <div className="flex items-center justify-between p-2 md:p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-              <div className="flex items-center gap-1 md:gap-1.5">
-                <Percent className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--text-tertiary)]" />
-                <span className="text-[11px] md:text-xs text-[var(--text-tertiary)]">Fee (0.05%)</span>
-              </div>
-              <span className="text-xs md:text-sm font-bold font-mono text-[var(--text-secondary)] tabular-nums">
-                ~${formatValue(computedValues.fee)}
-              </span>
-            </div>
           </div>
         )}
       </div>
@@ -939,7 +881,7 @@ export function TradingPanel({
             style={{ fontFamily: 'var(--font-rajdhani)' }}
           >
             <RefreshCw className="w-4 h-4" />
-            Reverse to {activePosition.direction === "long" ? "Short" : "Long"}
+            Reverse to {activePosition.direction === "long" ? "Down" : "Up"}
           </button>
         )}
 
@@ -991,7 +933,7 @@ export function TradingPanel({
             {isPerpetuals ? (
               <>
                 <Rocket className={`w-5 h-5 ${direction === "long" ? "" : ""}`} />
-                {direction === "long" ? "Open Long" : "Open Short"}
+                {direction === "long" ? "Go Up" : "Go Down"}
               </>
             ) : (
               <>

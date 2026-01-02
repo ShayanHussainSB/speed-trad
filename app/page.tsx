@@ -5,7 +5,6 @@ import { useWallet } from "@solana/wallet-adapter-react";
 import { ChevronUp, ChevronDown, BarChart3, Clock } from "lucide-react";
 import { Header } from "./components/layout/Header";
 import { MobileNav } from "./components/layout/MobileNav";
-import { Footer } from "./components/layout/Footer";
 import { TradingTabs } from "./components/trading/TradingTabs";
 import { PriceChart } from "./components/trading/PriceChart";
 import { TradingPanel } from "./components/trading/TradingPanel";
@@ -38,6 +37,7 @@ export default function TradingPage() {
   const [isPositionsModalOpen, setIsPositionsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("SOL");
+  const [isLeftPanelHidden, setIsLeftPanelHidden] = useState(false);
 
   // Live market data from CoinGecko (volume & market cap)
   const { volume24h, marketCap } = useMarketTicker(`${selectedSymbol}-USD`);
@@ -133,20 +133,22 @@ export default function TradingPage() {
       <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
 
       {/* Main Content */}
-      <main className="relative z-10 pt-[104px] pb-10 md:pb-10 h-screen overflow-hidden">
+      <main className="relative z-10 pt-[104px] h-screen overflow-hidden">
         {/* TRADE View */}
         {(
-          <div className="h-[calc(100vh-104px-40px)] md:h-[calc(100vh-104px-40px)] flex flex-col">
+          <div className="h-[calc(100vh-104px)] md:h-[calc(100vh-104px)] flex flex-col">
             {/* Desktop Layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
               {/* Far Left Panel - Leaderboard + Quests/Referrals */}
-              <div className="w-[280px] flex-shrink-0 border-r border-[var(--border-subtle)] bg-[var(--bg-card)] backdrop-blur-xl">
+              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-6 bg-transparent" : "w-[280px] border-r border-[var(--border-subtle)] bg-[var(--bg-card)]"}`}>
                 <LeftPanel
                   userRank={profile?.stats?.rank || 9999999}
                   userPoints={profile?.stats?.points || 0}
                   walletAddress={walletAddress || "0x2e50ffd0"}
                   userAvatar={profile?.avatar || "pepe"}
                   username={profile?.username}
+                  isHidden={isLeftPanelHidden}
+                  onToggleHide={() => setIsLeftPanelHidden(!isLeftPanelHidden)}
                 />
               </div>
 
@@ -397,8 +399,6 @@ export default function TradingPage() {
         calculateRequirements={calculateReverseRequirements}
       />
 
-      {/* Footer */}
-      <Footer />
     </div>
   );
 }

@@ -107,8 +107,8 @@ export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTicke
               className={`
                 group flex items-center gap-3 py-1.5 px-2 relative transition-all duration-300 rounded-lg
                 ${isSelected 
-                  ? "opacity-100 bg-white/[0.03]" 
-                  : "opacity-50 hover:opacity-90 hover:bg-white/[0.02]"
+                  ? "bg-white/[0.03]" 
+                  : "hover:bg-white/[0.02]"
                 }
               `}
             >
