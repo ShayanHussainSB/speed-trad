@@ -38,16 +38,34 @@ export function LeftPanel({
   const [isMinimized, setIsMinimized] = useState(true); // Default to minimized
   const [activeSection, setActiveSection] = useState<PanelSection>("leaderboard"); // Default to leaderboard only
 
-  // Hidden state - minimal edge toggle (no empty space)
+  // Hidden state - vertical icon bar with quick actions
   if (isHidden) {
     return (
-      <div className="h-full w-full flex flex-col items-center pt-2">
+      <div className="h-full w-full flex flex-col items-center bg-[var(--bg-card)] border-r border-white/10">
+        {/* Expand button */}
         <button
           onClick={onToggleHide}
-          className="w-full h-14 bg-white/5 hover:bg-[var(--accent-primary)]/20 flex items-center justify-center transition-all group border-r border-white/10"
-          title="Show Panel"
+          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          title="Expand Panel"
         >
-          <ChevronRight className="w-3.5 h-3.5 text-white/40 group-hover:text-[var(--accent-primary)]" />
+          <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-white" />
+        </button>
+        
+        {/* Quick access icons */}
+        <button
+          onClick={onToggleHide}
+          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          title="Leaderboard"
+        >
+          <Trophy className="w-5 h-5 text-white/30 group-hover:text-[var(--color-long)]" />
+        </button>
+        
+        <button
+          onClick={onToggleHide}
+          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          title="Quests"
+        >
+          <Zap className="w-5 h-5 text-white/30 group-hover:text-[var(--accent-primary)]" />
         </button>
       </div>
     );
@@ -56,7 +74,7 @@ export function LeftPanel({
   // Minimized state - compact view with section tabs
   if (isMinimized) {
     return (
-      <div className="h-full w-full flex flex-col bg-black/40">
+      <div className="h-full w-full flex flex-col bg-[var(--bg-card)]">
         {/* Control Bar */}
         <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02]">
           <div className="flex items-center gap-1">
@@ -137,7 +155,7 @@ export function LeftPanel({
 
   // Full expanded view
   return (
-    <div className="h-full w-full flex flex-col bg-black/40">
+    <div className="h-full w-full flex flex-col bg-[var(--bg-card)]">
       {/* Panel Control Strip */}
       <div className="flex items-center justify-between px-3 py-2 border-b border-white/5 bg-white/[0.02]">
         <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">DASHBOARD</span>

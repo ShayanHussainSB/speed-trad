@@ -10,7 +10,6 @@ import { PriceChart } from "./components/trading/PriceChart";
 import { TradingPanel } from "./components/trading/TradingPanel";
 import { PositionsList } from "./components/trading/PositionsList";
 import { TradeHistory } from "./components/trading/TradeHistory";
-import { OrdersList } from "./components/trading/OrdersList";
 import { PositionsModal } from "./components/trading/PositionsModal";
 import { TradeHistoryModal } from "./components/trading/TradeHistoryModal";
 import { ReversePositionModal } from "./components/trading/ReversePositionModal";
@@ -26,7 +25,7 @@ import { MobileAccountView } from "./components/mobile/MobileAccountView";
 type TradingMode = "perpetuals" | "spot";
 type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
 
-type BottomPanelTab = "positions" | "orders" | "history";
+type BottomPanelTab = "positions" | "history";
 
 export default function TradingPage() {
   const [tradingMode, setTradingMode] = useState<TradingMode>("perpetuals");
@@ -58,7 +57,6 @@ export default function TradingPage() {
   // Positions state
   const {
     positions,
-    orders,
     primaryPosition,
     totalPnL,
     longCount,
@@ -72,8 +70,6 @@ export default function TradingPage() {
     reversePosition,
     calculateReverseRequirements,
     openPosition,
-    placeOrder,
-    cancelOrder,
   } = usePositions();
 
   const walletAddress = publicKey?.toBase58() || "";
@@ -140,7 +136,7 @@ export default function TradingPage() {
             {/* Desktop Layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
               {/* Far Left Panel - Leaderboard + Quests/Referrals */}
-              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-6 bg-transparent" : "w-[280px] border-r border-[var(--border-subtle)] bg-[var(--bg-card)]"}`}>
+              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-12 bg-transparent" : "w-[280px] border-r border-[var(--border-subtle)] bg-[var(--bg-card)]"}`}>
                 <LeftPanel
                   userRank={profile?.stats?.rank || 9999999}
                   userPoints={profile?.stats?.points || 0}
@@ -205,22 +201,6 @@ export default function TradingPage() {
                         </span>
                       </button>
                       <button
-                        onClick={() => setBottomPanelTab("orders")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "orders"
-                            ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
-                            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-                          }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" />
-                        Orders
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "orders"
-                            ? "bg-[var(--accent-primary)] text-white"
-                            : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
-                          }`}>
-                          {orders.filter(o => o.status === "open").length}
-                        </span>
-                      </button>
-                      <button
                         onClick={() => setBottomPanelTab("history")}
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "history"
                             ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
@@ -263,13 +243,6 @@ export default function TradingPage() {
                           onReversePosition={openReverseModal}
                           maxVisible={10}
                         />
-                      ) : bottomPanelTab === "orders" ? (
-                        <OrdersList
-                          isConnected={connected}
-                          orders={orders}
-                          onCancelOrder={cancelOrder}
-                          onViewAll={() => { }}
-                        />
                       ) : (
                         <TradeHistory isConnected={connected} onViewAll={() => setIsHistoryModalOpen(true)} />
                       )}
@@ -288,7 +261,6 @@ export default function TradingPage() {
                   activePosition={primaryPosition}
                   onReversePosition={openReverseModal}
                   onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
-                  onPlaceOrder={(direction, amount, trigger, leverage, type) => placeOrder({ direction, size: amount, triggerPrice: trigger, leverage, type, symbol: `${selectedSymbol}/USD` })}
                 />
               </div>
             </div>

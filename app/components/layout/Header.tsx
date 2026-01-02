@@ -1,7 +1,8 @@
 "use client";
 
-import { Zap, Menu, X, ExternalLink } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Zap } from "lucide-react";
+import { useState } from "react";
+import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletSection } from "@/app/components/wallet/WalletSection";
 import { WalletModal } from "@/app/components/wallet/WalletModal";
 import { UsernameModal } from "@/app/components/wallet/UsernameModal";
@@ -14,8 +15,7 @@ import { useRewards } from "@/app/hooks/useRewards";
 
 export function Header() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const [isSettingsMenuOpen, setIsSettingsMenuOpen] = useState(false);
-  const settingsMenuRef = useRef<HTMLDivElement>(null);
+  const { connected } = useWallet();
 
   const {
     profile,
@@ -41,23 +41,6 @@ export function Header() {
     copyReferralCode,
   } = useRewards();
 
-  // Close settings menu when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
-        setIsSettingsMenuOpen(false);
-      }
-    };
-
-    if (isSettingsMenuOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isSettingsMenuOpen]);
-
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 glass">
@@ -75,96 +58,36 @@ export function Header() {
               <div className="absolute inset-0 rounded-lg bg-[var(--sunset-orange)] blur-xl opacity-0 group-hover:opacity-40 transition-opacity -z-10" />
             </div>
 
-            <div className="flex flex-col -space-y-0.5">
-              <div className="flex items-center">
-                <span className="text-2xl font-bold tracking-tight text-[var(--warm-yellow)] lowercase neon-glow-yellow" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 190, 11, 0.5)' }}>up</span>
-                <span className="text-2xl font-bold tracking-tight text-[var(--hot-pink)] lowercase neon-glow-pink" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 0, 110, 0.5)' }}>dn</span>
-                <span className="text-2xl font-bold tracking-tight text-white lowercase" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)' }}>.trade</span>
-              </div>
-              <div className="flex items-center gap-1.5 px-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--cyan-glow)] live-pulse shadow-sm shadow-cyan-400/50" />
-                <span className="text-[9px] font-bold text-[var(--cyan-glow)]/80 uppercase tracking-[0.25em]" style={{ fontFamily: 'var(--font-rajdhani)' }}>Mainnet Live</span>
-              </div>
+            <div className="flex items-center">
+              <span className="text-2xl font-bold tracking-tight text-[var(--warm-yellow)] lowercase neon-glow-yellow" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 190, 11, 0.5)' }}>up</span>
+              <span className="text-2xl font-bold tracking-tight text-[var(--hot-pink)] lowercase neon-glow-pink" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 0, 110, 0.5)' }}>dn</span>
+              <span className="text-2xl font-bold tracking-tight text-white lowercase" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)' }}>.trade</span>
             </div>
           </div>
 
-          {/* Right Section - Settings Menu + Points Badge + Wallet */}
+          {/* Right Section - Points Badge + Wallet */}
           <div className="relative flex items-center gap-2 sm:gap-3">
-            {/* Settings Menu Button */}
-            <div className="relative" ref={settingsMenuRef}>
-              <button
-                onClick={() => setIsSettingsMenuOpen(!isSettingsMenuOpen)}
-                className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                aria-label="Settings menu"
-              >
-                {isSettingsMenuOpen ? (
-                  <X className="w-5 h-5" />
-                ) : (
-                  <Menu className="w-5 h-5" />
-                )}
-              </button>
-
-              {/* Settings Dropdown Menu */}
-              {isSettingsMenuOpen && (
-                <div className="absolute right-0 top-full mt-2 w-48 bg-[var(--bg-card)] border border-[var(--border-subtle)] rounded-xl shadow-lg backdrop-blur-xl overflow-hidden z-50 animate-scale-in">
-                  <div className="py-2">
-                    <a
-                      href="#"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                      onClick={() => setIsSettingsMenuOpen(false)}
-                    >
-                      Terms
-                    </a>
-                    <a
-                      href="#"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                      onClick={() => setIsSettingsMenuOpen(false)}
-                    >
-                      Privacy
-                    </a>
-                    <a
-                      href="#"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                      onClick={() => setIsSettingsMenuOpen(false)}
-                    >
-                      Docs
-                      <ExternalLink className="w-3.5 h-3.5" />
-                    </a>
-                    <div className="h-px bg-[var(--border-subtle)] my-1" />
-                    <a
-                      href="#"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                      onClick={() => setIsSettingsMenuOpen(false)}
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
-                      </svg>
-                      Follow us
-                    </a>
-                  </div>
+            {/* Points Badge - Only show when logged in */}
+            {connected && (
+              <>
+                {/* Desktop */}
+                <div className="hidden sm:block">
+                  <PointsBadge
+                    points={rewardsData.totalPoints}
+                    onClick={openRewardsModal}
+                    isFreshAccount={rewardsData.isFreshAccount}
+                  />
                 </div>
-              )}
-            </div>
-
-            {/* Points Badge - Desktop */}
-            <div className="hidden sm:block">
-              <PointsBadge
-                points={rewardsData.totalPoints}
-                tier={rewardsData.tier}
-                weeklyPoints={rewardsData.weeklyPoints}
-                onClick={openRewardsModal}
-                isFreshAccount={rewardsData.isFreshAccount}
-              />
-            </div>
-            {/* Points Badge - Mobile (compact) */}
-            <div className="sm:hidden">
-              <PointsBadgeCompact
-                points={rewardsData.totalPoints}
-                tier={rewardsData.tier}
-                onClick={openRewardsModal}
-                isFreshAccount={rewardsData.isFreshAccount}
-              />
-            </div>
+                {/* Mobile */}
+                <div className="sm:hidden">
+                  <PointsBadgeCompact
+                    points={rewardsData.totalPoints}
+                    onClick={openRewardsModal}
+                    isFreshAccount={rewardsData.isFreshAccount}
+                  />
+                </div>
+              </>
+            )}
             <WalletSection
               onOpenModal={() => setIsWalletModalOpen(true)}
               onOpenProfile={openProfileModal}

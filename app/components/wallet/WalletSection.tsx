@@ -13,11 +13,13 @@ import {
   Plus,
   TrendingUp,
   Trophy,
-  Wifi,
   User,
+  FileText,
+  Shield,
+  BookOpen,
 } from "lucide-react";
 import { useWalletBalance } from "@/app/hooks/useWalletBalance";
-import { NETWORK_DISPLAY_NAME, IS_PRODUCTION, getAccountUrl } from "@/app/config/network";
+import { getAccountUrl } from "@/app/config/network";
 import { ProfileEditModal } from "./ProfileEditModal";
 import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
 
@@ -164,62 +166,26 @@ export const WalletSection: FC<WalletSectionProps> = ({
         {connecting ? (
           <>
             <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-            <span>Connecting...</span>
+            <span>Logging in...</span>
           </>
         ) : (
           <>
             <Zap className="w-4 h-4" />
-            <span>Connect Wallet</span>
+            <span>Login</span>
           </>
         )}
       </button>
     );
   }
 
-  // Connected state - Split design
+  // Connected state - Profile only (balance shown in Trading Panel)
   return (
     <div className="flex items-center gap-2" ref={dropdownRef}>
-      {/* Balance Pill - Mobile (compact) */}
-      <div className="flex sm:hidden items-center gap-1.5 px-2 py-1.5 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-        <div className="w-5 h-5 rounded-full bg-black/40 flex items-center justify-center flex-shrink-0">
-          <SolanaLogo className="w-3 h-3" id="sol-mobile" />
-        </div>
-        <span className="text-xs font-bold font-mono text-[var(--text-primary)] tabular-nums">
-          {formatBalance(balance, 2)}
-        </span>
-      </div>
-
-      {/* Balance Pill - Desktop (full) */}
-      <div className="hidden sm:flex items-center gap-2.5 px-3 py-2 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
-        {/* Solana Logo */}
-        <div className="w-7 h-7 rounded-full bg-black/40 flex items-center justify-center p-1">
-          <SolanaLogo className="w-4 h-4" id="sol-desktop" />
-        </div>
-
-        {/* Balance Info */}
-        <div className="flex flex-col min-w-[52px]">
-          <span className="text-sm font-bold font-mono text-[var(--text-primary)] leading-tight tabular-nums">
-            {formatBalance(balance, 2)}
-          </span>
-          <span className="text-[10px] text-[var(--text-tertiary)] leading-tight tabular-nums">
-            {formatUSD(balanceUSD)}
-          </span>
-        </div>
-
-        {/* Quick Deposit Button */}
-        <button
-          className="w-7 h-7 rounded-lg bg-[var(--color-long)]/10 hover:bg-[var(--color-long)]/20 flex items-center justify-center text-[var(--color-long)] transition-colors"
-          title="Deposit"
-        >
-          <Plus className="w-4 h-4" />
-        </button>
-      </div>
-
       {/* Profile Button */}
       <button
         onClick={() => setShowDropdown(!showDropdown)}
         className={`
-          relative flex items-center gap-2 pl-1.5 pr-3 py-1.5 rounded-xl
+          relative flex items-center gap-2 h-10 pl-1 pr-3 rounded-xl
           bg-[var(--bg-elevated)] border border-[var(--border-subtle)]
           hover:border-[var(--accent-primary)]/50 hover:bg-[var(--bg-tertiary)]
           transition-all duration-200
@@ -228,24 +194,18 @@ export const WalletSection: FC<WalletSectionProps> = ({
       >
         {/* Avatar */}
         <div className="relative">
-          <div className="w-8 h-8 rounded-lg overflow-hidden shadow-md">
+          <div className="w-8 h-8 rounded-lg overflow-hidden">
             <AvatarIcon avatarId={avatar} size={32} />
           </div>
           {/* Online indicator */}
-          <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[var(--color-long)] border-2 border-[var(--bg-elevated)]" />
+          <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[var(--color-long)] border-2 border-[var(--bg-elevated)]" />
         </div>
 
-        {/* Name & Network */}
-        <div className="flex flex-col items-start max-w-[100px]">
-          <span className="text-xs font-semibold text-[var(--text-primary)] truncate w-full">
+        {/* Username */}
+        <div className="flex items-center max-w-[120px]">
+          <span className="text-sm font-semibold text-[var(--text-primary)] truncate">
             {displayName}
           </span>
-          <div className="flex items-center gap-1">
-            <Wifi className={`w-2.5 h-2.5 ${IS_PRODUCTION ? "text-[var(--color-long)]" : "text-[#FF6B00]"}`} />
-            <span className={`text-[10px] ${IS_PRODUCTION ? "text-[var(--text-tertiary)]" : "text-[#FF6B00]"}`}>
-              {NETWORK_DISPLAY_NAME}
-            </span>
-          </div>
         </div>
 
         {/* Dropdown Arrow */}
@@ -398,6 +358,45 @@ export const WalletSection: FC<WalletSectionProps> = ({
 
             <div className="my-2 h-px bg-[var(--border-subtle)]" />
 
+            {/* Links */}
+            <a
+              href="#"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            >
+              <FileText className="w-4 h-4" />
+              <span>Terms</span>
+            </a>
+            <a
+              href="#"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            >
+              <Shield className="w-4 h-4" />
+              <span>Privacy</span>
+            </a>
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Docs</span>
+              <ExternalLink className="w-3 h-3 ml-auto" />
+            </a>
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm text-[var(--text-tertiary)] hover:text-[var(--accent-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+              </svg>
+              <span>Follow us</span>
+            </a>
+
+            <div className="my-2 h-px bg-[var(--border-subtle)]" />
+
             <button
               onClick={handleDisconnect}
               className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-[var(--color-short)] hover:bg-[var(--color-short)]/10 transition-colors"
@@ -405,7 +404,7 @@ export const WalletSection: FC<WalletSectionProps> = ({
               <div className="w-8 h-8 rounded-lg bg-[var(--color-short)]/10 flex items-center justify-center">
                 <LogOut className="w-4 h-4" />
               </div>
-              <span className="flex-1 text-left">Disconnect Wallet</span>
+              <span className="flex-1 text-left">Logout</span>
             </button>
           </div>
         </div>

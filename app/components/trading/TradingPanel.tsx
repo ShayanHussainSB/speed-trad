@@ -8,19 +8,11 @@ import {
   Wallet,
   Target,
   Plus,
-  Minus,
   ArrowDownUp,
   ChevronDown,
   Settings,
   Info,
-  Flame,
-  Skull,
-  Rocket,
   RefreshCw,
-  DollarSign,
-  AlertTriangle,
-  Trophy,
-  BarChart3,
 } from "lucide-react";
 import { Position } from "@/app/hooks/usePositions";
 
@@ -36,7 +28,6 @@ interface TradingPanelProps {
   activePosition?: Position | null;
   onReversePosition?: (position: Position) => void;
   onOpenPosition?: (direction: TradeDirection, amount: number, leverage: number) => void;
-  onPlaceOrder?: (direction: TradeDirection, amount: number, triggerPrice: number, leverage: number, type: "limit" | "stop") => void;
 }
 
 interface Token {
@@ -112,7 +103,6 @@ export function TradingPanel({
   activePosition,
   onReversePosition,
   onOpenPosition,
-  onPlaceOrder,
 }: TradingPanelProps) {
   const [direction, setDirection] = useState<TradeDirection>("long");
   const [amount, setAmount] = useState(500);
@@ -209,11 +199,6 @@ export function TradingPanel({
     return { receiveAmount, fee, priceImpact, rate, minReceived };
   }, [spotAmountNum, currentPrice, payTokenSymbol, slippage]);
 
-  const handleAmountChange = (delta: number) => {
-    const newAmount = Math.max(0, amount + delta);
-    setAmount(newAmount);
-  };
-
   const handleAmountPreset = (preset: number) => {
     setAmount(preset);
   };
@@ -271,157 +256,116 @@ export function TradingPanel({
 
   return (
     <div className="flex flex-col h-full">
-      {/* Top Section - Balance & Header - Miami Terminal Style */}
-      <div className="px-5 py-3.5 border-b border-[var(--border-subtle)] bg-gradient-to-r from-[var(--bg-secondary)]/50 to-[var(--bg-tertiary)]/30 backdrop-blur-md relative">
-        {/* Subtle racing line accent */}
-        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[var(--sunset-orange)]/30 to-transparent" />
-        
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col">
-            <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-[0.25em] mb-0.5" style={{ fontFamily: 'var(--font-rajdhani)' }}>Terminal</span>
-            <span className="text-sm font-bold text-white uppercase tracking-wider" style={{ fontFamily: 'var(--font-rajdhani)' }}>
-              {isPerpetuals ? "Perpetuals" : "Spot Swap"}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="flex flex-col items-end">
-              <span className="text-[9px] font-bold text-[var(--sunset-orange)] uppercase tracking-wide" style={{ fontFamily: 'var(--font-rajdhani)' }}>Available</span>
-              <div className="flex items-center gap-1.5">
-                <span className="text-base font-bold font-mono text-white tabular-nums">${balanceInUSD.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-              </div>
-            </div>
-            <button className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--sunset-orange)]/10 to-[var(--hot-pink)]/5 border border-[var(--sunset-orange)]/20 flex items-center justify-center hover:border-[var(--sunset-orange)]/50 hover:shadow-lg hover:shadow-orange-500/10 transition-all group">
-              <Plus className="w-4 h-4 text-[var(--sunset-orange)] group-hover:scale-110 transition-transform" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Direction Toggle - Minimalist Version */}
-      {isPerpetuals && (
-        <div className="p-1 px-5 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/10">
-          <div className="flex h-12">
-            <button
-              onClick={() => setDirection("long")}
-              className={`
-                flex-1 flex items-center justify-center gap-2 font-black transition-all duration-300 relative
-                ${direction === "long" ? "text-[var(--color-long)]" : "text-[var(--text-tertiary)] hover:text-white"}
-              `}
-            >
-              <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-long)] transition-all duration-300 shadow-[0_0_10px_var(--color-long)] ${direction === "long" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`} />
-              <TrendingUp className={`w-4 h-4 transition-transform duration-500 ${direction === "long" ? "rotate-0 scale-110" : "-rotate-12 scale-90"}`} />
-              <span className="text-xs uppercase tracking-[0.2em]">Up</span>
-            </button>
-            <div className="w-[1px] h-4 my-auto bg-[var(--border-subtle)]" />
-            <button
-              onClick={() => setDirection("short")}
-              className={`
-                flex-1 flex items-center justify-center gap-2 font-black transition-all duration-300 relative
-                ${direction === "short" ? "text-[var(--color-short)]" : "text-[var(--text-tertiary)] hover:text-white"}
-              `}
-            >
-              <div className={`absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-short)] transition-all duration-300 shadow-[0_0_10px_var(--color-short)] ${direction === "short" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`} />
-              <TrendingDown className={`w-4 h-4 transition-transform duration-500 ${direction === "short" ? "rotate-0 scale-110" : "rotate-12 scale-90"}`} />
-              <span className="text-xs uppercase tracking-[0.2em]">Down</span>
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Trading Form */}
-      <div className="flex-1 p-3 md:p-4 space-y-4 md:space-y-5 overflow-y-auto">
-        {/* Perpetuals Amount Input */}
+      <div className="flex-1 p-5 space-y-6 overflow-y-auto">
+        {/* Perpetuals Interface */}
         {isPerpetuals && (
-          <div className="space-y-4">
-            {/* Technical Amount Input */}
-            <div className="relative group">
-              <div className="absolute inset-x-0 bottom-0 h-px bg-white/5 group-focus-within:bg-[var(--accent-primary)] transition-colors" />
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Your Margin</span>
-                <span className="text-[11px] font-black text-white/60 font-mono">≈ {(amount / currentPrice).toFixed(4)} SOL</span>
-              </div>
-
-              <div className="flex items-center gap-4">
-                <div className="flex-1 flex items-baseline gap-2">
-                  <span className="text-xl font-black text-[var(--accent-primary)]">$</span>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(parseFloat(e.target.value) || 0)}
-                    className="w-full bg-transparent text-4xl font-black text-white focus:outline-none font-mono tracking-tighter"
-                    placeholder="0"
-                  />
-                </div>
-
-                <div className="flex items-center gap-1 bg-white/5 p-1 rounded-lg border border-white/5">
-                  <button
-                    onClick={() => handleAmountChange(-100)}
-                    className="w-8 h-8 rounded-md hover:bg-white/5 flex items-center justify-center text-[var(--text-tertiary)] transition-colors"
+          <div className="space-y-6">
+            {/* Section: Enter Amount */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-white uppercase tracking-wide">Enter Amount</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5">
+                    <Wallet className="w-4 h-4 text-[var(--text-tertiary)]" />
+                    <span className="text-xs font-mono text-white">${balanceInUSD.toFixed(2)}</span>
+                  </div>
+                  <button 
+                    className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                    title="Deposit"
                   >
-                    <Minus className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleAmountChange(100)}
-                    className="w-8 h-8 rounded-md hover:bg-white/5 flex items-center justify-center text-[var(--text-tertiary)] transition-colors"
-                  >
-                    <Plus className="w-4 h-4" />
+                    <Plus className="w-4 h-4 text-white/60" />
                   </button>
                 </div>
               </div>
-            </div>
-
-            {/* Sharp Presets */}
-            <div className="grid grid-cols-4 gap-1.5">
-              {AMOUNT_PRESETS.map((preset) => (
+              
+              <div className="flex items-center justify-center py-4 px-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                <span className="text-4xl font-bold font-mono text-white">${amount}</span>
+              </div>
+              
+              <div className="grid grid-cols-4 gap-2">
+                {AMOUNT_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => handleAmountPreset(preset)}
+                    className={`
+                      py-3 rounded-xl text-sm font-bold transition-all border
+                      ${amount === preset
+                        ? "bg-white text-black border-white"
+                        : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
+                      }
+                    `}
+                  >
+                    ${preset}
+                  </button>
+                ))}
                 <button
-                  key={preset}
-                  onClick={() => handleAmountPreset(preset)}
+                  onClick={() => setAmount(Math.floor(balanceInUSD))}
                   className={`
-                    py-2 rounded-md text-[10px] font-black transition-all border
-                    ${amount === preset
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-[var(--text-tertiary)] border-white/5 hover:border-white/20 hover:text-white"
+                    py-3 rounded-xl text-sm font-bold transition-all border
+                    ${amount === Math.floor(balanceInUSD) && balanceInUSD > 0
+                      ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
+                      : "bg-transparent text-[var(--color-long)] border-[var(--color-long)]/30 hover:border-[var(--color-long)]"
                     }
                   `}
                 >
-                  ${preset}
+                  MAX
                 </button>
-              ))}
-              <button
-                onClick={() => setAmount(Math.floor(balanceInUSD))}
-                className={`
-                  py-2 rounded-md text-[10px] font-black transition-all border
-                  ${amount === Math.floor(balanceInUSD) && balanceInUSD > 0
-                    ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
-                    : "bg-transparent text-[var(--color-long)] border-[var(--color-long)]/20 hover:bg-[var(--color-long)]/5"
-                  }
-                `}
-              >
-                MAX
-              </button>
+              </div>
             </div>
 
-            {/* Gamified Insufficient Balance Warning */}
-            {hasInsufficientBalance && (
-              <div className="relative overflow-hidden rounded-xl bg-[var(--color-short)]/5 border border-[var(--color-short)]/20 animate-slide-up">
-                <div className="flex items-center gap-3 p-3">
-                  <div className="w-10 h-10 rounded-xl bg-[var(--color-short)]/10 flex items-center justify-center">
-                    <Wallet className="w-5 h-5 text-[var(--color-short)]" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-bold text-[var(--color-short)]">WALLET&apos;S FEELING LIGHT</p>
-                    <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
-                      Need ${(amount - balanceInUSD).toFixed(0)} more to enter this position
-                    </p>
-                  </div>
-                  <button className="px-3 py-1.5 rounded-lg bg-[var(--color-short)]/10 hover:bg-[var(--color-short)]/20 text-[var(--color-short)] text-xs font-bold transition-colors flex items-center gap-1.5">
-                    <Plus className="w-3.5 h-3.5" />
-                    Top Up
-                  </button>
-                </div>
+            {/* Section: Set Leverage */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-white uppercase tracking-wide">Set Leverage</span>
+                <span className="text-sm font-mono text-white/60">{leverage}x</span>
               </div>
-            )}
+              
+              <div className="grid grid-cols-3 gap-2">
+                {LEVERAGE_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setLeverage(preset)}
+                    className={`
+                      py-3 rounded-xl text-sm font-bold transition-all border
+                      ${leverage === preset
+                        ? "bg-white text-black border-white"
+                        : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
+                      }
+                    `}
+                  >
+                    {preset}x
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Section: Set Take Profit */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-white uppercase tracking-wide">Set Take Profit</span>
+                <span className="text-sm font-mono text-white/60">{takeProfit}%</span>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-2">
+                {TAKE_PROFIT_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => setTakeProfit(preset)}
+                    className={`
+                      py-3 rounded-xl text-sm font-bold transition-all border
+                      ${takeProfit === preset
+                        ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
+                        : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
+                      }
+                    `}
+                  >
+                    {preset}%
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -699,207 +643,84 @@ export function TradingPanel({
           </div>
         )}
 
-        {/* Leverage Management - Technical Strip */}
-        {isPerpetuals && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Choose Leverage</span>
-              <span className="text-[12px] font-black font-mono text-white tracking-widest">{leverage}X</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5">
-              {LEVERAGE_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setLeverage(preset)}
-                  className={`
-                    py-2 rounded-md text-[10px] font-black transition-all border
-                    ${leverage === preset
-                      ? "bg-white text-black border-white"
-                      : "bg-transparent text-[var(--text-tertiary)] border-white/5 hover:border-white/20 hover:text-white"
-                    }
-                  `}
-                >
-                  {preset}X
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Profit_Extract Protocol */}
-        {isPerpetuals && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-black text-[var(--text-tertiary)] uppercase tracking-[0.2em]">Take Profit</span>
-              <span className="text-[12px] font-black font-mono text-white tracking-widest">+{takeProfit}%</span>
-            </div>
-
-            <div className="grid grid-cols-3 gap-1.5">
-              {TAKE_PROFIT_PRESETS.map((preset) => (
-                <button
-                  key={preset}
-                  onClick={() => setTakeProfit(preset)}
-                  className={`
-                    py-2 rounded-md text-[10px] font-black transition-all border
-                    ${takeProfit === preset
-                      ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
-                      : "bg-transparent text-[var(--text-tertiary)] border-white/5 hover:border-white/20 hover:text-white"
-                    }
-                  `}
-                >
-                  {preset}%
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Position Summary - Perpetuals */}
+        {/* Position Summary */}
         {isPerpetuals && amount > 0 && (
-          <div className="space-y-2 md:space-y-3 animate-slide-up">
-            {/* Header */}
-            <div className="flex items-center justify-between">
-              <span className="text-[10px] md:text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
-                POSITION SUMMARY
-              </span>
-              <div className="flex items-center gap-1 md:gap-1.5 px-1.5 md:px-2 py-0.5 md:py-1 rounded-lg bg-[var(--bg-secondary)]">
-                <BarChart3 className="w-2.5 h-2.5 md:w-3 md:h-3 text-[var(--accent-primary)]" />
-                <span className="text-[9px] md:text-[10px] font-bold text-[var(--text-tertiary)]">
-                  R:R {computedValues.riskRewardRatio.toFixed(1)}x
-                </span>
+          <div className="space-y-0 pt-2 border-t border-white/5">
+            {/* Row: Entry Price */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-white/50">Entry Price</span>
+              <span className="text-sm font-mono text-white">${formatPrice(currentPrice)}</span>
+            </div>
+            
+            {/* Row: Take Profit Price */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-white/50">Take Profit Price</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-mono text-white">${formatPrice(computedValues.takeProfitPrice)}</span>
+                <span className="text-sm font-mono text-[var(--color-long)]">+${formatValue(computedValues.potentialProfit, 0)}</span>
               </div>
             </div>
-
-            {/* Main Stats Grid */}
-            <div className="grid grid-cols-2 gap-1.5 md:gap-2">
-              {/* Position Size */}
-              <div className="p-2 md:p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <div className="flex items-center gap-1 md:gap-1.5 mb-0.5 md:mb-1">
-                  <BarChart3 className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--accent-primary)]" />
-                  <span className="text-[10px] md:text-[11px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Size</span>
-                </div>
-                <p className="text-base md:text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                  {formatValue(computedValues.positionSize)} SOL
-                </p>
-                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)] font-mono tabular-nums">
-                  ${formatValue(computedValues.positionValue, 0)}
-                </p>
-              </div>
-
-              {/* Entry Price */}
-              <div className="p-2 md:p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <div className="flex items-center gap-1 md:gap-1.5 mb-0.5 md:mb-1">
-                  <DollarSign className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--text-tertiary)]" />
-                  <span className="text-[10px] md:text-[11px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Entry</span>
-                </div>
-                <p className="text-base md:text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
-                  ${formatPrice(currentPrice)}
-                </p>
-                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">Market Price</p>
+            
+            {/* Row: Liquidation Price */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm text-white/50">Liquidation Price</span>
+              <div className="flex items-center gap-3">
+                <span className="text-sm font-mono text-white">${formatPrice(computedValues.liquidationPrice)}</span>
+                <span className="text-xs text-white/40">{computedValues.liqDistance.toFixed(1)}% away</span>
               </div>
             </div>
-
-            {/* Liquidation - Full Width with Visual Indicator */}
-            <div className="p-2 md:p-3 rounded-xl bg-[var(--color-short)]/5 border border-[var(--color-short)]/20">
-              <div className="flex items-center justify-between mb-1 md:mb-2">
-                <div className="flex items-center gap-1 md:gap-1.5">
-                  <AlertTriangle className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--color-short)]" />
-                  <span className="text-[10px] md:text-[11px] uppercase tracking-wide font-bold text-[var(--color-short)]">
-                    Liquidation
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--color-short)]/10">
-                  <span className="text-[9px] md:text-[10px] font-bold text-[var(--color-short)] tabular-nums">
-                    {computedValues.liqDistance.toFixed(1)}% away
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-lg md:text-xl font-bold font-mono text-[var(--color-short)] tabular-nums">
-                  ${formatPrice(computedValues.liquidationPrice)}
-                </p>
-                <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">
-                  {direction === "long" ? "↓ drops" : "↑ rises"}
-                </p>
-              </div>
-              {/* Visual distance bar */}
-              <div className="mt-1.5 md:mt-2 h-1 md:h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-[var(--color-short)] to-[var(--color-short)]/50 transition-all duration-300"
-                  style={{ width: `${Math.min(computedValues.liqDistance * 10, 100)}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Take Profit - Full Width with Potential Gain */}
-            <div className="p-2 md:p-3 rounded-xl bg-[var(--color-long)]/5 border border-[var(--color-long)]/20">
-              <div className="flex items-center justify-between mb-1 md:mb-2">
-                <div className="flex items-center gap-1 md:gap-1.5">
-                  <Target className="w-3 h-3 md:w-3.5 md:h-3.5 text-[var(--color-long)]" />
-                  <span className="text-[10px] md:text-[11px] uppercase tracking-wide font-bold text-[var(--color-long)]">
-                    Take Profit
-                  </span>
-                </div>
-                <div className="flex items-center gap-1 px-1.5 md:px-2 py-0.5 rounded-full bg-[var(--color-long)]/10">
-                  <Trophy className="w-2.5 h-2.5 md:w-3 md:h-3 text-[var(--color-long)]" />
-                  <span className="text-[9px] md:text-[10px] font-bold text-[var(--color-long)] tabular-nums">
-                    +{takeProfit}%
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-lg md:text-xl font-bold font-mono text-[var(--color-long)] tabular-nums">
-                  ${formatPrice(computedValues.takeProfitPrice)}
-                </p>
-                <div className="text-right">
-                  <p className="text-[11px] md:text-xs font-bold text-[var(--color-long)] tabular-nums">
-                    +${formatValue(computedValues.potentialProfit, 0)}
-                  </p>
-                  <p className="text-[9px] md:text-[10px] text-[var(--text-tertiary)]">profit</p>
-                </div>
-              </div>
-            </div>
-
           </div>
         )}
       </div>
 
-      {/* Action Buttons - Miami Racing Execution */}
-      <div className="p-4 border-t border-[var(--border-subtle)] space-y-3 bg-gradient-to-t from-[var(--bg-elevated)]/50 to-transparent">
-        {isConnected && isPerpetuals && activePosition && onReversePosition && (
-          <button
-            onClick={() => onReversePosition(activePosition)}
-            className={`
-              w-full py-3.5 rounded-lg text-xs font-bold transition-all border uppercase tracking-wider
-              flex items-center justify-center gap-2 miami-hover
-              ${activePosition.direction === "long"
-                ? "bg-[var(--color-short)]/10 border-[var(--color-short)]/30 text-[var(--color-short)] hover:bg-[var(--color-short)]/20 hover:shadow-lg hover:shadow-pink-500/20"
-                : "bg-[var(--color-long)]/10 border-[var(--color-long)]/30 text-[var(--color-long)] hover:bg-[var(--color-long)]/20 hover:shadow-lg hover:shadow-yellow-500/20"
-              }
-            `}
-            style={{ fontFamily: 'var(--font-rajdhani)' }}
-          >
-            <RefreshCw className="w-4 h-4" />
-            Reverse to {activePosition.direction === "long" ? "Down" : "Up"}
-          </button>
+      {/* Action Section */}
+      <div className="p-4 border-t border-[var(--border-subtle)] space-y-3">
+        {/* Direction Toggle - Prominent */}
+        {isPerpetuals && isConnected && isValidTrade && (
+          <div className="grid grid-cols-2 gap-2">
+            <button
+              onClick={() => setDirection("long")}
+              className={`
+                py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
+                ${direction === "long"
+                  ? "bg-[var(--color-long)] text-black"
+                  : "bg-transparent border border-white/10 text-[var(--text-tertiary)] hover:border-[var(--color-long)]/50 hover:text-[var(--color-long)]"
+                }
+              `}
+            >
+              <TrendingUp className="w-4 h-4" />
+              Up
+            </button>
+            <button
+              onClick={() => setDirection("short")}
+              className={`
+                py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
+                ${direction === "short"
+                  ? "bg-[var(--color-short)] text-white"
+                  : "bg-transparent border border-white/10 text-[var(--text-tertiary)] hover:border-[var(--color-short)]/50 hover:text-[var(--color-short)]"
+                }
+              `}
+            >
+              <TrendingDown className="w-4 h-4" />
+              Down
+            </button>
+          </div>
         )}
 
+
+        {/* Main Action Button */}
         {!isConnected ? (
           <button
             onClick={onConnectWallet}
-            className="w-full py-4 rounded-lg bg-gradient-to-r from-[var(--warm-yellow)] via-[var(--sunset-orange)] to-[var(--hot-pink)] text-[#1a0a2e] text-sm font-bold uppercase tracking-wider hover:shadow-xl hover:shadow-orange-500/30 hover:scale-[1.02] transition-all flex items-center justify-center gap-3 relative overflow-hidden"
-            style={{ fontFamily: 'var(--font-rajdhani)' }}
+            className="w-full py-4 rounded-lg bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-white/90 transition-all flex items-center justify-center gap-2"
           >
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full hover:translate-x-full transition-transform duration-700" />
-            <Zap className="w-5 h-5" fill="currentColor" />
+            <Zap className="w-4 h-4" />
             Connect Wallet
           </button>
         ) : (isPerpetuals ? hasInsufficientBalance : hasInsufficientSpotBalance) ? (
           <button
             disabled
-            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-3"
-            style={{ fontFamily: 'var(--font-rajdhani)' }}
+            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Wallet className="w-4 h-4" />
             Insufficient Funds
@@ -907,8 +728,7 @@ export function TradingPanel({
         ) : !isValidTrade ? (
           <button
             disabled
-            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-3"
-            style={{ fontFamily: 'var(--font-rajdhani)' }}
+            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed"
           >
             Enter Amount
           </button>
@@ -917,27 +737,20 @@ export function TradingPanel({
             onClick={handleTrade}
             className={`
               w-full py-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all
-              flex items-center justify-center gap-3 relative overflow-hidden group
+              flex items-center justify-center gap-2
               ${isPerpetuals
                 ? direction === "long"
-                  ? "bg-gradient-to-r from-[var(--warm-yellow)] to-[var(--color-long-dim)] text-[#1a0a2e] hover:shadow-xl hover:shadow-yellow-500/30"
-                  : "bg-gradient-to-r from-[var(--hot-pink)] to-[var(--color-short-dim)] text-white hover:shadow-xl hover:shadow-pink-500/30"
-                : "bg-gradient-to-r from-[var(--warm-yellow)] to-[var(--sunset-orange)] text-[#1a0a2e] hover:shadow-xl hover:shadow-orange-500/30"
+                  ? "bg-[var(--color-long)] text-black hover:opacity-90"
+                  : "bg-[var(--color-short)] text-white hover:opacity-90"
+                : "bg-white text-black hover:bg-white/90"
               }
-              hover:scale-[1.02]
             `}
-            style={{ fontFamily: 'var(--font-rajdhani)' }}
           >
-            {/* Racing stripe animation */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-500" />
             {isPerpetuals ? (
-              <>
-                <Rocket className={`w-5 h-5 ${direction === "long" ? "" : ""}`} />
-                {direction === "long" ? "Go Up" : "Go Down"}
-              </>
+              direction === "long" ? "Go Up" : "Go Down"
             ) : (
               <>
-                <Zap className="w-5 h-5" fill="currentColor" />
+                <Zap className="w-4 h-4" />
                 Swap Now
               </>
             )}
