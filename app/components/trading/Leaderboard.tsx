@@ -97,16 +97,16 @@ export function Leaderboard({
 
   return (
     <div className="flex flex-col h-full bg-black/40">
-      {/* Control Strip - Sharp & Technical Technical Mode */}
-      <div className="flex flex-col border-b border-white/5 bg-white/[0.02]">
-        <div className="flex items-center justify-between px-4 py-2 opacity-50">
+      {/* Control Strip - Sharp & Technical Mode */}
+      <div className="flex flex-col border-b border-white/10 bg-white/[0.02]">
+        <div className="flex items-center justify-between px-4 py-2.5">
           <div className="flex items-center gap-2">
-            <Trophy className="w-3 h-3 text-white" />
-            <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">RANKING_SYSTEM</span>
+            <Trophy className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
+            <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">Top Traders</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-1 h-1 rounded-full bg-[var(--color-long)] animate-pulse" />
-            <span className="text-[9px] font-black text-white uppercase tracking-[0.2em]">LIVE_FEED</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-long)] animate-pulse" />
+            <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Live</span>
           </div>
         </div>
 
@@ -117,10 +117,10 @@ export function Leaderboard({
               key={p}
               onClick={() => setPeriod(p)}
               className={`
-                flex-1 py-1 rounded text-[9px] font-black uppercase tracking-widest transition-all
+                flex-1 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all
                 ${period === p
-                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary)]/10"
-                  : "text-white/30 hover:text-white"
+                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary)]/15"
+                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
                 }
               `}
             >
@@ -138,11 +138,11 @@ export function Leaderboard({
           return (
             <div
               key={trader.rank}
-              className="group flex items-center gap-4 px-4 py-3 hover:bg-white/[0.02] transition-colors border-b border-white/[0.02]"
+              className="group flex items-center gap-4 px-4 py-3 hover:bg-white/[0.03] transition-colors border-b border-white/[0.04]"
             >
               {/* Rank Position */}
               <div className="w-6 shrink-0 flex justify-center">
-                <span className={`text-[12px] font-black font-mono tracking-tighter ${isTop3 ? "text-white" : "text-white/20"}`}>
+                <span className={`text-sm font-black font-mono ${isTop3 ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"}`}>
                   {trader.rank.toString().padStart(2, '0')}
                 </span>
               </div>
@@ -150,16 +150,16 @@ export function Leaderboard({
               {/* Identity Module */}
               <div className="flex-1 min-w-0 flex items-center gap-3">
                 <div className="w-7 h-7 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[var(--accent-primary)]/40 transition-all">
-                  <span className="text-[9px] font-black text-white/40 uppercase">
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">
                     {trader.username.slice(0, 2)}
                   </span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-[12px] font-black text-white uppercase tracking-wider truncate group-hover:text-[var(--accent-primary)] transition-colors">
+                  <span className="text-sm font-bold text-white uppercase tracking-wide truncate group-hover:text-[var(--accent-primary)] transition-colors">
                     {trader.username}
                   </span>
-                  <span className="text-[8px] font-black text-white/20 uppercase tracking-[0.2em] mt-0.5">
-                    {trader.trades} TRADES
+                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">
+                    {trader.trades} trades
                   </span>
                 </div>
               </div>
@@ -167,10 +167,10 @@ export function Leaderboard({
               {/* Performance Metrics */}
               <div className="text-right shrink-0">
                 <div className="flex flex-col">
-                  <span className="text-[12px] font-black font-mono text-[var(--color-long)] tracking-tighter">
+                  <span className="text-sm font-black font-mono text-[var(--color-long)]">
                     {formatPoints(trader.points)}
                   </span>
-                  <span className="text-[8px] font-black text-white/40 uppercase tracking-widest mt-0.5">
+                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">
                     {trader.winRate}% WR
                   </span>
                 </div>
@@ -194,13 +194,13 @@ export function Leaderboard({
 
               <div className="flex flex-col">
                 <div className="flex items-center gap-2">
-                  <span className="text-[13px] font-black text-white uppercase tracking-wider">
+                  <span className="text-sm font-bold text-white uppercase tracking-wide">
                     {username || `user_${walletAddress.slice(2, 6)}`}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">GLOBAL_RANK</span>
-                  <span className="text-[11px] font-black font-mono text-white tracking-tighter">
+                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Rank</span>
+                  <span className="text-sm font-bold font-mono text-white">
                     {formatRank(userRank)}
                   </span>
                 </div>
@@ -208,10 +208,10 @@ export function Leaderboard({
             </div>
 
             <div className="text-right">
-              <span className="text-[18px] font-black font-mono text-[var(--color-long)] tracking-tighter block leading-none">
+              <span className="text-xl font-black font-mono text-[var(--color-long)] block leading-none">
                 {formatPoints(userPoints)}
               </span>
-              <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em] mt-1 block">AGGREGATE_POINTS</span>
+              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-1 block">Points</span>
             </div>
           </div>
 
@@ -219,10 +219,10 @@ export function Leaderboard({
           {userRank > 1 && (
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[9px] font-black text-white/20 uppercase tracking-[0.2em]">ADVANCEMENT_PROTOCOL</span>
-                <span className="text-[10px] font-black font-mono text-[var(--accent-primary)] tracking-tighter">{progressToNext.toFixed(1)}%</span>
+                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Next Rank</span>
+                <span className="text-sm font-bold font-mono text-[var(--accent-primary)]">{progressToNext.toFixed(1)}%</span>
               </div>
-              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
                 <div
                   className="h-full bg-[var(--accent-primary)] shadow-[0_0_10px_rgba(0,245,160,0.5)]"
                   style={{ width: `${progressToNext}%` }}

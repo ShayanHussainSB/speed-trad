@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CandlestickSeries, CandlestickData, Time, ColorType } from "lightweight-charts";
-import { CandlestickChart, ChevronDown, Activity, Command, RefreshCw, TrendingUp, TrendingDown, Loader2 } from "lucide-react";
+import { CandlestickChart, ChevronDown, Activity, Command, Loader2 } from "lucide-react";
 import { LiveLineChart } from "./LiveLineChart";
 import { TokenSelectorModal, Token } from "./TokenSelectorModal";
 import { SpeedGauge } from "./SpeedGauge";
@@ -10,37 +10,6 @@ import { Position } from "@/app/hooks/usePositions";
 import { useMarketData } from "@/app/hooks/useMarketData";
 import { useLivePrice } from "@/app/hooks/useLivePrice";
 import type { ChartCandle } from "@/app/services/bulkTrade";
-
-// Mock PnL simulation for speedometer demo
-function useMockPnL() {
-  const [pnl, setPnl] = useState({ percent: 0, dollars: 0 });
-  const [direction, setDirection] = useState<"long" | "short">("long");
-
-  useEffect(() => {
-    let time = 0;
-    const baseAmount = 500; // $500 position
-
-    const interval = setInterval(() => {
-      time += 0.05;
-      
-      // Create realistic price movement simulation
-      const wave1 = Math.sin(time * 0.8) * 60;
-      const wave2 = Math.sin(time * 2.1) * 25;
-      const wave3 = Math.sin(time * 0.3) * 80;
-      const noise = (Math.random() - 0.5) * 15;
-      const trend = Math.sin(time * 0.1) * 100;
-      
-      const percent = wave1 + wave2 + wave3 + noise + trend;
-      const dollars = (percent / 100) * baseAmount;
-
-      setPnl({ percent, dollars });
-    }, 100);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  return { ...pnl, direction };
-}
 
 type ChartType = "candlestick" | "live";
 
@@ -110,9 +79,6 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
   const [chartType, setChartType] = useState<ChartType>("live");
   const [timeframe, setTimeframe] = useState("5m");
-  
-  // Mock PnL for speedometer demo
-  const mockPnL = useMockPnL();
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
 
   // Initialize token from symbol prop
@@ -451,30 +417,6 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
         {/* Right side controls */}
         <div className="flex items-center gap-2 md:gap-3">
-          {/* Reverse Position Button - Only show when there's an active position */}
-          {activePosition && onReversePosition && (
-            <button
-              onClick={() => onReversePosition(activePosition)}
-              className={`
-                flex items-center gap-1.5 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs font-bold
-                transition-all hover:-translate-y-0.5
-                ${activePosition.direction === "long"
-                  ? "bg-[var(--color-short)]/10 hover:bg-[var(--color-short)]/20 text-[var(--color-short)] border border-[var(--color-short)]/20"
-                  : "bg-[var(--color-long)]/10 hover:bg-[var(--color-long)]/20 text-[var(--color-long)] border border-[var(--color-long)]/20"
-                }
-              `}
-              title={`Reverse to ${activePosition.direction === "long" ? "Short" : "Long"}`}
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Reverse</span>
-              {activePosition.direction === "long" ? (
-                <TrendingDown className="w-3 h-3 hidden sm:block" />
-              ) : (
-                <TrendingUp className="w-3 h-3 hidden sm:block" />
-              )}
-            </button>
-          )}
-
           {/* Chart Type Selector - Compact on mobile */}
           <div className="flex items-center gap-1 md:gap-2">
           <span className="text-xs text-[var(--text-tertiary)] hidden sm:block">Chart Type</span>
@@ -543,16 +485,18 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             tokenSymbol={selectedToken.symbol}
           />
           
-          {/* SpeedGauge Overlay - Bottom Left */}
-          <div className="absolute bottom-4 left-4 z-20 hidden md:block">
-            <SpeedGauge
-              pnlPercent={mockPnL.percent}
-              pnlDollars={mockPnL.dollars}
-              isPositionOpen={true}
-              direction={mockPnL.direction}
-              size="large"
-            />
-          </div>
+          {/* SpeedGauge Overlay - Only show when user has an open position */}
+          {activePosition && (
+            <div className="absolute bottom-2 left-2 z-20 hidden lg:block opacity-90 hover:opacity-100 transition-opacity">
+              <SpeedGauge
+                pnlPercent={activePosition.pnlPercent}
+                pnlDollars={activePosition.pnl}
+                isPositionOpen={true}
+                direction={activePosition.direction}
+                size="normal"
+              />
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 min-h-0 relative">
@@ -577,17 +521,6 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             </div>
           )}
           <div ref={chartContainerRef} className="w-full h-full" />
-          
-          {/* SpeedGauge Overlay - Bottom Left */}
-          <div className="absolute bottom-4 left-4 z-20 hidden md:block">
-            <SpeedGauge
-              pnlPercent={mockPnL.percent}
-              pnlDollars={mockPnL.dollars}
-              isPositionOpen={true}
-              direction={mockPnL.direction}
-              size="large"
-            />
-          </div>
         </div>
       )}
 

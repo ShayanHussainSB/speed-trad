@@ -41,31 +41,31 @@ export function LeftPanel({
   // Hidden state - vertical icon bar with quick actions
   if (isHidden) {
     return (
-      <div className="h-full w-full flex flex-col items-center bg-[var(--bg-card)] border-r border-white/10">
+      <div className="h-full w-full flex flex-col items-center bg-[var(--bg-card)] border-r border-[var(--border-subtle)]">
         {/* Expand button */}
         <button
           onClick={onToggleHide}
-          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          className="w-full py-3 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
           title="Expand Panel"
         >
-          <ChevronRight className="w-5 h-5 text-white/40 group-hover:text-white" />
+          <ChevronRight className="w-4 h-4 text-white/40 group-hover:text-white" />
         </button>
         
         {/* Quick access icons */}
         <button
           onClick={onToggleHide}
-          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          className="w-full py-3 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
           title="Leaderboard"
         >
-          <Trophy className="w-5 h-5 text-white/30 group-hover:text-[var(--color-long)]" />
+          <Trophy className="w-4 h-4 text-white/30 group-hover:text-[var(--color-long)]" />
         </button>
         
         <button
           onClick={onToggleHide}
-          className="w-full py-4 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
+          className="w-full py-3 flex items-center justify-center hover:bg-white/5 transition-all group border-b border-white/5"
           title="Quests"
         >
-          <Zap className="w-5 h-5 text-white/30 group-hover:text-[var(--accent-primary)]" />
+          <Zap className="w-4 h-4 text-white/30 group-hover:text-[var(--accent-primary)]" />
         </button>
       </div>
     );

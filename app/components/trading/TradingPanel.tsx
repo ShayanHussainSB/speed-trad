@@ -2,8 +2,6 @@
 
 import { useState, useMemo } from "react";
 import {
-  TrendingUp,
-  TrendingDown,
   Zap,
   Wallet,
   Target,
@@ -13,8 +11,11 @@ import {
   Settings,
   Info,
   RefreshCw,
+  FlaskConical,
+  RotateCcw,
 } from "lucide-react";
 import { Position } from "@/app/hooks/usePositions";
+import { DEMO_CONFIG } from "@/app/config/demoTrading";
 
 type TradeDirection = "long" | "short";
 type TradingMode = "perpetuals" | "spot";
@@ -24,10 +25,13 @@ interface TradingPanelProps {
   isConnected: boolean;
   onConnectWallet: () => void;
   balance?: number;
+  demoBalance?: number;
   currentPrice?: number;
   activePosition?: Position | null;
   onReversePosition?: (position: Position) => void;
   onOpenPosition?: (direction: TradeDirection, amount: number, leverage: number) => void;
+  onResetDemo?: () => void;
+  isDemoMode?: boolean;
 }
 
 interface Token {
@@ -99,13 +103,16 @@ export function TradingPanel({
   isConnected,
   onConnectWallet,
   balance = 0,
+  demoBalance,
   currentPrice = MOCK_CURRENT_PRICE,
   activePosition,
   onReversePosition,
   onOpenPosition,
+  onResetDemo,
+  isDemoMode = true,
 }: TradingPanelProps) {
   const [direction, setDirection] = useState<TradeDirection>("long");
-  const [amount, setAmount] = useState(500);
+  const [amount, setAmount] = useState(10);
   const [leverage, setLeverage] = useState(1000);
   const [takeProfit, setTakeProfit] = useState(500);
 
@@ -122,51 +129,55 @@ export function TradingPanel({
   const receiveToken = TOKENS.find(t => t.symbol === receiveTokenSymbol) || TOKENS[1];
 
   const isPerpetuals = mode === "perpetuals";
-  const balanceInUSD = balance * currentPrice;
-  const hasInsufficientBalance = isConnected && amount > balanceInUSD;
+  // Use demo balance directly (already in USD)
+  const balanceInUSD = isDemoMode ? (demoBalance ?? DEMO_CONFIG.INITIAL_BALANCE) : balance * currentPrice;
+  const hasInsufficientBalance = amount > balanceInUSD;
   const spotAmountNum = parseFloat(spotAmount) || 0;
   const hasInsufficientSpotBalance = isConnected && spotAmountNum > payToken.balance;
   const isValidTrade = isPerpetuals
     ? amount > 0 && !hasInsufficientBalance
     : spotAmountNum > 0 && !hasInsufficientSpotBalance;
 
-  // Computed values for perpetuals
+  // Computed values for perpetuals using real fee structure from workbook
   const computedValues = useMemo(() => {
-    const collateralSOL = amount / currentPrice;
-    const positionSize = collateralSOL * leverage;
-    const positionValue = positionSize * currentPrice;
-    const fee = positionValue * 0.0005;
+    const notional = amount * leverage;
+    
+    // Liquidation at 70% margin lost (from workbook)
+    // price_move = LIQUIDATION_THRESHOLD / leverage
+    const liqPriceMove = DEMO_CONFIG.LIQUIDATION_THRESHOLD / leverage;
+    
+    // Calculate both long and short liquidation prices
+    const liqPriceLong = currentPrice * (1 - liqPriceMove);
+    const liqPriceShort = currentPrice * (1 + liqPriceMove);
 
-    const liquidationPrice = direction === "long"
-      ? currentPrice * (1 - 0.9 / leverage)
-      : currentPrice * (1 + 0.9 / leverage);
-
-    const takeProfitPrice = direction === "long"
-      ? currentPrice * (1 + takeProfit / 100 / leverage)
-      : currentPrice * (1 - takeProfit / 100 / leverage);
-
-    // Distance to liquidation as percentage
-    const liqDistance = Math.abs((liquidationPrice - currentPrice) / currentPrice * 100);
+    // Calculate both long and short take profit prices
+    const takeProfitLong = currentPrice * (1 + takeProfit / 100 / leverage);
+    const takeProfitShort = currentPrice * (1 - takeProfit / 100 / leverage);
 
     // Potential profit in USD
     const potentialProfit = (takeProfit / 100) * amount;
 
-    // Risk/Reward ratio (simplified: potential profit vs potential loss at liquidation)
-    const potentialLoss = amount * 0.9; // ~90% loss at liquidation
-    const riskRewardRatio = potentialProfit / potentialLoss;
+    // Opening fee: 0.01% of notional (1 BIP)
+    const openingFee = DEMO_CONFIG.CLOSE_FEE_MIN * notional;
+    const openingFeePercent = DEMO_CONFIG.CLOSE_FEE_MIN * 100;
+
+    // Close fee: max(0.01% notional, 20% profit)
+    const minFee = DEMO_CONFIG.CLOSE_FEE_MIN * notional;
+    const profitFee = potentialProfit * DEMO_CONFIG.PROFIT_FEE_RATE;
+    const estimatedCloseFee = Math.max(minFee, profitFee);
 
     return {
-      collateralSOL,
-      positionSize,
-      positionValue,
-      fee,
-      liquidationPrice,
-      takeProfitPrice,
-      liqDistance,
+      notional,
+      liqPriceLong,
+      liqPriceShort,
+      takeProfitLong,
+      takeProfitShort,
       potentialProfit,
-      riskRewardRatio,
+      openingFee,
+      openingFeePercent,
+      estimatedCloseFee,
     };
-  }, [amount, leverage, currentPrice, direction, takeProfit]);
+  }, [amount, leverage, currentPrice, takeProfit]);
 
   // Spot computed values
   const spotValues = useMemo(() => {
@@ -255,42 +266,71 @@ export function TradingPanel({
   };
 
   return (
-    <div className="flex flex-col h-full">
-
-      {/* Trading Form */}
-      <div className="flex-1 p-5 space-y-6 overflow-y-auto">
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Trading Form - Scrollable Content */}
+      <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
         {/* Perpetuals Interface */}
         {isPerpetuals && (
-          <div className="space-y-6">
-            {/* Section: Enter Amount */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white uppercase tracking-wide">Enter Amount</span>
+          <div className="space-y-4">
+            {/* Demo Mode Badge - Only show when NOT connected */}
+            {isDemoMode && !isConnected && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5">
-                    <Wallet className="w-4 h-4 text-[var(--text-tertiary)]" />
-                    <span className="text-xs font-mono text-white">${balanceInUSD.toFixed(2)}</span>
+                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                    <FlaskConical className="w-4 h-4 text-amber-400" />
                   </div>
-                  <button 
-                    className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
-                    title="Deposit"
+                  <div>
+                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Demo Mode</span>
+                    <p className="text-[10px] text-amber-400/60">Practice with test funds</p>
+                  </div>
+                </div>
+                {onResetDemo && (
+                  <button
+                    onClick={onResetDemo}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs font-bold transition-all"
+                    title="Reset to $500"
                   >
-                    <Plus className="w-4 h-4 text-white/60" />
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    Reset
                   </button>
+                )}
+              </div>
+            )}
+
+            {/* Section: Enter Amount */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Enter Amount</span>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/5">
+                    <Wallet className="w-4 h-4 text-[var(--text-muted)]" />
+                    <span className="text-sm font-mono font-semibold text-white">${balanceInUSD.toFixed(2)}</span>
+                    {isDemoMode && !isConnected && (
+                      <span className="text-[10px] font-bold text-amber-400 uppercase">DEMO</span>
+                    )}
+                  </div>
+                  {isConnected && (
+                    <button 
+                      className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
+                      title="Deposit"
+                    >
+                      <Plus className="w-4 h-4 text-[var(--text-muted)]" />
+                    </button>
+                  )}
                 </div>
               </div>
               
-              <div className="flex items-center justify-center py-4 px-4 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
-                <span className="text-4xl font-bold font-mono text-white">${amount}</span>
+              <div className="flex items-center justify-center py-2 lg:py-3 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
+                <span className="text-xl lg:text-3xl font-bold font-mono text-white">${amount}</span>
               </div>
               
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-4 gap-1.5 lg:gap-2">
                 {AMOUNT_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => handleAmountPreset(preset)}
                     className={`
-                      py-3 rounded-xl text-sm font-bold transition-all border
+                      py-2 lg:py-3 rounded-lg lg:rounded-xl text-xs lg:text-sm font-bold transition-all border
                       ${amount === preset
                         ? "bg-white text-black border-white"
                         : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
@@ -303,7 +343,7 @@ export function TradingPanel({
                 <button
                   onClick={() => setAmount(Math.floor(balanceInUSD))}
                   className={`
-                    py-3 rounded-xl text-sm font-bold transition-all border
+                    py-2 lg:py-3 rounded-lg lg:rounded-xl text-xs lg:text-sm font-bold transition-all border
                     ${amount === Math.floor(balanceInUSD) && balanceInUSD > 0
                       ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
                       : "bg-transparent text-[var(--color-long)] border-[var(--color-long)]/30 hover:border-[var(--color-long)]"
@@ -316,19 +356,19 @@ export function TradingPanel({
             </div>
 
             {/* Section: Set Leverage */}
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white uppercase tracking-wide">Set Leverage</span>
-                <span className="text-sm font-mono text-white/60">{leverage}x</span>
+                <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Set Leverage</span>
+                <span className="text-sm font-mono font-semibold text-white">{leverage}x</span>
               </div>
               
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 lg:gap-2">
                 {LEVERAGE_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setLeverage(preset)}
                     className={`
-                      py-3 rounded-xl text-sm font-bold transition-all border
+                      py-2 lg:py-3 rounded-lg lg:rounded-xl text-xs lg:text-sm font-bold transition-all border
                       ${leverage === preset
                         ? "bg-white text-black border-white"
                         : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
@@ -342,19 +382,19 @@ export function TradingPanel({
             </div>
 
             {/* Section: Set Take Profit */}
-            <div className="space-y-4">
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <span className="text-sm font-bold text-white uppercase tracking-wide">Set Take Profit</span>
-                <span className="text-sm font-mono text-white/60">{takeProfit}%</span>
+                <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Set Take Profit</span>
+                <span className="text-sm font-mono font-semibold text-white">{takeProfit}%</span>
               </div>
               
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-1.5 lg:gap-2">
                 {TAKE_PROFIT_PRESETS.map((preset) => (
                   <button
                     key={preset}
                     onClick={() => setTakeProfit(preset)}
                     className={`
-                      py-3 rounded-xl text-sm font-bold transition-all border
+                      py-2 lg:py-3 rounded-lg lg:rounded-xl text-xs lg:text-sm font-bold transition-all border
                       ${takeProfit === preset
                         ? "bg-[var(--color-long)] text-black border-[var(--color-long)]"
                         : "bg-transparent text-white/70 border-white/10 hover:border-white/30"
@@ -374,7 +414,7 @@ export function TradingPanel({
           <div className="space-y-4">
             {/* Slippage Settings Toggle */}
             <div className="flex items-center justify-between">
-              <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
+              <span className="text-sm uppercase tracking-wider font-bold text-[var(--text-secondary)]">
                 Swap Tokens
               </span>
               <button
@@ -430,7 +470,7 @@ export function TradingPanel({
             {/* You Pay Section */}
             <div className="rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3">
-                <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
+                <span className="text-sm uppercase tracking-wider font-bold text-[var(--text-secondary)]">
                   You Pay
                 </span>
                 <div className="flex items-center gap-2">
@@ -508,7 +548,7 @@ export function TradingPanel({
             {/* You Receive Section */}
             <div className="rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)] overflow-hidden">
               <div className="flex items-center justify-between px-4 pt-3">
-                <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
+                <span className="text-sm uppercase tracking-wider font-bold text-[var(--text-secondary)]">
                   You Receive
                 </span>
                 <span className="text-xs text-[var(--text-tertiary)]">
@@ -587,8 +627,8 @@ export function TradingPanel({
               <div className="space-y-3 animate-slide-up">
                 {/* Header */}
                 <div className="flex items-center justify-between">
-                  <span className="text-xs uppercase tracking-wide font-bold text-[var(--text-tertiary)]">
-                    SWAP DETAILS
+                  <span className="text-sm uppercase tracking-wider font-bold text-[var(--text-secondary)]">
+                    Swap Details
                   </span>
                   <div className={`flex items-center gap-1 px-2 py-0.5 rounded-full ${spotValues.priceImpact > 1 ? "bg-[var(--color-short)]/10" : "bg-[var(--color-long)]/10"
                     }`}>
@@ -603,7 +643,7 @@ export function TradingPanel({
                 <div className="p-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                   <div className="flex items-center gap-1.5 mb-1">
                     <ArrowDownUp className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-                    <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--text-tertiary)]">Exchange Rate</span>
+                    <span className="text-xs uppercase tracking-wider font-bold text-[var(--text-tertiary)]">Exchange Rate</span>
                   </div>
                   <p className="text-lg font-bold font-mono text-[var(--text-primary)] tabular-nums">
                     1 {payToken.symbol} = {payToken.symbol === "SOL" ? `$${currentPrice.toFixed(2)}` : `${(1 / currentPrice).toFixed(4)} SOL`}
@@ -615,11 +655,11 @@ export function TradingPanel({
                   <div className="flex items-center justify-between mb-1">
                     <div className="flex items-center gap-1.5">
                       <Target className="w-3.5 h-3.5 text-[var(--color-long)]" />
-                      <span className="text-[10px] uppercase tracking-wide font-bold text-[var(--color-long)]">
+                      <span className="text-xs uppercase tracking-wider font-bold text-[var(--color-long)]">
                         Min. Received
                       </span>
                     </div>
-                    <span className="text-[10px] text-[var(--text-tertiary)]">
+                    <span className="text-xs font-medium text-[var(--text-muted)]">
                       after {slippage}% slippage
                     </span>
                   </div>
@@ -631,8 +671,8 @@ export function TradingPanel({
                 {/* Fee Row - Compact */}
                 <div className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                   <div className="flex items-center gap-1.5">
-                    <Zap className="w-3.5 h-3.5 text-[var(--text-tertiary)]" />
-                    <span className="text-xs text-[var(--text-tertiary)]">Network Fee</span>
+                    <Zap className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                    <span className="text-sm font-medium text-[var(--text-tertiary)]">Network Fee</span>
                   </div>
                   <span className="text-sm font-bold font-mono text-[var(--text-secondary)] tabular-nums">
                     ~0.00025 SOL
@@ -645,82 +685,103 @@ export function TradingPanel({
 
         {/* Position Summary */}
         {isPerpetuals && amount > 0 && (
-          <div className="space-y-0 pt-2 border-t border-white/5">
-            {/* Row: Entry Price */}
+          <div className="space-y-0 pt-3 border-t border-white/10">
+            {/* Row: Opening Fee */}
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-white/50">Entry Price</span>
-              <span className="text-sm font-mono text-white">${formatPrice(currentPrice)}</span>
+              <span className="text-sm font-medium text-[var(--text-tertiary)]">Opening Fee</span>
+              <span className="text-sm font-mono font-semibold text-[var(--text-secondary)]">
+                {computedValues.openingFeePercent.toFixed(2)}% (${computedValues.openingFee.toFixed(2)})
+              </span>
             </div>
             
-            {/* Row: Take Profit Price */}
+            {/* Row: Est. Entry Price */}
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-white/50">Take Profit Price</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-mono text-white">${formatPrice(computedValues.takeProfitPrice)}</span>
-                <span className="text-sm font-mono text-[var(--color-long)]">+${formatValue(computedValues.potentialProfit, 0)}</span>
-              </div>
+              <span className="text-sm font-medium text-[var(--text-tertiary)]">Est. Entry Price</span>
+              <span className="text-sm font-mono font-bold text-white">${currentPrice.toFixed(3)}</span>
             </div>
             
-            {/* Row: Liquidation Price */}
+            {/* Row: Take Profit - shows both long and short prices */}
             <div className="flex items-center justify-between py-2.5">
-              <span className="text-sm text-white/50">Liquidation Price</span>
-              <div className="flex items-center gap-3">
-                <span className="text-sm font-mono text-white">${formatPrice(computedValues.liquidationPrice)}</span>
-                <span className="text-xs text-white/40">{computedValues.liqDistance.toFixed(1)}% away</span>
-              </div>
+              <span className="text-sm font-medium text-[var(--text-tertiary)]">Take Profit ({takeProfit}%)</span>
+              <span className="text-sm font-mono font-semibold text-white">
+                ${computedValues.takeProfitLong.toFixed(3)} / ${computedValues.takeProfitShort.toFixed(3)}
+              </span>
+            </div>
+            
+            {/* Row: Liq Price (long) */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm font-medium text-[var(--text-tertiary)]">
+                Liq. Price <span className="text-[var(--color-long)] font-semibold">(long)</span>
+              </span>
+              <span className="text-sm font-mono font-semibold text-white">${computedValues.liqPriceLong.toFixed(3)}</span>
+            </div>
+
+            {/* Row: Liq Price (short) */}
+            <div className="flex items-center justify-between py-2.5">
+              <span className="text-sm font-medium text-[var(--text-tertiary)]">
+                Liq. Price <span className="text-[var(--color-short)] font-semibold">(short)</span>
+              </span>
+              <span className="text-sm font-mono font-semibold text-white">${computedValues.liqPriceShort.toFixed(3)}</span>
             </div>
           </div>
         )}
       </div>
 
-      {/* Action Section */}
-      <div className="p-4 border-t border-[var(--border-subtle)] space-y-3">
-        {/* Direction Toggle - Prominent */}
-        {isPerpetuals && isConnected && isValidTrade && (
-          <div className="grid grid-cols-2 gap-2">
+      {/* Action Section - Always Visible at Bottom */}
+      <div className="flex-shrink-0 p-3 lg:p-4 pb-20 md:pb-4 border-t border-[var(--border-subtle)] bg-[var(--bg-card)]">
+        {/* Demo mode allows trading without wallet connection */}
+        {isPerpetuals && (isDemoMode || isConnected) ? (
+          // Perpetuals trading buttons (demo mode or connected)
+          hasInsufficientBalance ? (
             <button
-              onClick={() => setDirection("long")}
-              className={`
-                py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
-                ${direction === "long"
-                  ? "bg-[var(--color-long)] text-black"
-                  : "bg-transparent border border-white/10 text-[var(--text-tertiary)] hover:border-[var(--color-long)]/50 hover:text-[var(--color-long)]"
-                }
-              `}
+              disabled
+              className="w-full py-3 lg:py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
             >
-              <TrendingUp className="w-4 h-4" />
-              Up
+              <Wallet className="w-4 h-4" />
+              Insufficient Funds
             </button>
+          ) : !isValidTrade ? (
             <button
-              onClick={() => setDirection("short")}
-              className={`
-                py-3 rounded-lg text-sm font-bold uppercase tracking-wider transition-all flex items-center justify-center gap-2
-                ${direction === "short"
-                  ? "bg-[var(--color-short)] text-white"
-                  : "bg-transparent border border-white/10 text-[var(--text-tertiary)] hover:border-[var(--color-short)]/50 hover:text-[var(--color-short)]"
-                }
-              `}
+              disabled
+              className="w-full py-3 lg:py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed"
             >
-              <TrendingDown className="w-4 h-4" />
-              Down
+              Enter Amount
             </button>
-          </div>
-        )}
-
-
-        {/* Main Action Button */}
-        {!isConnected ? (
+          ) : (
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setDirection("long");
+                  if (onOpenPosition) onOpenPosition("long", amount, leverage);
+                }}
+                className="flex-1 py-3 lg:py-4 rounded-lg bg-[var(--color-long)] text-black text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all"
+              >
+                Long
+              </button>
+              <button
+                onClick={() => {
+                  setDirection("short");
+                  if (onOpenPosition) onOpenPosition("short", amount, leverage);
+                }}
+                className="flex-1 py-3 lg:py-4 rounded-lg bg-[var(--color-short)] text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all"
+              >
+                Short
+              </button>
+            </div>
+          )
+        ) : !isConnected ? (
+          // Not connected and not in demo mode for perps - show connect button
           <button
             onClick={onConnectWallet}
-            className="w-full py-4 rounded-lg bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-white/90 transition-all flex items-center justify-center gap-2"
+            className="w-full py-3 lg:py-4 rounded-lg bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-white/90 transition-all flex items-center justify-center gap-2"
           >
             <Zap className="w-4 h-4" />
             Connect Wallet
           </button>
-        ) : (isPerpetuals ? hasInsufficientBalance : hasInsufficientSpotBalance) ? (
+        ) : hasInsufficientSpotBalance ? (
           <button
             disabled
-            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
+            className="w-full py-3 lg:py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed flex items-center justify-center gap-2"
           >
             <Wallet className="w-4 h-4" />
             Insufficient Funds
@@ -728,32 +789,17 @@ export function TradingPanel({
         ) : !isValidTrade ? (
           <button
             disabled
-            className="w-full py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed"
+            className="w-full py-3 lg:py-4 rounded-lg bg-[var(--bg-tertiary)] border border-white/10 text-[var(--text-muted)] text-sm font-bold uppercase tracking-wider cursor-not-allowed"
           >
             Enter Amount
           </button>
         ) : (
           <button
             onClick={handleTrade}
-            className={`
-              w-full py-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all
-              flex items-center justify-center gap-2
-              ${isPerpetuals
-                ? direction === "long"
-                  ? "bg-[var(--color-long)] text-black hover:opacity-90"
-                  : "bg-[var(--color-short)] text-white hover:opacity-90"
-                : "bg-white text-black hover:bg-white/90"
-              }
-            `}
+            className="w-full py-3 lg:py-4 rounded-lg bg-white text-black text-sm font-bold uppercase tracking-wider hover:bg-white/90 transition-all flex items-center justify-center gap-2"
           >
-            {isPerpetuals ? (
-              direction === "long" ? "Go Up" : "Go Down"
-            ) : (
-              <>
-                <Zap className="w-4 h-4" />
-                Swap Now
-              </>
-            )}
+            <Zap className="w-4 h-4" />
+            Swap Now
           </button>
         )}
       </div>

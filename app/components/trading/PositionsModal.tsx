@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   X,
   TrendingUp,
@@ -17,7 +16,6 @@ import {
 } from "lucide-react";
 import { Position } from "@/app/hooks/usePositions";
 
-type PositionFilter = "all" | "long" | "short";
 
 const formatTimeAgo = (date: Date): string => {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
@@ -62,18 +60,9 @@ export function PositionsModal({
   onClosePosition,
   onReversePosition,
 }: PositionsModalProps) {
-  const [filter, setFilter] = useState<PositionFilter>("all");
-
   if (!isOpen) return null;
 
-  const filteredPositions = positions.filter((p) => {
-    if (filter === "all") return true;
-    return p.direction === filter;
-  });
-
   const totalPnL = positions.reduce((sum, p) => sum + p.pnl, 0);
-  const longCount = positions.filter((p) => p.direction === "long").length;
-  const shortCount = positions.filter((p) => p.direction === "short").length;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -89,39 +78,7 @@ export function PositionsModal({
         <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]">
           <div className="flex items-center gap-4">
             <h2 className="text-lg font-bold text-[var(--text-primary)]">All Positions</h2>
-
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg-tertiary)]">
-              <button
-                onClick={() => setFilter("all")}
-                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "all"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                  }`}
-              >
-                All ({positions.length})
-              </button>
-              <button
-                onClick={() => setFilter("long")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "long"
-                  ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--color-long)]"
-                  }`}
-              >
-                <TrendingUp className="w-3 h-3" />
-                Long ({longCount})
-              </button>
-              <button
-                onClick={() => setFilter("short")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-bold transition-all ${filter === "short"
-                  ? "bg-[var(--color-short)]/20 text-[var(--color-short)]"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--color-short)]"
-                  }`}
-              >
-                <TrendingDown className="w-3 h-3" />
-                Short ({shortCount})
-              </button>
-            </div>
+            <span className="text-sm text-[var(--text-tertiary)]">({positions.length})</span>
           </div>
 
           <div className="flex items-center gap-3">
@@ -164,7 +121,7 @@ export function PositionsModal({
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--border-subtle)]/50 overflow-y-auto">
-              {filteredPositions.map((position) => {
+              {positions.map((position) => {
                 const isLong = position.direction === "long";
                 const isProfit = position.pnl >= 0;
 
@@ -230,7 +187,7 @@ export function PositionsModal({
             </tbody>
           </table>
 
-          {filteredPositions.length === 0 && (
+          {positions.length === 0 && (
             <div className="flex flex-col items-center justify-center py-24 opacity-50">
               <Rocket className="w-12 h-12 text-[var(--text-tertiary)] mb-4" />
               <p className="text-lg font-bold text-[var(--text-secondary)]">No active positions found</p>

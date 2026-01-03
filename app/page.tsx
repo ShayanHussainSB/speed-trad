@@ -4,21 +4,24 @@ import { useState } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { ChevronUp, ChevronDown, BarChart3, Clock } from "lucide-react";
 import { Header } from "./components/layout/Header";
+import { Footer } from "./components/layout/Footer";
 import { MobileNav } from "./components/layout/MobileNav";
 import { TradingTabs } from "./components/trading/TradingTabs";
 import { PriceChart } from "./components/trading/PriceChart";
 import { TradingPanel } from "./components/trading/TradingPanel";
 import { PositionsList } from "./components/trading/PositionsList";
-import { TradeHistory } from "./components/trading/TradeHistory";
+import { TradeHistory, Trade } from "./components/trading/TradeHistory";
 import { PositionsModal } from "./components/trading/PositionsModal";
 import { TradeHistoryModal } from "./components/trading/TradeHistoryModal";
 import { ReversePositionModal } from "./components/trading/ReversePositionModal";
 import { LeftPanel } from "./components/trading/LeftPanel";
 import { PriceTicker } from "./components/trading/PriceTicker";
 import { WalletModal } from "./components/wallet/WalletModal";
+import { NotificationContainer } from "./components/notifications/NotificationContainer";
 import { useWalletBalance } from "./hooks/useWalletBalance";
 import { useUserProfile } from "./hooks/useUserProfile";
 import { usePositions } from "./hooks/usePositions";
+import { useLivePrice } from "./hooks/useLivePrice";
 import { useMarketTicker } from "./hooks/useMarketTicker";
 import { MobileAccountView } from "./components/mobile/MobileAccountView";
 
@@ -36,7 +39,7 @@ export default function TradingPage() {
   const [isPositionsModalOpen, setIsPositionsModalOpen] = useState(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("SOL");
-  const [isLeftPanelHidden, setIsLeftPanelHidden] = useState(false);
+  const [isLeftPanelHidden, setIsLeftPanelHidden] = useState(true);
 
   // Live market data from CoinGecko (volume & market cap)
   const { volume24h, marketCap } = useMarketTicker(`${selectedSymbol}-USD`);
@@ -54,7 +57,7 @@ export default function TradingPage() {
   const { balance, balanceUSD } = useWalletBalance();
   const { profile } = useUserProfile();
 
-  // Positions state
+  // Positions state (now uses demo trading)
   const {
     positions,
     primaryPosition,
@@ -70,7 +73,31 @@ export default function TradingPage() {
     reversePosition,
     calculateReverseRequirements,
     openPosition,
+    balance: demoBalance,
+    tradeHistory,
+    resetDemo,
   } = usePositions();
+
+  // Convert demo trade history to TradeHistory component format
+  const formattedTradeHistory: Trade[] = tradeHistory.map((t) => ({
+    id: t.id,
+    symbol: t.symbol,
+    direction: t.direction,
+    leverage: t.leverage,
+    entryPrice: t.entryPrice,
+    exitPrice: t.exitPrice,
+    margin: t.margin,
+    notional: t.notional,
+    pnl: t.pnl,
+    fee: t.fee,
+    outcome: t.outcome,
+    openedAt: t.openedAt,
+    closedAt: t.closedAt,
+  }));
+
+  // Get live price for current symbol (format: SOL-USD)
+  const livePriceData = useLivePrice(`${selectedSymbol}-USD`);
+  const currentPrice = livePriceData.price;
 
   const walletAddress = publicKey?.toBase58() || "";
 
@@ -93,33 +120,6 @@ export default function TradingPage() {
 
   return (
     <div className="h-screen overflow-hidden relative">
-      {/* OutRun/Synthwave Background - Retro Miami Vibe */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        {/* Enhanced Horizon Grid */}
-        <div className="horizon-grid" />
-
-        {/* Enhanced Sun Disc with More Glow */}
-        <div className="sun" />
-        
-        {/* Floating Neon Particles - Miami Vibes */}
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        <div className="particle" />
-        
-        {/* Palm Tree Silhouettes */}
-        <div className="palm-tree palm-tree-left" />
-        <div className="palm-tree palm-tree-right" />
-        
-        {/* Additional gradient overlay for better focus */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/25" />
-      </div>
-
       {/* Header */}
       <div className="relative z-50">
         <Header />
@@ -132,11 +132,11 @@ export default function TradingPage() {
       <main className="relative z-10 pt-[104px] h-screen overflow-hidden">
         {/* TRADE View */}
         {(
-          <div className="h-[calc(100vh-104px)] md:h-[calc(100vh-104px)] flex flex-col">
+          <div className="h-[calc(100vh-104px)] md:h-[calc(100vh-104px-24px)] flex flex-col">
             {/* Desktop Layout */}
             <div className="hidden md:flex flex-1 overflow-hidden">
               {/* Far Left Panel - Leaderboard + Quests/Referrals */}
-              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-12 bg-transparent" : "w-[280px] border-r border-[var(--border-subtle)] bg-[var(--bg-card)]"}`}>
+              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-10" : "w-[240px] lg:w-[280px]"} border-r border-[var(--border-subtle)] bg-[var(--bg-card)]`}>
                 <LeftPanel
                   userRank={profile?.stats?.rank || 9999999}
                   userPoints={profile?.stats?.points || 0}
@@ -193,12 +193,14 @@ export default function TradingPage() {
                       >
                         <BarChart3 className="w-3.5 h-3.5" />
                         Positions
-                        <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "positions"
-                            ? "bg-[var(--accent-primary)] text-white"
-                            : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
-                          }`}>
-                          2
-                        </span>
+                        {positions.length > 0 && (
+                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "positions"
+                              ? "bg-[var(--accent-primary)] text-white"
+                              : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
+                            }`}>
+                            {positions.length}
+                          </span>
+                        )}
                       </button>
                       <button
                         onClick={() => setBottomPanelTab("history")}
@@ -233,7 +235,7 @@ export default function TradingPage() {
                     <div className="h-[calc(100%-48px)] overflow-hidden">
                       {bottomPanelTab === "positions" ? (
                         <PositionsList
-                          isConnected={connected}
+                          isConnected={true}
                           positions={positions}
                           totalPnL={totalPnL}
                           longCount={longCount}
@@ -244,7 +246,7 @@ export default function TradingPage() {
                           maxVisible={10}
                         />
                       ) : (
-                        <TradeHistory isConnected={connected} onViewAll={() => setIsHistoryModalOpen(true)} />
+                        <TradeHistory isConnected={true} trades={formattedTradeHistory} onViewAll={() => setIsHistoryModalOpen(true)} />
                       )}
                     </div>
                   )}
@@ -252,15 +254,19 @@ export default function TradingPage() {
               </div>
 
               {/* Right Panel - Trading */}
-              <div className="w-[380px] flex-shrink-0 bg-[var(--bg-card)] border-l border-[var(--border-subtle)] backdrop-blur-xl">
+              <div className="w-[280px] lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[var(--bg-card)] border-l border-[var(--border-subtle)] backdrop-blur-xl">
                 <TradingPanel
                   mode={tradingMode}
                   isConnected={connected}
                   onConnectWallet={openWalletModal}
                   balance={balance}
+                  demoBalance={demoBalance}
+                  currentPrice={currentPrice}
                   activePosition={primaryPosition}
                   onReversePosition={openReverseModal}
                   onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
+                  onResetDemo={resetDemo}
+                  isDemoMode={true}
                 />
               </div>
             </div>
@@ -287,8 +293,13 @@ export default function TradingPage() {
                       isConnected={connected}
                       onConnectWallet={openWalletModal}
                       balance={balance}
+                      demoBalance={demoBalance}
+                      currentPrice={currentPrice}
                       activePosition={primaryPosition}
                       onReversePosition={openReverseModal}
+                      onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
+                      onResetDemo={resetDemo}
+                      isDemoMode={true}
                     />
                   </div>
                 </div>
@@ -298,7 +309,7 @@ export default function TradingPage() {
               {mobileTab === "positions" && (
                 <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
                   <PositionsList
-                    isConnected={connected}
+                    isConnected={true}
                     positions={positions}
                     totalPnL={totalPnL}
                     longCount={longCount}
@@ -314,7 +325,7 @@ export default function TradingPage() {
               {/* Activity View (Trades, Orders, etc.) */}
               {mobileTab === "activity" && (
                 <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
-                  <TradeHistory isConnected={connected} onViewAll={() => setIsHistoryModalOpen(true)} />
+                  <TradeHistory isConnected={true} trades={formattedTradeHistory} onViewAll={() => setIsHistoryModalOpen(true)} />
                 </div>
               )}
 
@@ -338,6 +349,9 @@ export default function TradingPage() {
         )}
       </main>
 
+      {/* Footer - Desktop only */}
+      <Footer />
+
       {/* Mobile Navigation */}
       <MobileNav activeTab={mobileTab} onTabChange={handleMobileTabChange} />
 
@@ -357,6 +371,7 @@ export default function TradingPage() {
       <TradeHistoryModal
         isOpen={isHistoryModalOpen}
         onClose={() => setIsHistoryModalOpen(false)}
+        trades={formattedTradeHistory}
       />
 
       {/* Reverse Position Modal */}
@@ -371,6 +386,8 @@ export default function TradingPage() {
         calculateRequirements={calculateReverseRequirements}
       />
 
+      {/* Trade Notifications */}
+      <NotificationContainer />
     </div>
   );
 }

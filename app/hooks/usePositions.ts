@@ -1,12 +1,15 @@
 "use client";
 
 import { useState, useCallback, useMemo } from "react";
+import { useDemoTrading, PositionWithLivePnL } from "./useDemoTrading";
+import { AssetSymbol, LeverageOption } from "@/app/config/demoTrading";
+import { useNotifications } from "@/app/contexts/NotificationContext";
 
 export interface Position {
   id: string;
   symbol: string;
   direction: "long" | "short";
-  size: number;
+  size: number; // margin in USD
   entryPrice: number;
   currentPrice: number;
   leverage: number;
@@ -15,33 +18,56 @@ export interface Position {
   liquidationPrice: number;
   takeProfitPrice: number;
   openedAt: Date;
+  // Demo trading extensions
+  notional?: number;
+  health?: number;
+  closeFee?: number;
+  isNearLiquidation?: boolean;
 }
 
-// Mock positions data - in production this would come from API/blockchain
-const MOCK_POSITIONS: Position[] = [
-  {
-    id: "1",
-    symbol: "SOL/USD",
-    direction: "long",
-    size: 50,
-    entryPrice: 195.2,
-    currentPrice: 198.42,
-    leverage: 1000,
-    pnl: 16.1,
-    pnlPercent: 16.5,
-    liquidationPrice: 177.42,
-    takeProfitPrice: 215.0,
-    openedAt: new Date(Date.now() - 1000 * 60 * 45),
-  },
-];
+const MINIMUM_MARGIN = 1; // $1 minimum order
 
-const MINIMUM_MARGIN = 5; // $5 minimum order
+// Convert demo position to Position interface
+function toDemoPosition(p: PositionWithLivePnL): Position {
+  // Calculate take profit price (default 500% profit target)
+  const takeProfitMove = 5 / p.leverage; // 500% / leverage
+  const takeProfitPrice =
+    p.direction === "long"
+      ? p.entryPrice * (1 + takeProfitMove)
+      : p.entryPrice * (1 - takeProfitMove);
+
+  return {
+    id: p.id,
+    symbol: `${p.symbol}/USD`,
+    direction: p.direction,
+    size: p.margin,
+    entryPrice: p.entryPrice,
+    currentPrice: p.currentPrice,
+    leverage: p.leverage,
+    pnl: p.pnl,
+    pnlPercent: p.pnlPercent,
+    liquidationPrice: p.liquidationPrice,
+    takeProfitPrice,
+    openedAt: new Date(p.openedAt),
+    notional: p.notional,
+    health: p.health,
+    closeFee: p.closeFee,
+    isNearLiquidation: p.isNearLiquidation,
+  };
+}
 
 export function usePositions() {
-  const [positions, setPositions] = useState<Position[]>(MOCK_POSITIONS);
+  const demo = useDemoTrading();
+  const { showPositionOpened, showPositionClosed } = useNotifications();
   const [isReverseModalOpen, setIsReverseModalOpen] = useState(false);
   const [selectedPosition, setSelectedPosition] = useState<Position | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  // Convert demo positions to Position interface
+  const positions = useMemo<Position[]>(
+    () => demo.positions.map(toDemoPosition),
+    [demo.positions]
+  );
 
   // Get position for a specific symbol
   const getPositionBySymbol = useCallback(
@@ -58,43 +84,47 @@ export function usePositions() {
   const primaryPosition = useMemo(() => positions[0] || null, [positions]);
 
   // Calculate totals
-  const totalPnL = useMemo(
-    () => positions.reduce((sum, p) => sum + p.pnl, 0),
-    [positions]
-  );
-
-  const longCount = useMemo(
-    () => positions.filter((p) => p.direction === "long").length,
-    [positions]
-  );
-
-  const shortCount = useMemo(
-    () => positions.filter((p) => p.direction === "short").length,
-    [positions]
-  );
+  const totalPnL = useMemo(() => demo.totalPnL, [demo.totalPnL]);
+  const longCount = useMemo(() => demo.longCount, [demo.longCount]);
+  const shortCount = useMemo(() => demo.shortCount, [demo.shortCount]);
 
   // Open a new position (Market Order)
-  const openPosition = useCallback((data: Partial<Position>) => {
-    setIsProcessing(true);
-    setTimeout(() => {
-      const newPos: Position = {
-        id: Math.random().toString(36).substr(2, 9),
-        symbol: data.symbol || "SOL/USD",
-        direction: data.direction || "long",
-        size: data.size || 10,
-        entryPrice: data.entryPrice || 198.42,
-        currentPrice: data.entryPrice || 198.42,
-        leverage: data.leverage || 100,
-        pnl: 0,
-        pnlPercent: 0,
-        liquidationPrice: (data.entryPrice || 198.42) * (data.direction === "long" ? 0.8 : 1.2),
-        takeProfitPrice: (data.entryPrice || 198.42) * (data.direction === "long" ? 1.5 : 0.5),
-        openedAt: new Date(),
-      };
-      setPositions(prev => [newPos, ...prev]);
+  const openPosition = useCallback(
+    (data: {
+      direction: "long" | "short";
+      size: number; // margin in USD
+      leverage: number;
+      symbol: string;
+    }) => {
+      setIsProcessing(true);
+
+      // Extract asset symbol from pair (e.g., "SOL/USD" -> "SOL")
+      const assetSymbol = data.symbol.split("/")[0] as AssetSymbol;
+
+      const result = demo.openPosition(
+        assetSymbol,
+        data.direction,
+        data.size,
+        data.leverage as LeverageOption
+      );
+
       setIsProcessing(false);
-    }, 600);
-  }, []);
+
+      if (!result.success) {
+        console.error("Failed to open position:", result.error);
+      } else if (result.position) {
+        // Show notification for successful position open
+        showPositionOpened({
+          direction: data.direction,
+          symbol: assetSymbol,
+          entryPrice: result.position.entryPrice,
+        });
+      }
+
+      return result;
+    },
+    [demo, showPositionOpened]
+  );
 
   // Open reverse modal for a position
   const openReverseModal = useCallback((position: Position) => {
@@ -109,14 +139,37 @@ export function usePositions() {
   }, []);
 
   // Close a position
-  const closePosition = useCallback((positionId: string) => {
-    setIsProcessing(true);
-    // Simulate API call
-    setTimeout(() => {
-      setPositions((prev) => prev.filter((p) => p.id !== positionId));
+  const closePosition = useCallback(
+    (positionId: string) => {
+      // Get position data before closing for notification
+      const position = positions.find((p) => p.id === positionId);
+      
+      setIsProcessing(true);
+
+      const result = demo.closePosition(positionId);
+
       setIsProcessing(false);
-    }, 500);
-  }, []);
+
+      if (!result.success) {
+        console.error("Failed to close position:", result.error);
+      } else if (position) {
+        // Show notification for successful position close
+        const pnl = result.pnl ?? 0;
+        const pnlPercent = (pnl / position.size) * 100;
+        
+        showPositionClosed({
+          direction: position.direction,
+          symbol: position.symbol.split("/")[0],
+          closePrice: position.currentPrice,
+          pnl,
+          pnlPercent,
+        });
+      }
+
+      return result;
+    },
+    [demo, positions, showPositionClosed]
+  );
 
   // Reverse a position (close current + open opposite)
   const reversePosition = useCallback(
@@ -147,37 +200,51 @@ export function usePositions() {
 
       setIsProcessing(true);
 
-      // Simulate API call - close current and open opposite
-      setTimeout(() => {
-        setPositions((prev) => {
-          const filtered = prev.filter((p) => p.id !== position.id);
-          const newPosition: Position = {
-            ...position,
-            id: `${Date.now()}`,
-            direction: position.direction === "long" ? "short" : "long",
-            entryPrice: position.currentPrice,
-            pnl: 0,
-            pnlPercent: 0,
-            openedAt: new Date(),
-            // Recalculate liquidation based on new direction
-            liquidationPrice:
-              position.direction === "long"
-                ? position.currentPrice * (1 + 0.9 / position.leverage)
-                : position.currentPrice * (1 - 0.9 / position.leverage),
-            takeProfitPrice:
-              position.direction === "long"
-                ? position.currentPrice * 0.9
-                : position.currentPrice * 1.1,
-          };
-          return [...filtered, newPosition];
-        });
+      // Close current position
+      const closeResult = demo.closePosition(position.id);
+      if (!closeResult.success) {
         setIsProcessing(false);
-        closeReverseModal();
-      }, 800);
+        return { success: false, error: closeResult.error };
+      }
 
-      return { success: true };
+      // Show close notification
+      const closePnl = closeResult.pnl ?? 0;
+      const closePnlPercent = (closePnl / position.size) * 100;
+      showPositionClosed({
+        direction: position.direction,
+        symbol: position.symbol.split("/")[0],
+        closePrice: position.currentPrice,
+        pnl: closePnl,
+        pnlPercent: closePnlPercent,
+      });
+
+      // Extract asset symbol
+      const assetSymbol = position.symbol.split("/")[0] as AssetSymbol;
+      const newDirection = position.direction === "long" ? "short" : "long";
+
+      // Open opposite position
+      const openResult = demo.openPosition(
+        assetSymbol,
+        newDirection,
+        position.size,
+        position.leverage as LeverageOption
+      );
+
+      if (openResult.success && openResult.position) {
+        // Show open notification for the new position
+        showPositionOpened({
+          direction: newDirection,
+          symbol: assetSymbol,
+          entryPrice: openResult.position.entryPrice,
+        });
+      }
+
+      setIsProcessing(false);
+      closeReverseModal();
+
+      return openResult;
     },
-    [closeReverseModal]
+    [demo, closeReverseModal, showPositionClosed, showPositionOpened]
   );
 
   // Calculate margin requirements for reverse
@@ -208,6 +275,12 @@ export function usePositions() {
     longCount,
     shortCount,
     isProcessing,
+
+    // Demo specific
+    balance: demo.balance,
+    tradeHistory: demo.tradeHistory,
+    isHydrated: demo.isHydrated,
+    resetDemo: demo.resetDemo,
 
     // Reverse modal state
     isReverseModalOpen,

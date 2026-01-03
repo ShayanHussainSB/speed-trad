@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Rajdhani, Space_Mono, Inter } from "next/font/google";
 import { WalletProvider } from "@/app/providers/WalletProvider";
 import { MarketDataProvider } from "@/app/contexts/MarketDataContext";
+import { DemoTradingProvider } from "@/app/contexts/DemoTradingContext";
+import { NotificationProvider } from "@/app/contexts/NotificationContext";
 import "./globals.css";
 
 // Rajdhani - Primary display font (geometric, racing aesthetic)
@@ -54,7 +56,11 @@ export default function RootLayout({
       >
         <WalletProvider>
           <MarketDataProvider>
-            {children}
+            <DemoTradingProvider>
+              <NotificationProvider>
+                {children}
+              </NotificationProvider>
+            </DemoTradingProvider>
           </MarketDataProvider>
         </WalletProvider>
       </body>

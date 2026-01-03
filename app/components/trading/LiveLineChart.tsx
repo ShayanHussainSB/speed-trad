@@ -469,18 +469,35 @@ export function LiveLineChart({ livePrice, symbol, tokenImage, tokenColor, token
           </linearGradient>
         </defs>
 
-        {/* Grid lines */}
+        {/* Horizontal grid lines - subtle but visible for price reference */}
         {yAxisLabels.map((label, i) => (
           <line
-            key={i}
+            key={`h-${i}`}
             x1={PADDING_LEFT}
             y1={label.y}
             x2={width - 80}
             y2={label.y}
-            stroke="rgba(255, 255, 255, 0.03)"
+            stroke="rgba(255, 255, 255, 0.08)"
             strokeWidth="1"
+            strokeDasharray="4 4"
           />
         ))}
+
+        {/* Vertical grid lines - for time reference */}
+        {Array.from({ length: 8 }).map((_, i) => {
+          const x = PADDING_LEFT + ((chartWidth) * (i + 1)) / 9;
+          return (
+            <line
+              key={`v-${i}`}
+              x1={x}
+              y1={PADDING_TOP}
+              x2={x}
+              y2={height - PADDING_BOTTOM}
+              stroke="rgba(255, 255, 255, 0.05)"
+              strokeWidth="1"
+            />
+          );
+        })}
 
         {/* Y-axis labels */}
         {yAxisLabels.map((label, i) => (

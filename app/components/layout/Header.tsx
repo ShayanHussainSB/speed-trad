@@ -2,12 +2,11 @@
 
 import { Zap } from "lucide-react";
 import { useState } from "react";
-import { useWallet } from "@solana/wallet-adapter-react";
 import { WalletSection } from "@/app/components/wallet/WalletSection";
 import { WalletModal } from "@/app/components/wallet/WalletModal";
 import { UsernameModal } from "@/app/components/wallet/UsernameModal";
 import { ProfileModal } from "@/app/components/wallet/ProfileModal";
-import { PointsBadge, PointsBadgeCompact } from "@/app/components/rewards/PointsBadge";
+import { PointsBadge } from "@/app/components/rewards/PointsBadge";
 import { RewardsModal } from "@/app/components/rewards/RewardsModal";
 import { useUserProfile } from "@/app/hooks/useUserProfile";
 import { useWalletBalance } from "@/app/hooks/useWalletBalance";
@@ -15,7 +14,6 @@ import { useRewards } from "@/app/hooks/useRewards";
 
 export function Header() {
   const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
-  const { connected } = useWallet();
 
   const {
     profile,
@@ -43,51 +41,26 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 glass">
-        {/* Racing line accent at top */}
-        <div className="absolute top-0 left-0 right-0 h-[2px] racing-line opacity-60" />
-        
-        <div className="flex items-center justify-between h-14 px-6 md:px-8 max-w-[1920px] mx-auto">
-          {/* Logo - Miami Synthwave Style */}
-          <div className="flex items-center gap-4">
-            <div className="relative group cursor-pointer">
-              {/* Neon glow icon */}
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-[var(--warm-yellow)] to-[var(--sunset-orange)] flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-6 shadow-lg shadow-orange-500/30">
-                <Zap className="w-5 h-5 text-[#1a0a2e]" fill="currentColor" strokeWidth={2.5} />
-              </div>
-              <div className="absolute inset-0 rounded-lg bg-[var(--sunset-orange)] blur-xl opacity-0 group-hover:opacity-40 transition-opacity -z-10" />
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a12]/95 backdrop-blur-md border-b border-white/[0.06]">
+        <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-[1920px] mx-auto">
+          {/* Logo */}
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF006E] to-[#8338EC] flex items-center justify-center shadow-lg shadow-pink-500/20">
+              <Zap className="w-4 h-4 text-white" fill="currentColor" />
             </div>
-
-            <div className="flex items-center">
-              <span className="text-2xl font-bold tracking-tight text-[var(--warm-yellow)] lowercase neon-glow-yellow" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 190, 11, 0.5)' }}>up</span>
-              <span className="text-2xl font-bold tracking-tight text-[var(--hot-pink)] lowercase neon-glow-pink" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)', textShadow: '0 0 20px rgba(255, 0, 110, 0.5)' }}>dn</span>
-              <span className="text-2xl font-bold tracking-tight text-white lowercase" style={{ fontFamily: 'var(--font-rajdhani), var(--font-space-mono)' }}>.trade</span>
+            <div className="flex items-baseline">
+              <span className="text-lg font-bold tracking-tight text-white">updn</span>
+              <span className="text-lg font-bold tracking-tight text-[#FF006E]">.trade</span>
             </div>
           </div>
 
-          {/* Right Section - Points Badge + Wallet */}
-          <div className="relative flex items-center gap-2 sm:gap-3">
-            {/* Points Badge - Only show when logged in */}
-            {connected && (
-              <>
-                {/* Desktop */}
-                <div className="hidden sm:block">
-                  <PointsBadge
-                    points={rewardsData.totalPoints}
-                    onClick={openRewardsModal}
-                    isFreshAccount={rewardsData.isFreshAccount}
-                  />
-                </div>
-                {/* Mobile */}
-                <div className="sm:hidden">
-                  <PointsBadgeCompact
-                    points={rewardsData.totalPoints}
-                    onClick={openRewardsModal}
-                    isFreshAccount={rewardsData.isFreshAccount}
-                  />
-                </div>
-              </>
-            )}
+          {/* Right Section */}
+          <div className="flex items-center gap-3">
+            <PointsBadge
+              points={rewardsData.totalPoints}
+              onClick={openRewardsModal}
+              isFreshAccount={rewardsData.isFreshAccount}
+            />
             <WalletSection
               onOpenModal={() => setIsWalletModalOpen(true)}
               onOpenProfile={openProfileModal}
@@ -99,13 +72,11 @@ export function Header() {
         </div>
       </header>
 
-      {/* Wallet Connection Modal */}
       <WalletModal
         isOpen={isWalletModalOpen}
         onClose={() => setIsWalletModalOpen(false)}
       />
 
-      {/* Username Setup Modal */}
       <UsernameModal
         isOpen={showUsernameModal}
         onClose={closeUsernameModal}
@@ -113,7 +84,6 @@ export function Header() {
         walletAddress={profile?.walletAddress || ""}
       />
 
-      {/* Profile Modal */}
       {profile && (
         <ProfileModal
           isOpen={showProfileModal}
@@ -129,7 +99,6 @@ export function Header() {
         />
       )}
 
-      {/* Rewards Modal - "The grind dashboard" */}
       <RewardsModal
         isOpen={isRewardsModalOpen}
         onClose={closeRewardsModal}
