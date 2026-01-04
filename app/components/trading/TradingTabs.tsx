@@ -11,53 +11,37 @@ interface TradingTabsProps {
 
 export function TradingTabs({ activeMode, onModeChange }: TradingTabsProps) {
   return (
-    <div className="inline-flex items-center gap-1">
+    <div className="relative flex items-stretch h-9 w-full">
       <button
         onClick={() => onModeChange("perpetuals")}
         className={`
-          relative flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all duration-200
-          ${activeMode === "perpetuals"
-            ? "text-[var(--text-primary)]"
-            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-          }
+          relative flex-1 flex items-center justify-center gap-2 transition-all duration-300 z-10
+          ${activeMode === "perpetuals" ? "bg-white/[0.04] text-white" : "text-white/30 hover:bg-white/[0.02] hover:text-white/50"}
         `}
       >
-        <Zap className={`w-4 h-4 ${activeMode === "perpetuals" ? "text-[var(--accent-primary)]" : ""}`} />
-        <span>Perpetuals</span>
-        {/* Underline indicator */}
-        <div
-          className={`
-            absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-200
-            ${activeMode === "perpetuals"
-              ? "bg-[var(--accent-primary)] opacity-100"
-              : "bg-transparent opacity-0"
-            }
-          `}
-        />
+        <Zap className={`w-3.5 h-3.5 transition-colors ${activeMode === "perpetuals" ? "text-[var(--accent-primary)]" : "text-current"}`} />
+        <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Perps</span>
+
+        {activeMode === "perpetuals" && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--accent-primary)] shadow-[0_0_12px_var(--accent-primary)]" />
+        )}
       </button>
+
+      <div className="w-[1px] h-3 my-auto bg-white/[0.08]" />
 
       <button
         onClick={() => onModeChange("spot")}
         className={`
-          relative flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-all duration-200
-          ${activeMode === "spot"
-            ? "text-[var(--text-primary)]"
-            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-          }
+          relative flex-1 flex items-center justify-center gap-2 transition-all duration-300 z-10
+          ${activeMode === "spot" ? "bg-white/[0.04] text-white" : "text-white/30 hover:bg-white/[0.02] hover:text-white/50"}
         `}
       >
-        <ArrowLeftRight className={`w-4 h-4 ${activeMode === "spot" ? "text-[var(--accent-primary)]" : ""}`} />
-        <span>Spot</span>
-        {/* Underline indicator */}
-        <div
-          className={`
-            absolute bottom-0 left-0 right-0 h-[2px] rounded-full transition-all duration-200
-            ${activeMode === "spot"
-              ? "bg-[var(--accent-primary)] opacity-100"
-              : "bg-transparent opacity-0"
-            }
-          `}
-        />
+        <ArrowLeftRight className={`w-3.5 h-3.5 transition-colors ${activeMode === "spot" ? "text-[var(--accent-primary)]" : "text-current"}`} />
+        <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Spot</span>
+
+        {activeMode === "spot" && (
+          <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--accent-primary)] shadow-[0_0_12px_var(--accent-primary)]" />
+        )}
       </button>
     </div>
   );

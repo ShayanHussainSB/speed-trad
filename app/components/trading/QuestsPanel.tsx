@@ -92,7 +92,7 @@ const MOCK_REFERRAL: ReferralStats = {
 
 export function QuestsPanel() {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<"quests" | "referrals">("quests");
+  const [showReferral, setShowReferral] = useState(false);
 
   const handleCopyCode = () => {
     navigator.clipboard.writeText(`https://speedtrad.io/ref/${MOCK_REFERRAL.referralCode}`);
@@ -103,143 +103,22 @@ export function QuestsPanel() {
   const completedQuests = MOCK_QUESTS.filter((q) => q.completed).length;
   const totalQuests = MOCK_QUESTS.length;
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Tab Header */}
-      <div className="px-3 py-2 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-1 p-0.5 rounded-md bg-[var(--bg-secondary)]">
+  if (showReferral) {
+    return (
+      <div className="flex flex-col h-full">
+        {/* Referral Header */}
+        <div className="px-3 py-2 border-b border-[var(--border-subtle)] flex items-center gap-2">
           <button
-            onClick={() => setActiveTab("quests")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold uppercase transition-all ${activeTab === "quests"
-              ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-              : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-              }`}
+            onClick={() => setShowReferral(false)}
+            className="p-1 hover:bg-white/5 rounded-lg transition-colors"
           >
-            <Zap className="w-3 h-3" />
-            Quests
+            <ChevronRight className="w-4 h-4 rotate-180 text-white/40" />
           </button>
-          <button
-            onClick={() => setActiveTab("referrals")}
-            className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 rounded text-[10px] font-bold uppercase transition-all ${activeTab === "referrals"
-              ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-              : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-              }`}
-          >
-            <Users className="w-3 h-3" />
-            Refer
-          </button>
+          <span className="text-[10px] font-black text-white uppercase tracking-widest">Referral Program</span>
         </div>
-      </div>
 
-      {activeTab === "quests" ? (
-        <>
-          {/* Quest Progress Summary */}
-          <div className="px-3 py-2 border-b border-[var(--border-subtle)]/50">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[9px] text-[var(--text-tertiary)] uppercase font-medium">
-                Daily Progress
-              </span>
-              <span className="text-[10px] font-bold text-[var(--accent-primary)]">
-                {completedQuests}/{totalQuests}
-              </span>
-            </div>
-            <div className="h-1 rounded-full bg-[var(--bg-tertiary)] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]"
-                style={{ width: `${(completedQuests / totalQuests) * 100}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Quest List */}
-          <div className="flex-1 overflow-y-auto scrollbar-hide py-1">
-            {MOCK_QUESTS.map((quest) => {
-              const progressPercent = Math.min((quest.progress / quest.target) * 100, 100);
-
-              return (
-                <div
-                  key={quest.id}
-                  className={`group relative px-4 py-3.5 transition-all duration-300 hover:bg-[var(--bg-secondary)]/40 ${quest.completed ? "opacity-60" : ""
-                    }`}
-                >
-                  <div className="flex items-start gap-3.5">
-                    {/* Icon Container with Glow */}
-                    <div className="relative shrink-0">
-                      <div
-                        className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${quest.completed
-                          ? "bg-[var(--color-long)]/10 text-[var(--color-long)] scale-95"
-                          : "bg-[var(--bg-elevated)] text-[var(--accent-primary)] group-hover:scale-110 group-hover:bg-[var(--accent-primary)]/10"
-                          }`}
-                      >
-                        {quest.completed ? (
-                          <Check className="w-5 h-5 stroke-[3]" />
-                        ) : (
-                          <div className="transition-transform duration-300 group-hover:rotate-12">
-                            {quest.icon}
-                          </div>
-                        )}
-                      </div>
-                      {!quest.completed && (
-                        <div className="absolute -inset-1 bg-[var(--accent-primary)]/20 rounded-xl blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[12px] font-black text-[var(--text-primary)] tracking-tight group-hover:text-[var(--accent-primary)] transition-colors">
-                          {quest.title}
-                        </span>
-                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-400/10 border border-yellow-400/20">
-                          <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
-                          <span className="text-[10px] font-black text-yellow-600">+{quest.reward}</span>
-                        </div>
-                      </div>
-
-                      <p className="text-[10px] text-[var(--text-tertiary)] leading-relaxed mb-3">
-                        {quest.description}
-                      </p>
-
-                      {/* Progress Bar - High Tech Version */}
-                      {!quest.completed && (
-                        <div className="space-y-1.5">
-                          <div className="flex-1 h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden p-[1px]">
-                            <div
-                              className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.4)] transition-all duration-1000 ease-out"
-                              style={{ width: `${progressPercent}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-end">
-                            <span className="text-[9px] font-black font-mono text-[var(--text-tertiary)] tabular-nums">
-                              {quest.progress.toLocaleString()} <span className="opacity-40">/</span> {quest.target.toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-
-                      {quest.completed && (
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[9px] font-black text-[var(--color-long)] uppercase tracking-widest">Completed</span>
-                          <div className="h-px flex-1 bg-[var(--color-long)]/20" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* View All Button */}
-          <div className="px-3 py-2 border-t border-[var(--border-subtle)]">
-            <button className="w-full flex items-center justify-center gap-1 px-3 py-1.5 rounded-lg text-[10px] font-medium text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 transition-colors">
-              View All Quests
-              <ChevronRight className="w-3 h-3" />
-            </button>
-          </div>
-        </>
-      ) : (
-        <>
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
           {/* Referral Stats - Modern Grid */}
           <div className="px-4 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)]/30">
             <div className="grid grid-cols-3 gap-3">
@@ -260,7 +139,7 @@ export function QuestsPanel() {
           </div>
 
           {/* Referral Link - Premium Card */}
-          <div className="px-4 py-4 flex-1">
+          <div className="px-4 py-4">
             <div className="relative group overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 border border-[var(--accent-primary)]/20">
               {/* Background Glow */}
               <div className="absolute -top-24 -right-24 w-48 h-48 bg-[var(--accent-primary)]/10 rounded-full blur-[60px]" />
@@ -339,18 +218,144 @@ export function QuestsPanel() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Invite Button */}
-          <div className="px-3 py-2 border-t border-[var(--border-subtle)]">
-            <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors">
-              <Users className="w-3.5 h-3.5" />
-              View Referral History
-            </button>
+        {/* Invite Button */}
+        <div className="px-3 py-2 border-t border-[var(--border-subtle)]">
+          <button className="w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-[10px] font-bold bg-[var(--bg-secondary)] text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors">
+            <Users className="w-3.5 h-3.5" />
+            View Referral History
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Quest Progress Summary */}
+      <div className="px-3 py-3.5 border-b border-[var(--border-subtle)]/50">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-black tracking-widest">
+            Daily Progress
+          </span>
+          <span className="text-[10px] font-black text-[var(--accent-primary)]">
+            {completedQuests}/{totalQuests}
+          </span>
+        </div>
+        <div className="h-1.5 rounded-full bg-[var(--bg-tertiary)] overflow-hidden p-[1px]">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)] shadow-[0_0_8px_rgba(var(--accent-primary-rgb),0.2)]"
+            style={{ width: `${(completedQuests / totalQuests) * 100}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Quest List */}
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
+        {/* Special Refer Item */}
+        <button
+          onClick={() => setShowReferral(true)}
+          className="w-full group relative px-4 py-4 border-b border-white/[0.03] transition-all duration-300 hover:bg-[var(--accent-primary)]/[0.03]"
+        >
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500/20 to-purple-500/20 flex items-center justify-center text-indigo-400 group-hover:scale-110 transition-transform">
+              <Users className="w-5 h-5" />
+            </div>
+            <div className="flex-1 text-left">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] font-black text-white tracking-tight">Refer & Earn</span>
+                <ChevronRight className="w-3.5 h-3.5 text-white/20 group-hover:text-white/60 transition-colors" />
+              </div>
+              <p className="text-[10px] text-white/40 mt-0.5">Invite friends and get 10% of fees</p>
+            </div>
           </div>
-        </>
-      )}
+        </button>
+
+        {MOCK_QUESTS.map((quest) => {
+          const progressPercent = Math.min((quest.progress / quest.target) * 100, 100);
+
+          return (
+            <div
+              key={quest.id}
+              className={`group relative px-4 py-4 border-b border-white/[0.03] transition-all duration-300 hover:bg-white/[0.02] ${quest.completed ? "opacity-60" : ""
+                }`}
+            >
+              <div className="flex items-start gap-4">
+                {/* Icon Container with Glow */}
+                <div className="relative shrink-0">
+                  <div
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 ${quest.completed
+                      ? "bg-[var(--color-long)]/10 text-[var(--color-long)] scale-95"
+                      : "bg-white/[0.03] text-[var(--accent-primary)] group-hover:scale-110 group-hover:bg-[var(--accent-primary)]/10"
+                      }`}
+                  >
+                    {quest.completed ? (
+                      <Check className="w-5 h-5 stroke-[3]" />
+                    ) : (
+                      <div className="transition-transform duration-300 group-hover:rotate-12">
+                        {quest.icon}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[13px] font-black text-white tracking-tight group-hover:text-[var(--accent-primary)] transition-colors">
+                      {quest.title}
+                    </span>
+                    <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-yellow-400/10 border border-yellow-400/20">
+                      <Star className="w-2.5 h-2.5 text-yellow-500 fill-yellow-500" />
+                      <span className="text-[10px] font-black text-yellow-600">+{quest.reward}</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[10px] text-white/40 leading-relaxed mb-3">
+                    {quest.description}
+                  </p>
+
+                  {/* Progress Bar */}
+                  {!quest.completed && (
+                    <div className="space-y-1.5">
+                      <div className="flex-1 h-1.5 rounded-full bg-white/[0.03] overflow-hidden p-[1px]">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--accent-secondary)]"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <span className="text-[9px] font-black font-mono text-white/30 tabular-nums">
+                          {quest.progress.toLocaleString()} <span className="opacity-40">/</span> {quest.target.toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {quest.completed && (
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <span className="text-[9px] font-black text-[var(--color-long)] uppercase tracking-widest">Completed</span>
+                      <div className="h-px flex-1 bg-[var(--color-long)]/20" />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* View All Button */}
+      <div className="px-3 py-3 border-t border-white/[0.03]">
+        <button className="w-full flex items-center justify-center gap-1 px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/10 transition-colors">
+          View All Quests
+          <ChevronRight className="w-3 h-3" />
+        </button>
+      </div>
     </div>
   );
 }
+
 
 export default QuestsPanel;

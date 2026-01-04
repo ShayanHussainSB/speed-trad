@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trophy, TrendingUp, ChevronUp, Sparkles } from "lucide-react";
+import { Trophy, Clock, Zap } from "lucide-react";
 import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
 import { LeaderboardSkeleton } from "@/app/components/ui/Skeleton";
 
@@ -61,7 +61,7 @@ interface LeaderboardProps {
   walletAddress?: string;
   userAvatar?: string;
   username?: string;
-  isLoading?: boolean; // "Loading the hall of fame (and shame)..."
+  isLoading?: boolean;
 }
 
 const formatPoints = (points: number): string => {
@@ -87,7 +87,6 @@ export function Leaderboard({
   const [period, setPeriod] = useState<TimePeriod>("7d");
   const traders = MOCK_TRADERS[period];
 
-  // Loading state - "Ranking degens by PnL..."
   if (isLoading) {
     return <LeaderboardSkeleton count={7} />;
   }
@@ -96,84 +95,77 @@ export function Leaderboard({
   const progressToNext = nextRankPoints > 0 ? Math.min((userPoints / nextRankPoints) * 100, 100) : 0;
 
   return (
-    <div className="flex flex-col h-full bg-black/40">
-      {/* Control Strip - Sharp & Technical Mode */}
-      <div className="flex flex-col border-b border-white/10 bg-white/[0.02]">
-        <div className="flex items-center justify-between px-4 py-2.5">
-          <div className="flex items-center gap-2">
-            <Trophy className="w-3.5 h-3.5 text-[var(--accent-primary)]" />
-            <span className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">Top Traders</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-long)] animate-pulse" />
-            <span className="text-xs font-bold text-[var(--text-tertiary)] uppercase tracking-wider">Live</span>
-          </div>
-        </div>
+    <div className="flex flex-col h-full bg-black/20">
+      {/* Time Period Strips - Minimal & Compact */}
+      <div className="flex items-center p-2 gap-1 border-b border-white/5 bg-white/[0.01]">
+        {(["24h", "7d", "30d", "all"] as TimePeriod[]).map((p) => (
+          <button
+            key={p}
+            onClick={() => setPeriod(p)}
+            className={`
+              flex-1 py-1 rounded text-[10px] font-black uppercase tracking-widest transition-all
+              ${period === p
+                ? "text-[var(--accent-primary)] bg-[var(--accent-primary)]/10 border border-[var(--accent-primary)]/20 shadow-[0_0_10px_rgba(255,107,53,0.1)]"
+                : "text-[var(--text-muted)] hover:text-[var(--text-secondary)] hover:bg-white/5"
+              }
+            `}
+          >
+            {p}
+          </button>
+        ))}
+      </div>
 
-        {/* Time Period Strips - Minimal & Compact */}
-        <div className="flex items-center px-2 pb-2 gap-1">
-          {(["24h", "7d", "30d", "all"] as TimePeriod[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`
-                flex-1 py-1.5 rounded text-xs font-bold uppercase tracking-wider transition-all
-                ${period === p
-                  ? "text-[var(--accent-primary)] bg-[var(--accent-primary)]/15"
-                  : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
-                }
-              `}
-            >
-              {p}
-            </button>
-          ))}
-        </div>
+      {/* Table Headers */}
+      <div className="grid grid-cols-[40px_1fr_90px] px-4 py-2 bg-white/[0.02] border-b border-white/[0.05]">
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Rank</span>
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">Trader</span>
+        <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest text-right">Points</span>
       </div>
 
       {/* Hall of Fame Feed */}
-      <div className="flex-1 overflow-y-auto scrollbar-hide py-1">
+      <div className="flex-1 overflow-y-auto scrollbar-hide">
         {traders.map((trader) => {
           const isTop3 = trader.rank <= 3;
 
           return (
             <div
               key={trader.rank}
-              className="group flex items-center gap-4 px-4 py-3 hover:bg-white/[0.03] transition-colors border-b border-white/[0.04]"
+              className={`
+                grid grid-cols-[40px_1fr_90px] items-center px-4 py-3 border-b border-white/5 transition-all
+                ${isTop3 ? 'bg-[var(--accent-primary)]/[0.02]' : 'hover:bg-white/[0.02]'}
+              `}
             >
-              {/* Rank Position */}
-              <div className="w-6 shrink-0 flex justify-center">
-                <span className={`text-sm font-black font-mono ${isTop3 ? "text-[var(--accent-primary)]" : "text-[var(--text-muted)]"}`}>
+              {/* Rank */}
+              <div className="flex justify-start">
+                <span className={`
+                  text-sm font-black font-display tracking-tight
+                  ${trader.rank === 1 ? 'text-[var(--color-long)] drop-shadow-[0_0_8px_rgba(255,190,11,0.3)]' :
+                    trader.rank === 2 ? 'text-[var(--text-secondary)]' :
+                      trader.rank === 3 ? 'text-[var(--accent-primary)]' :
+                        'text-[var(--text-muted)]'}
+                `}>
                   {trader.rank.toString().padStart(2, '0')}
                 </span>
               </div>
 
-              {/* Identity Module */}
-              <div className="flex-1 min-w-0 flex items-center gap-3">
-                <div className="w-7 h-7 rounded bg-white/5 border border-white/10 flex items-center justify-center shrink-0 group-hover:border-[var(--accent-primary)]/40 transition-all">
-                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase">
-                    {trader.username.slice(0, 2)}
-                  </span>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="text-sm font-bold text-white uppercase tracking-wide truncate group-hover:text-[var(--accent-primary)] transition-colors">
-                    {trader.username}
-                  </span>
-                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">
-                    {trader.trades} trades
-                  </span>
-                </div>
+              {/* Username + Meta */}
+              <div className="flex flex-col min-w-0 pr-2">
+                <span className={`text-sm font-bold uppercase tracking-wide truncate ${isTop3 ? 'text-white' : 'text-[var(--text-secondary)]'}`}>
+                  {trader.username}
+                </span>
+                <span className="text-[10px] font-semibold text-[var(--text-muted)] uppercase tracking-wider">
+                  {trader.trades} RACES
+                </span>
               </div>
 
-              {/* Performance Metrics */}
-              <div className="text-right shrink-0">
-                <div className="flex flex-col">
-                  <span className="text-sm font-black font-mono text-[var(--color-long)]">
-                    {formatPoints(trader.points)}
-                  </span>
-                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-0.5">
-                    {trader.winRate}% WR
-                  </span>
-                </div>
+              {/* Points */}
+              <div className="flex flex-col items-end">
+                <span className="text-sm font-black font-mono text-[var(--color-long)] drop-shadow-[0_0_8px_rgba(255,190,11,0.2)]">
+                  {trader.points.toLocaleString()}
+                </span>
+                <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-widest">
+                  {trader.winRate}% WR
+                </span>
               </div>
             </div>
           );
@@ -181,26 +173,24 @@ export function Leaderboard({
       </div>
 
       {/* User Terminal Section */}
-      <div className="mt-auto border-t border-[var(--accent-primary)]/30 bg-[var(--accent-primary)]/[0.03]">
+      <div className="mt-auto border-t border-[var(--accent-primary)]/30 bg-gradient-to-b from-[var(--bg-elevated)] to-black">
         <div className="p-4">
-          <div className="flex items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-10 h-10 rounded-sm bg-black border border-[var(--accent-primary)]/50 overflow-hidden">
+          <div className="flex items-center justify-between gap-4 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="relative group">
+                <div className="w-10 h-10 rounded bg-black border border-[var(--accent-primary)]/30 overflow-hidden group-hover:border-[var(--accent-primary)] transition-all">
                   <AvatarIcon avatarId={userAvatar} size={40} />
                 </div>
-                <div className="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[var(--color-long)] border-2 border-black" />
+                <div className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[var(--color-long)] border-2 border-black animate-pulse shadow-[0_0_8px_var(--color-long)]" />
               </div>
 
               <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-bold text-white uppercase tracking-wide">
-                    {username || `user_${walletAddress.slice(2, 6)}`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Rank</span>
-                  <span className="text-sm font-bold font-mono text-white">
+                <span className="text-sm font-black text-white uppercase tracking-wider">
+                  {username || `PILOT_${walletAddress.slice(2, 6)}`}
+                </span>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-widest">POSITION</span>
+                  <span className="text-[11px] font-black font-display text-[var(--accent-primary)]">
                     {formatRank(userRank)}
                   </span>
                 </div>
@@ -208,23 +198,23 @@ export function Leaderboard({
             </div>
 
             <div className="text-right">
-              <span className="text-xl font-black font-mono text-[var(--color-long)] block leading-none">
-                {formatPoints(userPoints)}
+              <span className="text-[11px] font-black text-[var(--text-muted)] uppercase tracking-widest block mb-1">XP POINTS</span>
+              <span className="text-xl font-black font-mono text-[var(--color-long)] leading-none drop-shadow-[0_0_12px_rgba(255,190,11,0.4)]">
+                {userPoints.toLocaleString()}
               </span>
-              <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide mt-1 block">Points</span>
             </div>
           </div>
 
-          {/* Advancement Protocol */}
+          {/* Progress to Next Tier */}
           {userRank > 1 && (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-[var(--text-muted)] uppercase tracking-wide">Next Rank</span>
-                <span className="text-sm font-bold font-mono text-[var(--accent-primary)]">{progressToNext.toFixed(1)}%</span>
+            <div className="pt-2 border-t border-white/5">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[9px] font-black text-[var(--text-muted)] uppercase tracking-widest">Advancement</span>
+                <span className="text-[10px] font-black font-mono text-[var(--accent-primary)]">{progressToNext.toFixed(1)}%</span>
               </div>
-              <div className="h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div className="h-1 rounded-full bg-white/5 overflow-hidden">
                 <div
-                  className="h-full bg-[var(--accent-primary)] shadow-[0_0_10px_rgba(0,245,160,0.5)]"
+                  className="h-full bg-gradient-to-r from-[var(--accent-primary)] to-[var(--color-long)] shadow-[0_0_10px_rgba(255,107,53,0.3)] transition-all duration-1000"
                   style={{ width: `${progressToNext}%` }}
                 />
               </div>

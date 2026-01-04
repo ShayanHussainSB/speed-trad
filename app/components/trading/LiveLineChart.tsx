@@ -2,6 +2,11 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 
+interface HistoricalPrice {
+  time: number;
+  price: number;
+}
+
 interface LiveLineChartProps {
   /** Current live price from WebSocket */
   livePrice: number;
@@ -13,26 +18,51 @@ interface LiveLineChartProps {
   tokenColor?: string;
   /** Token symbol for alt text */
   tokenSymbol?: string;
+  /** Entry price for position */
+  entryPrice?: number;
+  /** Liquidation price to show on chart */
+  liquidationPrice?: number;
+  /** Take profit price to show on chart */
+  takeProfitPrice?: number;
+  /** Position direction (affects line colors/labels) */
+  positionDirection?: "long" | "short";
+  /** Current PnL percent */
+  pnlPercent?: number;
+  /** Current PnL dollars */
+  pnlDollars?: number;
+  /** Historical prices to pre-populate chart (optional) */
+  historicalPrices?: HistoricalPrice[];
 }
 
-// ECG-style chart constants
-const SCROLL_DURATION = 8000; // 8 seconds to cross entire screen
-const SMOOTHING_FACTOR = 0.08; // How fast Y catches up to target (lower = smoother)
-const POINT_INTERVAL = 16; // Add new point every ~16ms (60fps)
-const MIN_POINTS = 2; // Minimum points before drawing
+// Chart behavior constants
+const SCROLL_DURATION = 30000; // 30 seconds of history visible
+const POINT_INTERVAL = 50; // More frequent points = smoother curves
+const MIN_POINTS = 2;
 
-// Smart dynamic zoom constants
-const PRICE_WINDOW_MS = 5000; // Rolling window for price analysis
-const SCALE_SMOOTHING = 0.02; // How fast the zoom animates (lower = smoother transitions)
-const SPIKE_SCALE_SMOOTHING = 0.15; // Faster zoom out for spikes (catch up quickly to big moves)
-const MIN_VISIBLE_RANGE_PERCENT = 0.0005; // Minimum 0.05% of price as visible range (prevents over-zoom on flat prices)
-const BREATHING_ROOM = 0.2; // 20% padding around actual price range
+// Smoothing - VERY heavy smoothing for super curvy lines like speedtrading.exchange
+// This makes price changes appear as flowing curves, not sharp corners
+const PRICE_SMOOTHING = 0.05; // Very slow price interpolation = super smooth
+const Y_SMOOTHING = 0.08; // Very slow Y movement = flowing curves  
+
+// Y-axis SMOOTH scaling (like speedtrading.exchange)
+// Scale UP aggressively when volatility is low - make small movements dramatic
+// Scale DOWN smoothly when volatility increases to fit price swings
+const MIN_PRICE_RANGE_PERCENT = 0.00003; // ULTRA tight 0.003% range = tiny moves fill screen
+const SCALE_PADDING = 0.08; // 8% padding - very tight to maximize amplification
+const SCALE_SMOOTHING = 0.05; // Smooth scale transitions
 
 // Static padding values
 const PADDING_TOP = 20;
 const PADDING_BOTTOM = 40;
 const PADDING_LEFT = 10;
 const RIGHT_GAP_PERCENT = 0.25;
+
+// Grid constants - match reference site which shows ~7 grid levels
+const GRID_LABEL_COUNT = 7;
+
+// Color constants
+const LINE_COLOR = "#00F5A0";
+const GLOW_COLOR = "rgba(0, 245, 160, 0.5)";
 
 // Solana Logo SVG Component
 const SolanaLogo = ({ className = "w-4 h-4" }: { className?: string }) => (
@@ -70,50 +100,108 @@ const SolanaLogo = ({ className = "w-4 h-4" }: { className?: string }) => (
   </svg>
 );
 
-// Point in the animated line (uses pixel coordinates)
+// Animated rolling number digit component
+function RollingDigit({ digit, color = "#0A0A0A" }: { digit: string; color?: string }) {
+  const isNumber = /[0-9]/.test(digit);
+
+  if (!isNumber) {
+    return (
+      <span
+        className="inline-block font-mono font-bold"
+        style={{ color }}
+      >
+        {digit}
+      </span>
+    );
+  }
+
+  const numValue = parseInt(digit, 10);
+
+  return (
+    <span
+      className="inline-block relative overflow-hidden font-mono font-bold"
+      style={{ height: "1.2em", width: "0.6em", color }}
+    >
+      <span
+        className="absolute left-0 right-0 flex flex-col items-center transition-transform duration-300 ease-out"
+        style={{
+          transform: `translateY(-${numValue * 1.2}em)`,
+        }}
+      >
+        {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+          <span key={n} style={{ height: "1.2em", lineHeight: "1.2em" }}>
+            {n}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+// Animated price display with rolling numbers
+function AnimatedPrice({
+  value,
+  precision = 6,
+  color = "#0A0A0A",
+  className = ""
+}: {
+  value: number;
+  precision?: number;
+  color?: string;
+  className?: string;
+}) {
+  const displayValue = value.toPrecision(precision);
+
+  return (
+    <span className={`inline-flex tabular-nums ${className}`}>
+      {displayValue.split("").map((char, i) => (
+        <RollingDigit key={i} digit={char} color={color} />
+      ))}
+    </span>
+  );
+}
+
 interface LinePoint {
-  x: number; // Pixel X position
-  y: number; // Pixel Y position
+  x: number;
+  y: number;
+  price: number; // Store price for min/max calculation
 }
 
-// Price sample with timestamp for rolling window
-interface PriceSample {
-  price: number;
-  timestamp: number;
-}
-
-// Generate smooth SVG path from pixel points
+// Smooth curve generation with controlled tension to prevent artifacts during rescaling
 function generatePathFromPoints(points: LinePoint[]): string {
   if (points.length < 2) return "";
 
+  if (points.length === 2) {
+    return `M ${points[0].x} ${points[0].y} L ${points[1].x} ${points[1].y}`;
+  }
+
   let path = `M ${points[0].x} ${points[0].y}`;
 
-  for (let i = 1; i < points.length; i++) {
-    const prev = points[i - 1];
-    const curr = points[i];
-    const next = points[i + 1];
-    const prevPrev = points[i - 2];
+  // Higher tension for smooth organic curves (0.38 is safe for no loops)
+  const tension = 0.38;
 
-    const tension = 0.3;
-    let cp1x: number, cp1y: number, cp2x: number, cp2y: number;
+  for (let i = 0; i < points.length - 1; i++) {
+    const p0 = points[Math.max(0, i - 1)];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[Math.min(points.length - 1, i + 2)];
 
-    if (i === 1) {
-      cp1x = prev.x + (curr.x - prev.x) * tension;
-      cp1y = prev.y + (curr.y - prev.y) * tension;
-    } else {
-      cp1x = prev.x + (curr.x - prevPrev.x) * tension;
-      cp1y = prev.y + (curr.y - prevPrev.y) * tension;
-    }
+    // Calculate control points
+    let cp1x = p1.x + (p2.x - p0.x) * tension;
+    let cp1y = p1.y + (p2.y - p0.y) * tension;
+    let cp2x = p2.x - (p3.x - p1.x) * tension;
+    let cp2y = p2.y - (p3.y - p1.y) * tension;
 
-    if (!next) {
-      cp2x = curr.x - (curr.x - prev.x) * tension;
-      cp2y = curr.y - (curr.y - prev.y) * tension;
-    } else {
-      cp2x = curr.x - (next.x - prev.x) * tension;
-      cp2y = curr.y - (next.y - prev.y) * tension;
-    }
+    // Clamp control points to prevent loops and crossing artifacts
+    const minY = Math.min(p1.y, p2.y);
+    const maxY = Math.max(p1.y, p2.y);
+    const yRange = maxY - minY;
+    const maxOvershoot = Math.max(yRange * 0.2, 3); // Reduced overshoot prevents loops
 
-    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${curr.x} ${curr.y}`;
+    cp1y = Math.max(minY - maxOvershoot, Math.min(maxY + maxOvershoot, cp1y));
+    cp2y = Math.max(minY - maxOvershoot, Math.min(maxY + maxOvershoot, cp2y));
+
+    path += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
   }
 
   return path;
@@ -123,200 +211,335 @@ function generateAreaFromPath(
   linePath: string,
   points: LinePoint[],
   height: number,
-  paddingBottom: number
+  paddingBottom: number,
+  paddingLeft: number
 ): string {
   if (!linePath || points.length < 2) return "";
 
   const lastX = points[points.length - 1].x;
-  const firstX = points[0].x;
+  // Use padding left as the leftmost point to avoid gaps
+  const firstX = Math.max(points[0].x, paddingLeft);
   const bottomY = height - paddingBottom;
 
   return `${linePath} L ${lastX} ${bottomY} L ${firstX} ${bottomY} Z`;
 }
 
-export function LiveLineChart({ livePrice, symbol, tokenImage, tokenColor, tokenSymbol }: LiveLineChartProps) {
+// Calculate nice round grid levels (divisible by 5)
+function calculateNiceGridLevels(min: number, max: number, count: number): number[] {
+  if (min >= max || count <= 0) return [];
+
+  const range = max - min;
+  const rawStep = range / count;
+
+  // Find nice step size - prefer steps divisible by 5
+  // For crypto prices, we want steps like 0.005, 0.01, 0.05, 0.1, 0.5, 1, 5, 10
+  const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const normalized = rawStep / magnitude;
+
+  let niceStep: number;
+  if (normalized <= 0.5) niceStep = 0.5;
+  else if (normalized <= 1) niceStep = 1;
+  else if (normalized <= 2.5) niceStep = 2.5;
+  else if (normalized <= 5) niceStep = 5;
+  else niceStep = 10;
+
+  niceStep *= magnitude;
+
+  // Ensure minimum step for readability
+  if (niceStep < 0.001) niceStep = 0.001;
+
+  // Generate levels starting from a nice round number
+  const start = Math.ceil(min / niceStep) * niceStep;
+  const levels: number[] = [];
+
+  for (let level = start; level <= max + niceStep; level += niceStep) {
+    // Round to avoid floating point errors
+    const rounded = Math.round(level * 100000) / 100000;
+    levels.push(rounded);
+    if (levels.length >= count + 2) break;
+  }
+
+  return levels;
+}
+
+export function LiveLineChart({
+  livePrice,
+  symbol,
+  tokenImage,
+  tokenColor,
+  tokenSymbol,
+  entryPrice,
+  liquidationPrice,
+  takeProfitPrice,
+  positionDirection,
+  pnlPercent = 0,
+  pnlDollars = 0,
+  historicalPrices = [],
+}: LiveLineChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const linePathRef = useRef<SVGPathElement>(null);
   const areaPathRef = useRef<SVGPathElement>(null);
   const glowPathRef = useRef<SVGPathElement>(null);
   const dotGroupRef = useRef<SVGGElement>(null);
   const priceLabelRef = useRef<HTMLDivElement>(null);
-  const priceDisplayRef = useRef<HTMLSpanElement>(null);
   const outerGlowRef = useRef<SVGCircleElement>(null);
+  const gridGroupRef = useRef<SVGGElement>(null);
 
   const [dimensions, setDimensions] = useState({ width: 800, height: 400 });
   const [isReady, setIsReady] = useState(false);
+  const [displayPrice, setDisplayPrice] = useState(0);
+  const [gridLevels, setGridLevels] = useState<number[]>([]);
 
-  // Animation state (refs to avoid re-renders)
+  // Animation state refs
   const pointsRef = useRef<LinePoint[]>([]);
   const animationFrameRef = useRef<number>(0);
   const lastFrameTimeRef = useRef<number>(0);
   const lastPointTimeRef = useRef<number>(0);
 
   // Price tracking
-  const targetYRef = useRef<number>(0);
-  const currentYRef = useRef<number>(0);
   const targetPriceRef = useRef<number>(0);
-  const currentPriceRef = useRef<number>(0);
-  const lastPriceDirectionRef = useRef<"up" | "down" | null>(null);
+  const smoothedPriceRef = useRef<number>(0);
+  const displayPriceRef = useRef<number>(0);
+  const currentYRef = useRef<number>(0);
   const glowIntensityRef = useRef<number>(0);
 
-  // Rolling price window for dynamic zoom (cinematic scaling)
-  const priceHistoryRef = useRef<PriceSample[]>([]);
+  // Dynamic Y-axis scaling based on visible min/max
+  const currentMinPriceRef = useRef<number>(0);
+  const currentMaxPriceRef = useRef<number>(0);
+  const targetMinPriceRef = useRef<number>(0);
+  const targetMaxPriceRef = useRef<number>(0);
 
-  // Animated scale bounds (smoothly interpolate for cinematic zoom effect)
-  const targetMinRef = useRef<number>(0);
-  const targetMaxRef = useRef<number>(0);
-  const currentMinRef = useRef<number>(0);
-  const currentMaxRef = useRef<number>(0);
+  // For smooth price display updates
+  const lastDisplayUpdateRef = useRef<number>(0);
+  const lastGridUpdateRef = useRef<number>(0);
+  const gridLevelsRef = useRef<number[]>([]);
 
   const rightGap = Math.max(dimensions.width * RIGHT_GAP_PERCENT, 100);
   const { width, height } = dimensions;
-  const chartWidth = width - PADDING_LEFT - rightGap;
   const chartHeight = height - PADDING_TOP - PADDING_BOTTOM;
+  const chartWidth = width - PADDING_LEFT - rightGap;
+  const scrollSpeed = chartWidth / SCROLL_DURATION;
 
-  // Calculate scroll speed based on chart width and duration
-  const scrollSpeed = chartWidth / SCROLL_DURATION; // pixels per ms
+  // Position state
+  const hasPosition = entryPrice && entryPrice > 0;
+  const isWinning = hasPosition && (
+    (positionDirection === "long" && livePrice > entryPrice) ||
+    (positionDirection === "short" && livePrice < entryPrice)
+  );
 
-  // Calculate smart range based on price dynamics - always shows full price action
-  const calculateSmartRange = useCallback((minPrice: number, maxPrice: number): { min: number; max: number } => {
-    const midPrice = (minPrice + maxPrice) / 2;
-    const actualRange = maxPrice - minPrice;
-
-    // Minimum visible range to prevent over-zoom on flat prices
-    const minRange = midPrice * MIN_VISIBLE_RANGE_PERCENT;
-
-    // Use actual range with breathing room - NO max cap so spikes are fully visible
-    let targetRange = actualRange;
-
-    if (targetRange < minRange) {
-      // Price is too stable - expand to minimum visible range
-      targetRange = minRange;
-    } else {
-      // Add breathing room around actual range (20% padding on each side)
-      targetRange = actualRange * (1 + BREATHING_ROOM * 2);
-    }
-
-    // Center the range around the midpoint
-    const halfRange = targetRange / 2;
-    return {
-      min: midPrice - halfRange,
-      max: midPrice + halfRange,
-    };
-  }, []);
-
-  // Convert price to Y pixel position using current animated scale
+  // Convert price to Y coordinate based on current scale
   const priceToY = useCallback((price: number, minPrice: number, maxPrice: number): number => {
-    if (minPrice === 0 && maxPrice === 0) {
-      return height / 2;
+    if (maxPrice <= minPrice || minPrice === 0) {
+      return PADDING_TOP + chartHeight / 2;
     }
 
-    const { min: paddedMin, max: paddedMax } = calculateSmartRange(minPrice, maxPrice);
-    const paddedRange = paddedMax - paddedMin;
+    const range = maxPrice - minPrice;
+    const normalized = (price - minPrice) / range;
 
-    const y = PADDING_TOP + chartHeight - ((price - paddedMin) / paddedRange) * chartHeight;
+    // Invert Y (higher price = lower Y)
+    return PADDING_TOP + chartHeight * (1 - normalized);
+  }, [chartHeight]);
 
-    // Clamp Y to visible chart area to prevent overflow
-    const minY = PADDING_TOP;
-    const maxY = height - PADDING_BOTTOM;
-    return Math.max(minY, Math.min(maxY, y));
-  }, [chartHeight, height, calculateSmartRange]);
-
-  // Handle dimension changes
+  // Handle dimension changes - use ResizeObserver to detect container changes (not just window resize)
   useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let prevWidth = 0;
+
     const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.clientWidth,
-          height: containerRef.current.clientHeight,
-        });
+      const newWidth = container.clientWidth;
+      const newHeight = container.clientHeight;
+
+      if (newWidth > 0 && newHeight > 0) {
+        // If width changed, rescale the X positions of all points to fit new width
+        if (prevWidth > 0 && newWidth !== prevWidth && pointsRef.current.length > 0) {
+          const scale = newWidth / prevWidth;
+          const newRightGap = Math.max(newWidth * RIGHT_GAP_PERCENT, 100);
+          const oldRightGap = Math.max(prevWidth * RIGHT_GAP_PERCENT, 100);
+          const oldHeadX = prevWidth - oldRightGap;
+          const newHeadX = newWidth - newRightGap;
+
+          // Rescale all point X positions relative to the head position
+          pointsRef.current = pointsRef.current.map(p => ({
+            ...p,
+            x: newHeadX - (oldHeadX - p.x) * scale,
+          }));
+        }
+
+        prevWidth = newWidth;
+        setDimensions({ width: newWidth, height: newHeight });
       }
     };
 
+    // Initial dimensions
     updateDimensions();
+
+    // Use ResizeObserver for container size changes (panel expand/collapse)
+    const resizeObserver = new ResizeObserver(() => {
+      updateDimensions();
+    });
+    resizeObserver.observe(container);
+
+    // Also listen to window resize as fallback
     window.addEventListener("resize", updateDimensions);
-    return () => window.removeEventListener("resize", updateDimensions);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener("resize", updateDimensions);
+    };
   }, []);
 
   // Reset when symbol changes
   useEffect(() => {
     pointsRef.current = [];
-    priceHistoryRef.current = [];
-    targetMinRef.current = 0;
-    targetMaxRef.current = 0;
-    currentMinRef.current = 0;
-    currentMaxRef.current = 0;
     currentYRef.current = height / 2;
-    targetYRef.current = height / 2;
-    currentPriceRef.current = 0;
     targetPriceRef.current = 0;
+    smoothedPriceRef.current = 0;
+    displayPriceRef.current = 0;
     lastPointTimeRef.current = 0;
+    lastFrameTimeRef.current = 0;
+    currentMinPriceRef.current = 0;
+    currentMaxPriceRef.current = 0;
+    targetMinPriceRef.current = 0;
+    targetMaxPriceRef.current = 0;
+    setDisplayPrice(0);
+    setGridLevels([]);
     setIsReady(false);
   }, [symbol, height]);
 
-  // Handle price updates - just set targets, animation loop does the rest
+  // Pre-populate with historical prices
+  useEffect(() => {
+    if (historicalPrices.length === 0 || !width || !height) return;
+    if (pointsRef.current.length > 0) return; // Already populated
+
+    const headX = width - rightGap;
+    const now = Date.now();
+
+    // Get recent prices within our scroll window
+    const windowStart = now - SCROLL_DURATION;
+    const recentPrices = historicalPrices.filter(p => p.time >= windowStart);
+
+    if (recentPrices.length === 0) return;
+
+    // Calculate min/max from historical prices
+    const prices = recentPrices.map(p => p.price);
+    const minPrice = Math.min(...prices);
+    const maxPrice = Math.max(...prices);
+    const range = maxPrice - minPrice;
+    const padding = Math.max(range * SCALE_PADDING, maxPrice * MIN_PRICE_RANGE_PERCENT);
+
+    targetMinPriceRef.current = minPrice - padding;
+    targetMaxPriceRef.current = maxPrice + padding;
+    currentMinPriceRef.current = targetMinPriceRef.current;
+    currentMaxPriceRef.current = targetMaxPriceRef.current;
+
+    // Initialize display price
+    const latestPrice = recentPrices[recentPrices.length - 1].price;
+    smoothedPriceRef.current = latestPrice;
+    displayPriceRef.current = latestPrice;
+    targetPriceRef.current = latestPrice;
+    setDisplayPrice(latestPrice);
+
+    // Convert historical prices to chart points
+    const points = recentPrices.map(p => {
+      const age = now - p.time;
+      const x = headX - (age / SCROLL_DURATION) * chartWidth;
+      const y = priceToY(p.price, currentMinPriceRef.current, currentMaxPriceRef.current);
+      return { x, y, price: p.price };
+    }).filter(p => p.x >= PADDING_LEFT - 200);
+
+    // Ensure line extends all the way to left edge (no blank space)
+    if (points.length > 0) {
+      const firstPoint = points[0];
+      const leftEdge = PADDING_LEFT - 300; // Extend well beyond visible left
+      // Add points extending to left edge at the same price level
+      for (let x = firstPoint.x - 30; x >= leftEdge; x -= 30) {
+        points.unshift({ x, y: firstPoint.y, price: firstPoint.price });
+      }
+    }
+
+    if (points.length >= MIN_POINTS) {
+      pointsRef.current = points;
+      currentYRef.current = points[points.length - 1].y;
+
+      // Calculate initial grid levels
+      const levels = calculateNiceGridLevels(
+        currentMinPriceRef.current,
+        currentMaxPriceRef.current,
+        GRID_LABEL_COUNT
+      );
+      setGridLevels(levels);
+
+      setIsReady(true);
+    }
+  }, [historicalPrices, width, height, rightGap, chartWidth, priceToY]);
+
+  // Handle price updates
   useEffect(() => {
     if (livePrice <= 0) return;
 
-    const now = Date.now();
+    const headX = width - rightGap;
 
-    // Add to rolling price history for dynamic zoom
-    priceHistoryRef.current.push({ price: livePrice, timestamp: now });
+    // Initialize on first price - create a straight line
+    if (currentMinPriceRef.current === 0) {
+      const padding = livePrice * MIN_PRICE_RANGE_PERCENT;
+      currentMinPriceRef.current = livePrice - padding;
+      currentMaxPriceRef.current = livePrice + padding;
+      targetMinPriceRef.current = currentMinPriceRef.current;
+      targetMaxPriceRef.current = currentMaxPriceRef.current;
+      smoothedPriceRef.current = livePrice;
+      displayPriceRef.current = livePrice;
+      setDisplayPrice(livePrice);
 
-    // Remove old prices outside the window
-    const cutoff = now - PRICE_WINDOW_MS;
-    priceHistoryRef.current = priceHistoryRef.current.filter(p => p.timestamp > cutoff);
+      // If no historical data, create initial straight line spanning full width
+      if (pointsRef.current.length === 0 && chartWidth > 0) {
+        const y = priceToY(livePrice, currentMinPriceRef.current, currentMaxPriceRef.current);
+        currentYRef.current = y;
 
-    // Calculate min/max from rolling window (cinematic zoom)
-    if (priceHistoryRef.current.length > 0) {
-      const prices = priceHistoryRef.current.map(p => p.price);
-      targetMinRef.current = Math.min(...prices);
-      targetMaxRef.current = Math.max(...prices);
+        // Create points from left edge (with buffer) to head position
+        const headX = width - rightGap;
+        const startX = PADDING_LEFT - 300; // Start well off-screen for no blank space
+        const numInitialPoints = 50; // More points for smoother curves
 
-      // Initialize current scale on first price
-      if (currentMinRef.current === 0 && currentMaxRef.current === 0) {
-        currentMinRef.current = targetMinRef.current;
-        currentMaxRef.current = targetMaxRef.current;
+        for (let i = 0; i < numInitialPoints; i++) {
+          const t = i / (numInitialPoints - 1);
+          const x = startX + (headX - startX) * t;
+          pointsRef.current.push({ x, y, price: livePrice });
+        }
+
+        // Calculate initial grid levels
+        const levels = calculateNiceGridLevels(
+          currentMinPriceRef.current,
+          currentMaxPriceRef.current,
+          GRID_LABEL_COUNT
+        );
+        setGridLevels(levels);
       }
     }
 
-    // Detect direction change for glow effect
-    if (currentPriceRef.current > 0 && livePrice !== targetPriceRef.current) {
-      const direction = livePrice > targetPriceRef.current ? "up" : "down";
-      if (direction !== lastPriceDirectionRef.current) {
-        glowIntensityRef.current = 1;
-      } else {
-        glowIntensityRef.current = Math.min(glowIntensityRef.current + 0.2, 1);
-      }
-      lastPriceDirectionRef.current = direction;
+    // Glow effect
+    if (targetPriceRef.current > 0 && livePrice !== targetPriceRef.current) {
+      glowIntensityRef.current = Math.min(glowIntensityRef.current + 0.2, 1);
     }
 
-    // Set targets - animation loop will smoothly interpolate
     targetPriceRef.current = livePrice;
-    targetYRef.current = priceToY(livePrice, currentMinRef.current, currentMaxRef.current);
-
-    // Initialize current values if first price
-    if (currentPriceRef.current === 0) {
-      currentPriceRef.current = livePrice;
-      currentYRef.current = targetYRef.current;
-    }
 
     if (!isReady && livePrice > 0) {
       setIsReady(true);
     }
-  }, [livePrice, priceToY, isReady]);
+  }, [livePrice, isReady, width, rightGap, chartWidth, priceToY]);
 
-  // Main animation loop - ECG style continuous scrolling
+  // Main animation loop
   useEffect(() => {
     if (!isReady) return;
 
     let isRunning = true;
-    const headX = width - rightGap; // Fixed X position for the "pen head"
+    const headX = width - rightGap;
 
     const animate = (timestamp: number) => {
       if (!isRunning) return;
 
-      // Initialize timing on first frame
       if (lastFrameTimeRef.current === 0) {
         lastFrameTimeRef.current = timestamp;
         lastPointTimeRef.current = timestamp;
@@ -325,89 +548,156 @@ export function LiveLineChart({ livePrice, symbol, tokenImage, tokenColor, token
       const deltaTime = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
 
-      // 1. Smooth the scale bounds (cinematic zoom transition)
-      // Use faster smoothing when zooming OUT (spike detected) to keep price visible
-      const dMin = targetMinRef.current - currentMinRef.current;
-      const dMax = targetMaxRef.current - currentMaxRef.current;
+      // Triple exponential smoothing for ultra-smooth organic curves
+      // Each layer makes the transitions more gradual and flowing
+      const dp1 = targetPriceRef.current - smoothedPriceRef.current;
+      smoothedPriceRef.current += dp1 * 0.12; // First smoothing layer
 
-      // Detect if we need to zoom out (target range is bigger than current range)
-      const currentRange = currentMaxRef.current - currentMinRef.current;
-      const targetRange = targetMaxRef.current - targetMinRef.current;
-      const isZoomingOut = targetRange > currentRange * 1.1; // 10% threshold
+      const dp2 = smoothedPriceRef.current - displayPriceRef.current;
+      displayPriceRef.current += dp2 * 0.08; // Second smoothing layer
 
-      // Use faster smoothing for zoom out (spike), slower for zoom in (settling)
-      const smoothing = isZoomingOut ? SPIKE_SCALE_SMOOTHING : SCALE_SMOOTHING;
+      // Third layer: smooth the Y position even more (done when adding points)
 
-      currentMinRef.current += dMin * smoothing;
-      currentMaxRef.current += dMax * smoothing;
-
-      // 2. Recalculate target Y with smoothed scale (enables smooth zoom)
-      if (targetPriceRef.current > 0) {
-        targetYRef.current = priceToY(targetPriceRef.current, currentMinRef.current, currentMaxRef.current);
+      // Update React state for animated display (throttled)
+      if (timestamp - lastDisplayUpdateRef.current > 100) {
+        lastDisplayUpdateRef.current = timestamp;
+        setDisplayPrice(displayPriceRef.current);
       }
 
-      // 3. Smooth current Y toward target Y (continuous interpolation)
-      const dy = targetYRef.current - currentYRef.current;
-      currentYRef.current += dy * SMOOTHING_FACTOR;
+      // SMOOTH RESCALE: Calculate target min/max and smoothly interpolate
+      // This creates nice curvy charts like speedtrading.exchange
+      if (pointsRef.current.length > 0) {
+        const prices = pointsRef.current.map(p => p.price);
+        const currentPrice = displayPriceRef.current;
+        prices.push(currentPrice);
 
-      // 4. Smooth current price toward target price
-      const dp = targetPriceRef.current - currentPriceRef.current;
-      currentPriceRef.current += dp * SMOOTHING_FACTOR;
+        const dataMin = Math.min(...prices);
+        const dataMax = Math.max(...prices);
+        const dataRange = dataMax - dataMin;
 
-      // 5. Decay glow intensity
+        // Calculate target scale bounds with padding
+        // Use tighter range when volatility is low for nice curves
+        const minRange = dataMax * MIN_PRICE_RANGE_PERCENT;
+        const actualRange = Math.max(dataRange, minRange);
+        const padding = actualRange * SCALE_PADDING;
+
+        // Set target bounds (what we want to smoothly move toward)
+        targetMinPriceRef.current = dataMin - padding;
+        targetMaxPriceRef.current = dataMax + padding;
+
+        // Initialize current bounds if not set
+        if (currentMinPriceRef.current === 0 || currentMaxPriceRef.current === 0) {
+          currentMinPriceRef.current = targetMinPriceRef.current;
+          currentMaxPriceRef.current = targetMaxPriceRef.current;
+        }
+
+        // Smoothly interpolate current bounds toward target (creates smooth scale transitions)
+        // Lower SCALE_SMOOTHING = slower/smoother transitions (~1 second)
+        const minDiff = targetMinPriceRef.current - currentMinPriceRef.current;
+        const maxDiff = targetMaxPriceRef.current - currentMaxPriceRef.current;
+
+        currentMinPriceRef.current += minDiff * SCALE_SMOOTHING;
+        currentMaxPriceRef.current += maxDiff * SCALE_SMOOTHING;
+
+        // Update grid levels - throttle to prevent excessive re-renders
+        const timeSinceGridUpdate = timestamp - lastGridUpdateRef.current;
+        if (timeSinceGridUpdate > 100) { // Update every 100ms to keep up with price
+          const levels = calculateNiceGridLevels(
+            currentMinPriceRef.current,
+            currentMaxPriceRef.current,
+            GRID_LABEL_COUNT
+          );
+
+          // Only update React state if levels actually changed (use ref for comparison)
+          const prevLevels = gridLevelsRef.current;
+          const levelsChanged = levels.length !== prevLevels.length ||
+            levels.some((l, i) => Math.abs(l - (prevLevels[i] || 0)) > 0.0001);
+
+          if (levelsChanged) {
+            gridLevelsRef.current = levels;
+            lastGridUpdateRef.current = timestamp;
+            setGridLevels(levels);
+          }
+        }
+      }
+
+      // Calculate target Y based on current scale
+      const targetY = priceToY(displayPriceRef.current, currentMinPriceRef.current, currentMaxPriceRef.current);
+
+      // Limit max Y change per frame to force ultra-smooth curves
+      const dy = targetY - currentYRef.current;
+      const maxYChangePerFrame = 1.5; // Very small = no sharp corners possible
+      const clampedDy = Math.max(-maxYChangePerFrame, Math.min(maxYChangePerFrame, dy * Y_SMOOTHING));
+      currentYRef.current += clampedDy;
+
+      // Decay glow
       if (glowIntensityRef.current > 0) {
         glowIntensityRef.current *= 0.95;
         if (glowIntensityRef.current < 0.01) glowIntensityRef.current = 0;
       }
 
-      // 6. Scroll all existing points leftward
+      // Scroll points left
       const scrollAmount = scrollSpeed * deltaTime;
       pointsRef.current.forEach(p => {
         p.x -= scrollAmount;
       });
 
-      // 7. Remove points that scrolled off the left edge
-      pointsRef.current = pointsRef.current.filter(p => p.x >= PADDING_LEFT);
+      // Remove points that are off-screen left (keep some buffer for smooth curves)
+      pointsRef.current = pointsRef.current.filter(p => p.x >= PADDING_LEFT - 100);
 
-      // 8. Add new point at fixed intervals (creates the continuous line)
+      // Add new point
       if (timestamp - lastPointTimeRef.current >= POINT_INTERVAL) {
         lastPointTimeRef.current = timestamp;
         pointsRef.current.push({
           x: headX,
           y: currentYRef.current,
+          price: displayPriceRef.current,
         });
       }
 
-      // 9. Update SVG paths directly (no React re-render)
+      // Recalculate Y positions for all points based on current scale
+      pointsRef.current.forEach(p => {
+        p.y = priceToY(p.price, currentMinPriceRef.current, currentMaxPriceRef.current);
+      });
+
+      // Update paths
       if (pointsRef.current.length >= MIN_POINTS) {
         const linePath = generatePathFromPoints(pointsRef.current);
-        const areaPath = generateAreaFromPath(linePath, pointsRef.current, height, PADDING_BOTTOM);
+        const areaPath = generateAreaFromPath(linePath, pointsRef.current, height, PADDING_BOTTOM, PADDING_LEFT);
 
-        if (linePathRef.current) linePathRef.current.setAttribute("d", linePath);
-        if (glowPathRef.current) glowPathRef.current.setAttribute("d", linePath);
-        if (areaPathRef.current) areaPathRef.current.setAttribute("d", areaPath);
+        if (linePathRef.current) {
+          linePathRef.current.setAttribute("d", linePath);
+        }
+        if (glowPathRef.current) {
+          glowPathRef.current.setAttribute("d", linePath);
+        }
+        if (areaPathRef.current) {
+          areaPathRef.current.setAttribute("d", areaPath);
+        }
       }
 
-      // 10. Update dot position (stays at headX, moves with currentY)
+      // Update current Y for head position
+      if (pointsRef.current.length > 0) {
+        currentYRef.current = pointsRef.current[pointsRef.current.length - 1].y;
+      }
+
+      // Update dot position
       if (dotGroupRef.current) {
         dotGroupRef.current.style.transform = `translate(${headX}px, ${currentYRef.current}px)`;
       }
 
-      // 11. Update price label position
+      // Update price label position
       if (priceLabelRef.current) {
-        priceLabelRef.current.style.top = `${currentYRef.current - 12}px`;
+        priceLabelRef.current.style.top = `${currentYRef.current - 14}px`;
       }
 
-      // 12. Update price display
-      if (priceDisplayRef.current && currentPriceRef.current > 0) {
-        priceDisplayRef.current.textContent = currentPriceRef.current.toPrecision(6);
-      }
-
-      // 13. Update glow effect
+      // Update headlight glow
       if (outerGlowRef.current) {
-        const baseOpacity = 0.25;
-        const glowOpacity = baseOpacity + glowIntensityRef.current * 0.5;
-        const glowRadius = 6 + glowIntensityRef.current * 4;
+        const baseOpacity = 0.2;
+        const glowOpacity = baseOpacity + glowIntensityRef.current * 0.3;
+        const baseRadius = 5;
+        const glowRadius = baseRadius + glowIntensityRef.current * 3;
+
         outerGlowRef.current.setAttribute("opacity", glowOpacity.toString());
         outerGlowRef.current.setAttribute("r", glowRadius.toString());
       }
@@ -423,34 +713,32 @@ export function LiveLineChart({ livePrice, symbol, tokenImage, tokenColor, token
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isReady, width, height, rightGap, scrollSpeed, priceToY]);
+  }, [isReady, width, height, rightGap, scrollSpeed, priceToY, chartHeight]);
 
-  // Generate Y-axis labels based on current animated scale (smart dynamic zoom)
-  const yAxisLabels = [];
-  if (currentMinRef.current > 0 && currentMaxRef.current > 0) {
-    const { min: paddedMin, max: paddedMax } = calculateSmartRange(currentMinRef.current, currentMaxRef.current);
-
-    const numLabels = 4;
-    for (let i = 0; i <= numLabels; i++) {
-      const price = paddedMin + ((paddedMax - paddedMin) * (numLabels - i)) / numLabels;
-      const y = PADDING_TOP + (chartHeight * i) / numLabels;
-      yAxisLabels.push({ price, y });
-    }
-  }
-
-  // Show placeholder if not ready
   if (!isReady) {
     return (
       <div ref={containerRef} className="w-full h-full relative bg-transparent flex items-center justify-center">
-        <div className="text-[var(--text-tertiary)] text-sm">Waiting for price data...</div>
+        <div className="text-[var(--text-tertiary)] text-sm animate-pulse">Waiting for price data...</div>
       </div>
     );
   }
 
   const initialY = currentYRef.current || height / 2;
+  const isPositiveChange = pnlPercent >= 0;
+
+  // Dynamic line color
+  const lineColor = hasPosition
+    ? (isWinning ? "#00FF66" : "#FF3B69")
+    : LINE_COLOR;
+  const glowColor = hasPosition
+    ? (isWinning ? "rgba(0, 255, 102, 0.5)" : "rgba(255, 59, 105, 0.5)")
+    : GLOW_COLOR;
 
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-transparent">
+    <div
+      ref={containerRef}
+      className="w-full h-full relative bg-transparent overflow-hidden"
+    >
       <svg
         width={width}
         height={height}
@@ -458,127 +746,177 @@ export function LiveLineChart({ livePrice, symbol, tokenImage, tokenColor, token
         style={{ overflow: "visible" }}
       >
         <defs>
-          <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#00F5A0" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#00F5A0" stopOpacity="1" />
+          <linearGradient id="areaGradientLive" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={lineColor} stopOpacity="0.12" />
+            <stop offset="100%" stopColor={lineColor} stopOpacity="0" />
           </linearGradient>
 
-          <linearGradient id="areaGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#00F5A0" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#00F5A0" stopOpacity="0" />
-          </linearGradient>
+          <filter id="lineGlowLive" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          <filter id="headGlowLive" x="-200%" y="-200%" width="500%" height="500%">
+            <feGaussianBlur stdDeviation="3" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+
+          {/* Clip path to prevent rendering outside chart area */}
+          <clipPath id="chartClipLive">
+            <rect x={PADDING_LEFT} y={0} width={width - PADDING_LEFT} height={height} />
+          </clipPath>
         </defs>
 
-        {/* Horizontal grid lines - subtle but visible for price reference */}
-        {yAxisLabels.map((label, i) => (
-          <line
-            key={`h-${i}`}
-            x1={PADDING_LEFT}
-            y1={label.y}
-            x2={width - 80}
-            y2={label.y}
-            stroke="rgba(255, 255, 255, 0.08)"
-            strokeWidth="1"
-            strokeDasharray="4 4"
+        {/* Dynamic Grid - recalculated based on visible price range */}
+        <g ref={gridGroupRef}>
+          {gridLevels.map((price, i) => {
+            const y = priceToY(price, currentMinPriceRef.current, currentMaxPriceRef.current);
+            const isVisible = y >= PADDING_TOP && y <= height - PADDING_BOTTOM;
+
+            if (!isVisible) return null;
+
+            return (
+              <g key={i}>
+                <line
+                  x1={PADDING_LEFT}
+                  y1={y}
+                  x2={width - 75}
+                  y2={y}
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="1"
+                />
+                <text
+                  x={width - 65}
+                  y={y + 4}
+                  fill="#5A5A5A"
+                  fontSize="11"
+                  fontFamily="ui-monospace, monospace"
+                >
+                  {price.toFixed(3)}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+
+        {/* Chart content - clipped to chart area */}
+        <g clipPath="url(#chartClipLive)">
+          {/* Area fill */}
+          <path
+            ref={areaPathRef}
+            d=""
+            fill="url(#areaGradientLive)"
           />
-        ))}
 
-        {/* Vertical grid lines - for time reference */}
-        {Array.from({ length: 8 }).map((_, i) => {
-          const x = PADDING_LEFT + ((chartWidth) * (i + 1)) / 9;
-          return (
-            <line
-              key={`v-${i}`}
-              x1={x}
-              y1={PADDING_TOP}
-              x2={x}
-              y2={height - PADDING_BOTTOM}
-              stroke="rgba(255, 255, 255, 0.05)"
-              strokeWidth="1"
-            />
-          );
-        })}
+          {/* Glow line */}
+          <path
+            ref={glowPathRef}
+            d=""
+            fill="none"
+            stroke={lineColor}
+            strokeWidth="10"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity="0.15"
+            filter="url(#lineGlowLive)"
+          />
 
-        {/* Y-axis labels */}
-        {yAxisLabels.map((label, i) => (
-          <text
-            key={i}
-            x={width - 70}
-            y={label.y + 4}
-            fill="#6B6B6B"
-            fontSize="10"
-            fontFamily="monospace"
-          >
-            {label.price.toPrecision(6)}
-          </text>
-        ))}
+          {/* Main line */}
+          <path
+            ref={linePathRef}
+            d=""
+            fill="none"
+            stroke={lineColor}
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
 
-        {/* Area fill - updated via ref */}
-        <path ref={areaPathRef} d="" fill="url(#areaGradient)" />
-
-        {/* Glow line - updated via ref */}
-        <path
-          ref={glowPathRef}
-          d=""
-          fill="none"
-          stroke="#00F5A0"
-          strokeWidth="6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity="0.15"
-        />
-
-        {/* Main line - updated via ref */}
-        <path
-          ref={linePathRef}
-          d=""
-          fill="none"
-          stroke="url(#lineGradient)"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-
-        {/* Animated indicator dot */}
+        {/* Headlight dot */}
         <g
           ref={dotGroupRef}
           style={{ transform: `translate(${width - rightGap}px, ${initialY}px)` }}
+          filter="url(#headGlowLive)"
         >
-          {/* Outer glow - animates on price changes */}
-          <circle ref={outerGlowRef} r="6" fill="#00F5A0" opacity="0.25" />
-          {/* Inner dot */}
-          <circle r="3" fill="#00F5A0" />
+          <circle
+            ref={outerGlowRef}
+            r="5"
+            fill={lineColor}
+            opacity="0.2"
+          />
+          <circle r="3" fill={lineColor} />
+          <circle r="1.5" fill="#FFFFFF" opacity="0.9" />
         </g>
       </svg>
 
-      {/* Floating price label */}
+      {/* Floating price label - shows position details when open, otherwise just price */}
       <div
         ref={priceLabelRef}
-        className="absolute flex items-center gap-1.5 px-2 py-1 rounded-md bg-[#00F5A0] shadow-[0_0_12px_rgba(0,245,160,0.3)]"
+        className="absolute flex items-center gap-2 z-20 pointer-events-none"
         style={{
-          right: rightGap - 70,
-          top: initialY - 12,
+          right: rightGap - 80,
+          top: initialY - 14,
         }}
       >
-        {tokenImage ? (
-          <img
-            src={tokenImage}
-            alt={tokenSymbol || "Token"}
-            className="w-3.5 h-3.5 rounded-full object-cover"
-          />
-        ) : tokenColor ? (
+        {hasPosition ? (
+          /* Position open: show PnL badge with animated numbers */
           <div
-            className="w-3.5 h-3.5 rounded-full flex items-center justify-center"
-            style={{ background: tokenColor }}
+            className="flex items-center gap-2 px-3 py-1.5 rounded-full"
+            style={{
+              backgroundColor: isPositiveChange ? "#00FF66" : "#FF3B69",
+              boxShadow: isPositiveChange
+                ? "0 0 15px rgba(0, 255, 102, 0.5)"
+                : "0 0 15px rgba(255, 59, 105, 0.5)",
+            }}
           >
-            <span className="text-[6px] font-bold text-white">{tokenSymbol?.[0] || "?"}</span>
+            <span className="text-lg font-black font-mono tabular-nums text-[#0A0A0A]">
+              {isPositiveChange ? "+" : ""}{pnlPercent.toFixed(2)}%
+            </span>
+            <span className="text-sm font-bold font-mono text-[#0A0A0A] opacity-80">
+              {isPositiveChange ? "+" : "-"}${Math.abs(pnlDollars).toFixed(2)}
+            </span>
           </div>
         ) : (
-          <SolanaLogo className="w-3.5 h-3.5" />
+          /* No position: show animated price badge */
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
+            style={{
+              backgroundColor: lineColor,
+              boxShadow: `0 0 10px ${glowColor}`,
+            }}
+          >
+            {tokenImage ? (
+              <img
+                src={tokenImage}
+                alt={tokenSymbol || "Token"}
+                className="w-4 h-4 rounded-full object-cover"
+              />
+            ) : tokenColor ? (
+              <div
+                className="w-4 h-4 rounded-full flex items-center justify-center"
+                style={{ background: tokenColor }}
+              >
+                <span className="text-[7px] font-bold text-white">{tokenSymbol?.[0] || "?"}</span>
+              </div>
+            ) : (
+              <SolanaLogo className="w-4 h-4" />
+            )}
+            <AnimatedPrice
+              value={displayPrice || livePrice}
+              precision={6}
+              color="#0A0A0A"
+              className="text-sm"
+            />
+          </div>
         )}
-        <span ref={priceDisplayRef} className="text-sm font-bold font-mono text-[#050505] tabular-nums">
-          {livePrice.toPrecision(6)}
-        </span>
       </div>
     </div>
   );

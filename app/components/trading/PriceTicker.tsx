@@ -55,13 +55,13 @@ interface PriceTickerProps {
   onSelectCoin?: (symbol: string) => void;
 }
 
-function CoinButton({ 
-  coin, 
-  isSelected, 
-  onSelect 
-}: { 
-  coin: CoinDisplay; 
-  isSelected: boolean; 
+function CoinButton({
+  coin,
+  isSelected,
+  onSelect
+}: {
+  coin: CoinDisplay;
+  isSelected: boolean;
   onSelect: () => void;
 }) {
   // Use exchange symbol format for price subscription
@@ -83,44 +83,45 @@ function CoinButton({
     <button
       onClick={onSelect}
       className={`
-        group flex items-center gap-2 py-1.5 px-3 relative transition-all duration-200 rounded-full
-        ${isSelected 
-          ? "bg-white/[0.08] border border-white/10" 
-          : "hover:bg-white/[0.04]"
+        group flex items-center gap-3 h-full px-5 relative transition-all duration-300
+        ${isSelected
+          ? "bg-white/[0.04]"
+          : "hover:bg-white/[0.02]"
         }
       `}
     >
-      {/* Icon */}
-      <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center">
-        {coin.icon}
-      </div>
-      
-      {/* Symbol */}
-      <span className={`text-sm font-bold tracking-wide ${
-        isSelected ? "text-white" : "text-[var(--text-secondary)]"
-      }`}>
-        {coin.symbol}
-      </span>
-      
-      {/* Price */}
-      <span className={`text-sm font-mono font-semibold tabular-nums ${
-        isSelected ? "text-white" : "text-[var(--text-secondary)]"
-      }`}>
-        {formatPrice(priceData.price)}
-      </span>
-      
-      {/* Change % */}
-      {priceData.priceChangePercent24h !== 0 && (
-        <span className={`text-xs font-bold ${
-          isPositive ? "text-emerald-400" : "text-rose-400"
-        }`}>
-          {isPositive ? "+" : ""}{priceData.priceChangePercent24h.toFixed(1)}%
+      {/* Symbol Block */}
+      <div className="flex items-center gap-2">
+        <div className="w-3.5 h-3.5 rounded-full overflow-hidden flex items-center justify-center opacity-90 group-hover:scale-110 transition-transform">
+          {coin.icon}
+        </div>
+        <span className={`text-[10px] font-black uppercase tracking-widest ${isSelected ? "text-white" : "text-white/40"}`}>
+          {coin.symbol}/USD
         </span>
-      )}
+      </div>
+
+      <div className="w-[1px] h-3 bg-white/[0.08]" />
+
+      {/* Stats Group */}
+      <div className="flex items-center gap-2">
+        <span className={`text-[10px] font-bold font-mono tabular-nums ${isSelected ? "text-white" : "text-white/60"}`}>
+          {formatPrice(priceData.price)}
+        </span>
+        {priceData.priceChangePercent24h !== 0 && (
+          <span className={`text-[9px] font-black tabular-nums scale-[0.9] origin-left ${isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
+            {isPositive ? "" : ""}{priceData.priceChangePercent24h.toFixed(1)}%
+          </span>
+        )}
+      </div>
 
       {/* Loading indicator */}
       {priceData.isLoading && priceData.price === 0 && (
-        <span className="text-xs text-[var(--text-muted)] animate-pulse">...</span>
+        <span className="text-[10px] text-white/20 animate-pulse">...</span>
+      )}
+
+      {/* App-Unified Selection Indicator */}
+      {isSelected && (
+        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[var(--accent-primary)] shadow-[0_0_12px_var(--accent-primary)]" />
       )}
     </button>
   );
@@ -128,17 +129,17 @@ function CoinButton({
 
 export function PriceTicker({ selectedSymbol = "SOL", onSelectCoin }: PriceTickerProps) {
   return (
-    <div className="fixed top-14 left-0 right-0 z-40 bg-[#0a0a12]/90 backdrop-blur-md border-b border-white/[0.04]">
-      <div className="flex items-center justify-center gap-2 h-10 px-4 overflow-x-auto scrollbar-hide">
-        {COIN_DISPLAYS.map((coin) => (
+    <div className="flex items-stretch h-9">
+      {COIN_DISPLAYS.map((coin, idx) => (
+        <div key={coin.symbol} className="flex items-center">
+          {idx > 0 && <div className="w-[1px] h-3 bg-white/[0.08]" />}
           <CoinButton
-            key={coin.symbol}
             coin={coin}
             isSelected={coin.symbol === selectedSymbol}
             onSelect={() => onSelectCoin?.(coin.symbol)}
           />
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }

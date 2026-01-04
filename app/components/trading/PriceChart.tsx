@@ -229,20 +229,28 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
     seriesRef.current = series;
 
-    // Handle resize
-    const handleResize = () => {
-      if (chartContainerRef.current) {
-        const width = chartContainerRef.current.clientWidth;
-        const height = chartContainerRef.current.clientHeight;
+    // Handle resize with ResizeObserver
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const { width, height } = entry.contentRect;
         if (width > 0 && height > 0) {
           chart.applyOptions({ width, height });
         }
       }
-    };
+    });
 
-    window.addEventListener("resize", handleResize);
-    // Initial size - use requestAnimationFrame to ensure DOM has painted
-    requestAnimationFrame(handleResize);
+    if (chartContainerRef.current) {
+      resizeObserver.observe(chartContainerRef.current);
+    }
+
+    // Initial size
+    if (chartContainerRef.current) {
+      const width = chartContainerRef.current.clientWidth;
+      const height = chartContainerRef.current.clientHeight;
+      if (width > 0 && height > 0) {
+        chart.applyOptions({ width, height });
+      }
+    }
 
     // Subscribe to visible range changes for infinite scroll
     const handleVisibleRangeChange = (logicalRange: { from: number; to: number } | null) => {
@@ -276,7 +284,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
-      window.removeEventListener("resize", handleResize);
+      resizeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       seriesRef.current = null;
@@ -419,35 +427,35 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
         <div className="flex items-center gap-2 md:gap-3">
           {/* Chart Type Selector - Compact on mobile */}
           <div className="flex items-center gap-1 md:gap-2">
-          <span className="text-xs text-[var(--text-tertiary)] hidden sm:block">Chart Type</span>
-          <div className="flex items-center gap-0.5 md:gap-1 p-0.5 md:p-1 rounded-lg bg-[var(--bg-secondary)]">
-            <button
-              onClick={() => setChartType("live")}
-              className={`
+            <span className="text-xs text-[var(--text-tertiary)] hidden sm:block">Chart Type</span>
+            <div className="flex items-center gap-0.5 md:gap-1 p-0.5 md:p-1 rounded-lg bg-[var(--bg-secondary)]">
+              <button
+                onClick={() => setChartType("live")}
+                className={`
                 p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "live"
-                  ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                }
+                    ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
+                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                  }
               `}
-              title="Live Line"
-            >
-              <Activity className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            </button>
-            <button
-              onClick={() => setChartType("candlestick")}
-              className={`
+                title="Live Line"
+              >
+                <Activity className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+              <button
+                onClick={() => setChartType("candlestick")}
+                className={`
                 p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "candlestick"
-                  ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
-                  : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                }
+                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
+                  }
               `}
-              title="Candlestick"
-            >
-              <CandlestickChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
-            </button>
-          </div>
+                title="Candlestick"
+              >
+                <CandlestickChart className="w-3.5 h-3.5 md:w-4 md:h-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -483,8 +491,39 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
             tokenImage={tokenImage}
             tokenColor={tokenIcon}
             tokenSymbol={selectedToken.symbol}
+            entryPrice={activePosition?.entryPrice}
+            liquidationPrice={activePosition?.liquidationPrice}
+            takeProfitPrice={activePosition?.takeProfitPrice}
+            positionDirection={activePosition?.direction}
+            pnlPercent={activePosition?.pnlPercent ?? 0}
+            pnlDollars={activePosition?.pnl ?? 0}
+            historicalPrices={(() => {
+              // Use only close prices for smooth initial line
+              const recentCandles = candles.slice(-30);
+              if (recentCandles.length === 0) return [];
+
+              const interpolated: { time: number; price: number }[] = [];
+              const now = Date.now();
+
+
+
+              for (let i = 0; i < recentCandles.length; i++) {
+                const candle = recentCandles[i];
+                const candleTime = candle.time * 1000;
+
+                // Just use close price for smooth line
+                interpolated.push({ time: candleTime, price: candle.close });
+              }
+
+              // Add current live price as the most recent point
+              if (livePrice > 0) {
+                interpolated.push({ time: now, price: livePrice });
+              }
+
+              return interpolated;
+            })()}
           />
-          
+
           {/* SpeedGauge Overlay - Only show when user has an open position */}
           {activePosition && (
             <div className="absolute bottom-2 left-2 z-20 hidden lg:block opacity-90 hover:opacity-100 transition-opacity">

@@ -141,11 +141,11 @@ export function TradingPanel({
   // Computed values for perpetuals using real fee structure from workbook
   const computedValues = useMemo(() => {
     const notional = amount * leverage;
-    
+
     // Liquidation at 70% margin lost (from workbook)
     // price_move = LIQUIDATION_THRESHOLD / leverage
     const liqPriceMove = DEMO_CONFIG.LIQUIDATION_THRESHOLD / leverage;
-    
+
     // Calculate both long and short liquidation prices
     const liqPriceLong = currentPrice * (1 - liqPriceMove);
     const liqPriceShort = currentPrice * (1 + liqPriceMove);
@@ -267,35 +267,12 @@ export function TradingPanel({
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Trading Form - Scrollable Content */}
+      {/* Scrollable Content */}
       <div className="flex-1 overflow-y-auto p-3 lg:p-4 space-y-3 lg:space-y-4">
         {/* Perpetuals Interface */}
         {isPerpetuals && (
           <div className="space-y-4">
-            {/* Demo Mode Badge - Only show when NOT connected */}
-            {isDemoMode && !isConnected && (
-              <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-amber-500/20 flex items-center justify-center">
-                    <FlaskConical className="w-4 h-4 text-amber-400" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-amber-400 uppercase tracking-wider">Demo Mode</span>
-                    <p className="text-[10px] text-amber-400/60">Practice with test funds</p>
-                  </div>
-                </div>
-                {onResetDemo && (
-                  <button
-                    onClick={onResetDemo}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-amber-400 text-xs font-bold transition-all"
-                    title="Reset to $500"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Reset
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Demo Mode banner removed - moved to header */}
 
             {/* Section: Enter Amount */}
             <div className="space-y-2.5">
@@ -310,7 +287,7 @@ export function TradingPanel({
                     )}
                   </div>
                   {isConnected && (
-                    <button 
+                    <button
                       className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all"
                       title="Deposit"
                     >
@@ -319,11 +296,11 @@ export function TradingPanel({
                   )}
                 </div>
               </div>
-              
+
               <div className="flex items-center justify-center py-2 lg:py-3 px-3 rounded-xl bg-[var(--bg-secondary)] border border-[var(--border-subtle)]">
                 <span className="text-xl lg:text-3xl font-bold font-mono text-white">${amount}</span>
               </div>
-              
+
               <div className="grid grid-cols-4 gap-1.5 lg:gap-2">
                 {AMOUNT_PRESETS.map((preset) => (
                   <button
@@ -361,7 +338,7 @@ export function TradingPanel({
                 <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Set Leverage</span>
                 <span className="text-sm font-mono font-semibold text-white">{leverage}x</span>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-1.5 lg:gap-2">
                 {LEVERAGE_PRESETS.map((preset) => (
                   <button
@@ -387,7 +364,7 @@ export function TradingPanel({
                 <span className="text-sm font-bold text-[var(--text-secondary)] uppercase tracking-wider">Set Take Profit</span>
                 <span className="text-sm font-mono font-semibold text-white">{takeProfit}%</span>
               </div>
-              
+
               <div className="grid grid-cols-3 gap-1.5 lg:gap-2">
                 {TAKE_PROFIT_PRESETS.map((preset) => (
                   <button
@@ -693,13 +670,13 @@ export function TradingPanel({
                 {computedValues.openingFeePercent.toFixed(2)}% (${computedValues.openingFee.toFixed(2)})
               </span>
             </div>
-            
+
             {/* Row: Est. Entry Price */}
             <div className="flex items-center justify-between py-2.5">
               <span className="text-sm font-medium text-[var(--text-tertiary)]">Est. Entry Price</span>
               <span className="text-sm font-mono font-bold text-white">${currentPrice.toFixed(3)}</span>
             </div>
-            
+
             {/* Row: Take Profit - shows both long and short prices */}
             <div className="flex items-center justify-between py-2.5">
               <span className="text-sm font-medium text-[var(--text-tertiary)]">Take Profit ({takeProfit}%)</span>
@@ -707,7 +684,7 @@ export function TradingPanel({
                 ${computedValues.takeProfitLong.toFixed(3)} / ${computedValues.takeProfitShort.toFixed(3)}
               </span>
             </div>
-            
+
             {/* Row: Liq Price (long) */}
             <div className="flex items-center justify-between py-2.5">
               <span className="text-sm font-medium text-[var(--text-tertiary)]">

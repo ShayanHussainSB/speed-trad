@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
-import { ChevronUp, ChevronDown, BarChart3, Clock } from "lucide-react";
+import { Layout, FlaskConical, ChevronDown, RotateCcw } from "lucide-react";
 import { Header } from "./components/layout/Header";
 import { Footer } from "./components/layout/Footer";
 import { MobileNav } from "./components/layout/MobileNav";
-import { TradingTabs } from "./components/trading/TradingTabs";
 import { PriceChart } from "./components/trading/PriceChart";
 import { TradingPanel } from "./components/trading/TradingPanel";
 import { PositionsList } from "./components/trading/PositionsList";
 import { TradeHistory, Trade } from "./components/trading/TradeHistory";
+import { TradingTabs } from "./components/trading/TradingTabs";
 import { PositionsModal } from "./components/trading/PositionsModal";
 import { TradeHistoryModal } from "./components/trading/TradeHistoryModal";
 import { ReversePositionModal } from "./components/trading/ReversePositionModal";
@@ -23,11 +23,9 @@ import { useUserProfile } from "./hooks/useUserProfile";
 import { usePositions } from "./hooks/usePositions";
 import { useLivePrice } from "./hooks/useLivePrice";
 import { useMarketTicker } from "./hooks/useMarketTicker";
-import { MobileAccountView } from "./components/mobile/MobileAccountView";
 
 type TradingMode = "perpetuals" | "spot";
 type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
-
 type BottomPanelTab = "positions" | "history";
 
 export default function TradingPage() {
@@ -40,24 +38,21 @@ export default function TradingPage() {
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedSymbol, setSelectedSymbol] = useState("SOL");
   const [isLeftPanelHidden, setIsLeftPanelHidden] = useState(true);
+  const [bottomPanelHeight, setBottomPanelHeight] = useState(280);
+  const [isResizing, setIsResizing] = useState(false);
 
-  // Live market data from CoinGecko (volume & market cap)
+  // Live market data
   const { volume24h, marketCap } = useMarketTicker(`${selectedSymbol}-USD`);
+  const livePriceData = useLivePrice(`${selectedSymbol}-USD`);
+  const currentPrice = livePriceData.price;
 
-  // Format large numbers (e.g., 2400000000 -> "$2.4B")
-  const formatLargeNumber = (num: number): string => {
-    if (num >= 1e9) return `$${(num / 1e9).toFixed(1)}B`;
-    if (num >= 1e6) return `$${(num / 1e6).toFixed(0)}M`;
-    if (num >= 1e3) return `$${(num / 1e3).toFixed(0)}K`;
-    return `$${num.toFixed(0)}`;
-  };
-
-  // Real wallet state from Solana wallet adapter
+  // Wallet
   const { publicKey, connected } = useWallet();
   const { balance, balanceUSD } = useWalletBalance();
   const { profile } = useUserProfile();
+  const walletAddress = publicKey?.toBase58() || "";
 
-  // Positions state (now uses demo trading)
+  // Positions
   const {
     positions,
     primaryPosition,
@@ -78,7 +73,6 @@ export default function TradingPage() {
     resetDemo,
   } = usePositions();
 
-  // Convert demo trade history to TradeHistory component format
   const formattedTradeHistory: Trade[] = tradeHistory.map((t) => ({
     id: t.id,
     symbol: t.symbol,
@@ -95,48 +89,123 @@ export default function TradingPage() {
     closedAt: t.closedAt,
   }));
 
-  // Get live price for current symbol (format: SOL-USD)
-  const livePriceData = useLivePrice(`${selectedSymbol}-USD`);
-  const currentPrice = livePriceData.price;
-
-  const walletAddress = publicKey?.toBase58() || "";
-
-  // Handle reverse confirmation
   const handleReverseConfirm = () => {
-    if (selectedPosition) {
-      reversePosition(selectedPosition, balanceUSD);
-    }
+    if (selectedPosition) reversePosition(selectedPosition, balanceUSD);
   };
 
   const handleMobileTabChange = (tab: MobileTab) => {
     setMobileTab(tab);
-    if (tab === "perpetuals" || tab === "spot") {
-      setTradingMode(tab);
-    }
+    if (tab === "perpetuals" || tab === "spot") setTradingMode(tab);
   };
+
+  const startResizing = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isResizing) return;
+    const handleMouseMove = (e: MouseEvent) => {
+      const footerHeight = 24;
+      const newHeight = window.innerHeight - e.clientY - footerHeight;
+      const minHeight = 48;
+      const maxHeight = window.innerHeight - 300;
+
+      if (newHeight <= 60) {
+        setBottomPanelHeight(minHeight);
+        setIsBottomPanelExpanded(false);
+      } else if (newHeight <= maxHeight) {
+        setBottomPanelHeight(newHeight);
+        setIsBottomPanelExpanded(true);
+      } else {
+        setBottomPanelHeight(maxHeight);
+        setIsBottomPanelExpanded(true);
+      }
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    document.body.style.cursor = 'row-resize';
+    document.body.style.userSelect = 'none';
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    };
+  }, [isResizing]);
 
   const openWalletModal = () => setIsWalletModalOpen(true);
   const closeWalletModal = () => setIsWalletModalOpen(false);
 
   return (
-    <div className="h-screen overflow-hidden relative">
-      {/* Header */}
-      <div className="relative z-50">
-        <Header />
-      </div>
+    <div className="h-screen overflow-hidden relative bg-[var(--bg-primary)]">
+      <Header />
 
-      {/* Price Ticker - Below Header */}
-      <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
+      <main className="relative z-10 pt-14 h-screen flex flex-col overflow-hidden">
+        {/* Main Workspace Layout */}
+        <div className="flex-1 flex gap-3 px-3 pb-3 pt-2 overflow-hidden relative">
+          <div className="absolute inset-0 opacity-20 pointer-events-none horizon-grid" />
 
-      {/* Main Content */}
-      <main className="relative z-10 pt-[104px] h-screen overflow-hidden">
-        {/* TRADE View */}
-        {(
-          <div className="h-[calc(100vh-104px)] md:h-[calc(100vh-104px-24px)] flex flex-col">
-            {/* Desktop Layout */}
-            <div className="hidden md:flex flex-1 overflow-hidden">
-              {/* Far Left Panel - Leaderboard + Quests/Referrals */}
-              <div className={`flex-shrink-0 backdrop-blur-xl transition-all duration-300 ${isLeftPanelHidden ? "w-10" : "w-[240px] lg:w-[280px]"} border-r border-[var(--border-subtle)] bg-[var(--bg-card)]`}>
+          {/* Left Section: Toolbar + Analyzer */}
+          <div className="flex-1 flex flex-col gap-0 min-w-0 z-10">
+            {/* Analyzer Header / Left Toolbar */}
+            <div className={`shrink-0 flex items-center ${!connected ? "h-[84px] pt-1" : "h-[52px]"}`}>
+              <div className={`flex flex-col w-full ${connected ? "h-full justify-center" : "gap-1"}`}>
+                <div className="flex items-center gap-3 w-full">
+                  {/* Sidebar Toggle */}
+                  <button
+                    onClick={() => setIsLeftPanelHidden(!isLeftPanelHidden)}
+                    className={`
+                      w-9 h-9 shrink-0 rounded-xl flex items-center justify-center transition-all duration-300 active:scale-95
+                      ${isLeftPanelHidden
+                        ? "bg-[#0D0D15]/60 backdrop-blur-2xl border border-white/[0.06] text-white/30 hover:text-white/60 shadow-2xl"
+                        : "bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] border border-[var(--accent-primary)]/20 shadow-[0_0_15px_rgba(255,107,53,0.15)]"
+                      }
+                    `}
+                  >
+                    <Layout className={`w-4.5 h-4.5 transition-transform duration-500 ${isLeftPanelHidden ? "" : "rotate-180"}`} />
+                  </button>
+
+                  {/* Price Ticker Strip */}
+                  <div className="flex items-center h-9 bg-[#0D0D15]/60 backdrop-blur-2xl border border-white/[0.06] rounded-xl shadow-2xl overflow-hidden max-w-max">
+                    <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
+                  </div>
+                </div>
+
+                {/* Account Status Row */}
+                {!connected && (
+                  <div className="flex items-center gap-1.5 max-w-[400px] ml-[48px]">
+                    <div className="flex-1 h-7 flex items-center justify-between px-3 bg-[#0D0D15]/40 backdrop-blur-2xl border border-white/[0.06] rounded-lg group shadow-xl">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
+                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em] transition-colors group-hover:text-white/60">
+                          Demo Account
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#96FF00]/10 border border-[#96FF00]/20">
+                        <div className="w-1 h-1 rounded-full bg-[#96FF00] shadow-[0_0_5px_#96FF00]" />
+                        <span className="text-[8px] font-black text-[#96FF00] uppercase tracking-wider">Live</span>
+                      </div>
+                    </div>
+
+                    <button
+                      onClick={resetDemo}
+                      className="h-7 px-3 rounded-lg bg-[#0D0D15]/40 backdrop-blur-2xl border border-white/[0.06] text-[10px] font-bold text-white/40 hover:text-white/80 uppercase tracking-[0.1em] transition-all flex items-center gap-1.5 shadow-xl hover:bg-white/[0.03]"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Content Row */}
+            <div className="flex-1 flex gap-3 min-h-0 mt-2">
+              {/* Left Column (Leaderboard/Quests) */}
+              <div className={`flex-shrink-0 transition-all duration-300 ${isLeftPanelHidden ? "w-0 opacity-0 border-none" : "w-[240px] lg:w-[280px] border border-white/[0.05] bg-[var(--bg-card)] shadow-xl"} rounded-xl overflow-hidden backdrop-blur-2xl`}>
                 <LeftPanel
                   userRank={profile?.stats?.rank || 9999999}
                   userPoints={profile?.stats?.points || 0}
@@ -144,31 +213,12 @@ export default function TradingPage() {
                   userAvatar={profile?.avatar || "pepe"}
                   username={profile?.username}
                   isHidden={isLeftPanelHidden}
-                  onToggleHide={() => setIsLeftPanelHidden(!isLeftPanelHidden)}
                 />
               </div>
 
-              {/* Center Panel - Chart & Positions */}
-              <div className="flex-1 flex flex-col bg-[var(--bg-card)] backdrop-blur-xl">
-                {/* Tabs & Stats Bar */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] backdrop-blur-md">
-                  <TradingTabs activeMode={tradingMode} onModeChange={setTradingMode} />
-
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--text-tertiary)]">24h Volume</span>
-                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(volume24h)}</span>
-                    </div>
-                    <div className="w-px h-4 bg-[var(--border-subtle)]" />
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-[var(--text-tertiary)]">Market Cap</span>
-                      <span className="text-xs font-mono font-semibold text-[var(--text-primary)]">{formatLargeNumber(marketCap)}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Chart */}
-                <div className="flex-1 min-h-0">
+              {/* Chart & Positions */}
+              <div className="flex-1 flex flex-col gap-3 min-w-0">
+                <div className="flex-1 bg-[var(--bg-card)] border border-white/[0.05] rounded-xl overflow-hidden backdrop-blur-2xl shadow-xl min-h-0">
                   <PriceChart
                     symbol={`${selectedSymbol}-USDC`}
                     onSymbolChange={(sym) => setSelectedSymbol(sym.split("/")[0])}
@@ -177,74 +227,25 @@ export default function TradingPage() {
                   />
                 </div>
 
-                {/* Bottom Panel - Positions & History (Desktop) */}
-                <div className={`border-t border-[var(--border-subtle)] bg-[var(--bg-card)] backdrop-blur-xl transition-all duration-300 ${isBottomPanelExpanded ? "h-[280px]" : "h-[48px]"
-                  }`}>
-                  {/* Panel Header with Tabs */}
-                  <div className="flex items-center justify-between px-4 h-[48px] border-b border-[var(--border-subtle)] bg-[var(--bg-secondary)] backdrop-blur-md">
-                    {/* Tabs */}
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => setBottomPanelTab("positions")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "positions"
-                            ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
-                            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-                          }`}
-                      >
-                        <BarChart3 className="w-3.5 h-3.5" />
-                        Positions
-                        {positions.length > 0 && (
-                          <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${bottomPanelTab === "positions"
-                              ? "bg-[var(--accent-primary)] text-white"
-                              : "bg-[var(--bg-elevated)] text-[var(--text-tertiary)]"
-                            }`}>
-                            {positions.length}
-                          </span>
-                        )}
+                <div onMouseDown={startResizing} className="h-1 w-full cursor-row-resize hover:bg-[var(--accent-primary)]/10 group transition-all flex items-center justify-center shrink-0">
+                  <div className="w-16 h-0.5 rounded-full bg-white/10 group-hover:bg-[var(--accent-primary)] transition-all duration-300" />
+                </div>
+
+                <div style={{ height: `${bottomPanelHeight}px` }} className={`bg-[var(--bg-card)] border border-white/[0.05] rounded-xl overflow-hidden backdrop-blur-2xl flex flex-col shadow-xl shrink-0 ${!isResizing ? "transition-all duration-300" : ""}`}>
+                  <div className="header h-12 border-b border-white/[0.05] bg-white/[0.01] flex items-center px-4">
+                    <div className="flex gap-4">
+                      <button onClick={() => setBottomPanelTab("positions")} className={`text-xs font-black uppercase tracking-tighter ${bottomPanelTab === "positions" ? "text-white" : "text-white/40"}`}>
+                        Positions ({positions.length})
                       </button>
-                      <button
-                        onClick={() => setBottomPanelTab("history")}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${bottomPanelTab === "history"
-                            ? "bg-[var(--accent-muted)] text-[var(--accent-primary)]"
-                            : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]"
-                          }`}
-                      >
-                        <Clock className="w-3.5 h-3.5" />
+                      <button onClick={() => setBottomPanelTab("history")} className={`text-xs font-black uppercase tracking-tighter ${bottomPanelTab === "history" ? "text-white" : "text-white/40"}`}>
                         History
                       </button>
                     </div>
-
-                    {/* Expand/Collapse Button */}
-                    <button
-                      onClick={() => setIsBottomPanelExpanded(!isBottomPanelExpanded)}
-                      className="flex items-center gap-1.5 px-2 py-1 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)] transition-colors"
-                    >
-                      <span className="text-[10px] font-medium">
-                        {isBottomPanelExpanded ? "Collapse" : "Expand"}
-                      </span>
-                      {isBottomPanelExpanded ? (
-                        <ChevronDown className="w-4 h-4" />
-                      ) : (
-                        <ChevronUp className="w-4 h-4" />
-                      )}
-                    </button>
                   </div>
-
-                  {/* Panel Content */}
                   {isBottomPanelExpanded && (
-                    <div className="h-[calc(100%-48px)] overflow-hidden">
+                    <div className="flex-1 overflow-auto">
                       {bottomPanelTab === "positions" ? (
-                        <PositionsList
-                          isConnected={true}
-                          positions={positions}
-                          totalPnL={totalPnL}
-                          longCount={longCount}
-                          shortCount={shortCount}
-                          onViewAll={() => setIsPositionsModalOpen(true)}
-                          onClosePosition={closePosition}
-                          onReversePosition={openReverseModal}
-                          maxVisible={10}
-                        />
+                        <PositionsList isConnected={true} positions={positions} totalPnL={totalPnL} longCount={longCount} shortCount={shortCount} onViewAll={() => setIsPositionsModalOpen(true)} onClosePosition={closePosition} onReversePosition={openReverseModal} maxVisible={10} />
                       ) : (
                         <TradeHistory isConnected={true} trades={formattedTradeHistory} onViewAll={() => setIsHistoryModalOpen(true)} />
                       )}
@@ -252,13 +253,26 @@ export default function TradingPage() {
                   )}
                 </div>
               </div>
+            </div>
+          </div>
 
-              {/* Right Panel - Trading */}
-              <div className="w-[280px] lg:w-[320px] xl:w-[380px] flex-shrink-0 bg-[var(--bg-card)] border-l border-[var(--border-subtle)] backdrop-blur-xl">
+          {/* Right Section: Integrated Trading Side Panel */}
+          <div className="w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 z-10 flex flex-col h-full">
+            <div className="flex-1 bg-[var(--bg-card)] border border-white/[0.05] rounded-xl overflow-hidden backdrop-blur-2xl shadow-xl flex flex-col">
+              {/* Tabs Section - Aligned with Left Toolbar Area */}
+              <div className={`shrink-0 border-b border-white/[0.05] flex flex-col justify-center ${!connected ? "h-[84px] pt-1" : "h-[52px]"}`}>
+                <TradingTabs
+                  activeMode={tradingMode}
+                  onModeChange={setTradingMode}
+                />
+              </div>
+
+              {/* Action Panel Content */}
+              <div className="flex-1 overflow-hidden">
                 <TradingPanel
                   mode={tradingMode}
                   isConnected={connected}
-                  onConnectWallet={openWalletModal}
+                  onConnectWallet={() => setIsWalletModalOpen(true)}
                   balance={balance}
                   demoBalance={demoBalance}
                   currentPrice={currentPrice}
@@ -270,124 +284,17 @@ export default function TradingPage() {
                 />
               </div>
             </div>
-
-            {/* Mobile Layout */}
-            <div className="flex md:hidden flex-1 flex-col overflow-hidden">
-              {/* Trading Views (Perps/Spot) */}
-              {(mobileTab === "perpetuals" || mobileTab === "spot") && (
-                <div className="flex flex-col h-full overflow-hidden">
-                  {/* Chart - Fixed height on mobile to prevent overlap */}
-                  <div className="h-[35vh] min-h-[180px] flex-shrink-0">
-                    <PriceChart
-                      symbol={`${selectedSymbol}-USDC`}
-                      onSymbolChange={(sym) => setSelectedSymbol(sym.split("/")[0])}
-                      activePosition={primaryPosition}
-                      onReversePosition={openReverseModal}
-                    />
-                  </div>
-
-                  {/* Trading Panel - Takes remaining space, scrollable */}
-                  <div className="flex-1 min-h-0 border-t border-[var(--border-subtle)] bg-[var(--bg-card)] overflow-y-auto scrollbar-hide pb-16">
-                    <TradingPanel
-                      mode={mobileTab}
-                      isConnected={connected}
-                      onConnectWallet={openWalletModal}
-                      balance={balance}
-                      demoBalance={demoBalance}
-                      currentPrice={currentPrice}
-                      activePosition={primaryPosition}
-                      onReversePosition={openReverseModal}
-                      onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
-                      onResetDemo={resetDemo}
-                      isDemoMode={true}
-                    />
-                  </div>
-                </div>
-              )}
-
-              {/* Positions View */}
-              {mobileTab === "positions" && (
-                <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
-                  <PositionsList
-                    isConnected={true}
-                    positions={positions}
-                    totalPnL={totalPnL}
-                    longCount={longCount}
-                    shortCount={shortCount}
-                    onViewAll={() => setIsPositionsModalOpen(true)}
-                    onClosePosition={closePosition}
-                    onReversePosition={openReverseModal}
-                    maxVisible={10}
-                  />
-                </div>
-              )}
-
-              {/* Activity View (Trades, Orders, etc.) */}
-              {mobileTab === "activity" && (
-                <div className="flex-1 overflow-y-auto bg-[var(--bg-card)] pb-16">
-                  <TradeHistory isConnected={true} trades={formattedTradeHistory} onViewAll={() => setIsHistoryModalOpen(true)} />
-                </div>
-              )}
-
-              {/* Account View */}
-              {mobileTab === "account" && (
-                <div className="flex-1 overflow-hidden bg-[var(--bg-primary)] pb-16">
-                  <MobileAccountView
-                    isConnected={connected}
-                    onConnectWallet={openWalletModal}
-                    walletAddress={walletAddress}
-                    balance={balance}
-                    balanceUSD={balanceUSD}
-                    username={profile?.username}
-                    avatar={profile?.avatar}
-                    stats={profile?.stats}
-                  />
-                </div>
-              )}
-            </div>
           </div>
-        )}
-      </main>
+        </div>
+      </main >
 
-      {/* Footer - Desktop only */}
       <Footer />
-
-      {/* Mobile Navigation */}
       <MobileNav activeTab={mobileTab} onTabChange={handleMobileTabChange} />
-
-      {/* Wallet Modal */}
       <WalletModal isOpen={isWalletModalOpen} onClose={closeWalletModal} />
-
-      {/* Positions Modal */}
-      <PositionsModal
-        isOpen={isPositionsModalOpen}
-        onClose={() => setIsPositionsModalOpen(false)}
-        positions={positions}
-        onClosePosition={closePosition}
-        onReversePosition={openReverseModal}
-      />
-
-      {/* Trade History Modal */}
-      <TradeHistoryModal
-        isOpen={isHistoryModalOpen}
-        onClose={() => setIsHistoryModalOpen(false)}
-        trades={formattedTradeHistory}
-      />
-
-      {/* Reverse Position Modal */}
-      <ReversePositionModal
-        isOpen={isReverseModalOpen}
-        onClose={closeReverseModal}
-        position={selectedPosition}
-        availableBalance={balanceUSD}
-        onConfirm={handleReverseConfirm}
-        onDeposit={openWalletModal}
-        isProcessing={isProcessing}
-        calculateRequirements={calculateReverseRequirements}
-      />
-
-      {/* Trade Notifications */}
+      <PositionsModal isOpen={isPositionsModalOpen} onClose={() => setIsPositionsModalOpen(false)} positions={positions} onClosePosition={closePosition} onReversePosition={openReverseModal} />
+      <TradeHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} trades={formattedTradeHistory} />
+      <ReversePositionModal isOpen={isReverseModalOpen} onClose={closeReverseModal} position={selectedPosition} availableBalance={balanceUSD} onConfirm={handleReverseConfirm} onDeposit={openWalletModal} isProcessing={isProcessing} calculateRequirements={calculateReverseRequirements} />
       <NotificationContainer />
-    </div>
+    </div >
   );
 }
