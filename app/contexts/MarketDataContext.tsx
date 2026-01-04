@@ -233,7 +233,16 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LOADING", isLoading: true });
 
       // Bulk.trade API caps at 200 candles max
-      const bulkCandles = await bulkTradeAPI.getKlines(symbol, interval, { limit: 200 });
+      let bulkCandles = await bulkTradeAPI.getKlines(symbol, interval, { limit: 200 });
+
+      // Fallback to Kraken if Bulk.trade returns no data
+      if (!bulkCandles || bulkCandles.length === 0) {
+        console.log(`[MarketData] Bulk.trade klines empty for ${symbol}, trying Kraken...`);
+        bulkCandles = await bulkTradeAPI.getHistoricalKlines(symbol, interval, {
+          endTime: Date.now(),
+          limit: 200
+        });
+      }
 
       if (!bulkCandles || bulkCandles.length === 0) {
         dispatch({ type: "SET_LOADING", isLoading: false });
@@ -249,6 +258,26 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
         candles: chartCandles,
       });
 
+      // Also update initial market data price from the last candle
+      const lastCandle = chartCandles[chartCandles.length - 1];
+      if (lastCandle) {
+        dispatch({
+          type: "UPDATE_MARKET_DATA",
+          symbol,
+          data: {
+            symbol,
+            price: lastCandle.close,
+            priceChange24h: 0,
+            priceChangePercent24h: 0,
+            high24h: lastCandle.high,
+            low24h: lastCandle.low,
+            volume24h: lastCandle.volume || 0,
+            openInterest: 0,
+            lastUpdated: lastCandle.time * 1000,
+          }
+        });
+      }
+
       dispatch({ type: "SET_LOADING", isLoading: false });
       return chartCandles;
     } catch (err) {
@@ -257,6 +286,12 @@ export function MarketDataProvider({ children }: { children: ReactNode }) {
       return [];
     }
   }, [bulkCandleToChartCandle]);
+
+  // Initial data fetch for top pairs
+  useEffect(() => {
+    const topPairs = ["BTC-USD", "ETH-USD", "SOL-USD"];
+    topPairs.forEach(symbol => fetchCandles(symbol, "5m"));
+  }, [fetchCandles]);
 
   // Fetch older candles for infinite scroll (before a given timestamp)
   // Uses Kraken API for historical data since Bulk.trade doesn't support pagination

@@ -210,29 +210,32 @@ class BulkTradeWebSocket {
       }
 
       // Handle ticker updates - support multiple message formats
-      // Bulk.trade format: {"type":"ticker","data":{"ticker":{...}}}
-      const isTicker = message.type === "ticker" || message.channel === "ticker";
+      // Bulk.trade format: {"type":"ticker","data":{"ticker":{...}}} or {"channel":"ticker","data":{...}}
+      const isTicker = message.type === "ticker" || message.channel === "ticker" || message.stream?.includes("ticker");
       if (isTicker) {
-        // Handle nested ticker format: message.data.ticker
+        // Handle nested ticker format: message.data.ticker or message.data
         const tickerData = message.data?.ticker || message.data || message;
-        const symbol = tickerData?.symbol || message.symbol;
+
+        // Try to find symbol in various possible locations
+        const symbol = tickerData?.symbol || tickerData?.s || message.symbol || message.s ||
+          (message.stream ? message.stream.split("@")[0].toUpperCase() : null);
 
         if (symbol && tickerData) {
           // Normalize ticker data to handle different field naming conventions
           const normalizedTicker: BulkTicker = {
             symbol,
-            priceChange: tickerData.priceChange ?? tickerData.price_change ?? 0,
-            priceChangePercent: tickerData.priceChangePercent ?? tickerData.price_change_percent ?? tickerData.priceChangePct ?? 0,
-            lastPrice: tickerData.lastPrice ?? tickerData.last_price ?? tickerData.price ?? 0,
-            highPrice: tickerData.highPrice ?? tickerData.high_price ?? tickerData.high ?? 0,
-            lowPrice: tickerData.lowPrice ?? tickerData.low_price ?? tickerData.low ?? 0,
-            volume: tickerData.volume ?? tickerData.vol ?? 0,
-            quoteVolume: tickerData.quoteVolume ?? tickerData.quote_volume ?? tickerData.quoteVol ?? tickerData.turnover ?? 0,
-            markPrice: tickerData.markPrice ?? tickerData.mark_price ?? tickerData.lastPrice ?? tickerData.last_price ?? tickerData.price ?? 0,
-            oraclePrice: tickerData.oraclePrice ?? tickerData.oracle_price ?? tickerData.indexPrice ?? 0,
+            priceChange: tickerData.priceChange ?? tickerData.price_change ?? tickerData.pc ?? 0,
+            priceChangePercent: tickerData.priceChangePercent ?? tickerData.price_change_percent ?? tickerData.priceChangePct ?? tickerData.pcp ?? tickerData.P ?? 0,
+            lastPrice: tickerData.lastPrice ?? tickerData.last_price ?? tickerData.price ?? tickerData.lp ?? tickerData.c ?? tickerData.p ?? 0,
+            highPrice: tickerData.highPrice ?? tickerData.high_price ?? tickerData.high ?? tickerData.h ?? 0,
+            lowPrice: tickerData.lowPrice ?? tickerData.low_price ?? tickerData.low ?? tickerData.l ?? 0,
+            volume: tickerData.volume ?? tickerData.vol ?? tickerData.v ?? 0,
+            quoteVolume: tickerData.quoteVolume ?? tickerData.quote_volume ?? tickerData.quoteVol ?? tickerData.turnover ?? tickerData.qv ?? tickerData.q ?? 0,
+            markPrice: tickerData.markPrice ?? tickerData.mark_price ?? tickerData.mp ?? tickerData.lastPrice ?? tickerData.last_price ?? tickerData.price ?? 0,
+            oraclePrice: tickerData.oraclePrice ?? tickerData.oracle_price ?? tickerData.indexPrice ?? tickerData.op ?? tickerData.i ?? 0,
             openInterest: tickerData.openInterest ?? tickerData.open_interest ?? tickerData.oi ?? 0,
-            fundingRate: tickerData.fundingRate ?? tickerData.funding_rate ?? 0,
-            timestamp: tickerData.timestamp ?? tickerData.ts ?? Date.now(),
+            fundingRate: tickerData.fundingRate ?? tickerData.funding_rate ?? tickerData.fr ?? 0,
+            timestamp: tickerData.timestamp ?? tickerData.ts ?? tickerData.T ?? tickerData.t ?? Date.now(),
           };
           this.tickerCallbacks.forEach(cb => cb(symbol, normalizedTicker));
         }
@@ -242,7 +245,7 @@ class BulkTradeWebSocket {
       // Handle candle/kline updates - support multiple message formats
       // Bulk.trade likely format: {"type":"candle","data":{"candle":{...}}} or similar
       const isCandle = message.type === "candle" || message.channel === "candle" ||
-                       message.type === "kline" || message.channel === "kline";
+        message.type === "kline" || message.channel === "kline";
       if (isCandle) {
         // Handle potentially nested candle format
         const candleWrapper = message.data?.candle || message.data?.kline || message.data || message;
