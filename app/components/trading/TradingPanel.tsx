@@ -247,11 +247,6 @@ export function TradingPanel({
   };
 
   const handleTrade = () => {
-    if (!isConnected) {
-      onConnectWallet();
-      return;
-    }
-
     if (isPerpetuals && onOpenPosition) {
       onOpenPosition(direction, amount, leverage);
     } else {
@@ -281,7 +276,7 @@ export function TradingPanel({
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/5">
                     <Wallet className="w-4 h-4 text-[var(--text-muted)]" />
-                    <span className="text-sm font-mono font-semibold text-white">${balanceInUSD.toFixed(2)}</span>
+                    <span className="text-sm font-mono font-semibold text-white">{balanceInUSD.toFixed(2)} USDC</span>
                     {isDemoMode && !isConnected && (
                       <span className="text-[10px] font-bold text-amber-400 uppercase">DEMO</span>
                     )}

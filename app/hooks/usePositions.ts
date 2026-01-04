@@ -38,7 +38,7 @@ function toDemoPosition(p: PositionWithLivePnL): Position {
 
   return {
     id: p.id,
-    symbol: `${p.symbol}/USD`,
+    symbol: p.symbol, // Raw symbol (e.g. "SOL")
     direction: p.direction,
     size: p.margin,
     entryPrice: p.entryPrice,
@@ -112,12 +112,13 @@ export function usePositions() {
 
       if (!result.success) {
         console.error("Failed to open position:", result.error);
-      } else if (result.position) {
+      } else {
         // Show notification for successful position open
+        const currentPrice = demo.getCurrentPrice(assetSymbol);
         showPositionOpened({
           direction: data.direction,
           symbol: assetSymbol,
-          entryPrice: result.position.entryPrice,
+          entryPrice: currentPrice,
         });
       }
 
@@ -143,7 +144,7 @@ export function usePositions() {
     (positionId: string) => {
       // Get position data before closing for notification
       const position = positions.find((p) => p.id === positionId);
-      
+
       setIsProcessing(true);
 
       const result = demo.closePosition(positionId);
@@ -156,7 +157,7 @@ export function usePositions() {
         // Show notification for successful position close
         const pnl = result.pnl ?? 0;
         const pnlPercent = (pnl / position.size) * 100;
-        
+
         showPositionClosed({
           direction: position.direction,
           symbol: position.symbol.split("/")[0],
@@ -230,12 +231,13 @@ export function usePositions() {
         position.leverage as LeverageOption
       );
 
-      if (openResult.success && openResult.position) {
+      if (openResult.success) {
         // Show open notification for the new position
+        const currentPrice = demo.getCurrentPrice(assetSymbol);
         showPositionOpened({
           direction: newDirection,
           symbol: assetSymbol,
-          entryPrice: openResult.position.entryPrice,
+          entryPrice: currentPrice,
         });
       }
 

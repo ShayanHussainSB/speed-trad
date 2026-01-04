@@ -118,41 +118,41 @@ export function TradeHistory({ isConnected, trades = [], isLoading = false, onVi
                       <span className="text-[13px] font-mono text-[var(--text-secondary)]">{formatDate(trade.closedAt)}</span>
                     </div>
                   </td>
-                  
+
                   {/* Market */}
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
                       <SolanaIcon />
-                      <span className="text-[13px] font-semibold text-[var(--text-primary)]">{assetSymbol}-USDC</span>
+                      <span className="text-[13px] font-semibold text-[var(--text-primary)]">{assetSymbol}/USDC</span>
                     </div>
                   </td>
-                  
+
                   {/* Side */}
                   <td className="px-4 py-4">
                     <span className={`text-[13px] font-semibold ${isLiquidated ? "text-[var(--color-short)]" : isLong ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
                       {isLiquidated ? "Liquidated" : `Close ${isLong ? "Long" : "Short"}`}
                     </span>
                   </td>
-                  
+
                   {/* Leverage */}
                   <td className="px-4 py-4">
                     <span className="text-[13px] font-mono font-bold text-[var(--accent-primary)]">{trade.leverage}x</span>
                   </td>
-                  
+
                   {/* Price */}
                   <td className="px-4 py-4">
                     <span className="text-[13px] font-mono text-[var(--text-secondary)]">
                       {trade.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </td>
-                  
+
                   {/* Size (Margin) */}
                   <td className="px-4 py-4 text-right">
                     <span className="text-[13px] font-mono text-[var(--text-primary)]">
                       ${trade.margin.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
                     </span>
                   </td>
-                  
+
                   {/* Total PnL */}
                   <td className="px-4 py-4 text-right">
                     <span className={`text-[13px] font-mono font-bold ${isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
@@ -160,7 +160,7 @@ export function TradeHistory({ isConnected, trades = [], isLoading = false, onVi
                       <span className="opacity-70"> ({isProfit ? "+" : ""}{pnlPercent.toFixed(2)}%)</span>
                     </span>
                   </td>
-                  
+
                   {/* Fee */}
                   <td className="px-4 py-4 text-right">
                     <span className="text-[13px] font-mono text-[var(--text-tertiary)]">

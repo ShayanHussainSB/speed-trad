@@ -362,12 +362,12 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
   return (
     <div className="flex flex-col h-full">
       {/* Chart Header - Compact on mobile */}
-      <div className="flex items-center justify-between px-2 md:px-4 py-2 md:py-3 border-b border-[var(--border-subtle)]">
+      <div className="flex items-center justify-between px-2 md:px-4 py-1 md:py-1.5 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2 md:gap-4">
           {/* Token Pair Selector - Compact on mobile */}
           <button
             onClick={() => setIsTokenSelectorOpen(true)}
-            className="flex items-center gap-1.5 md:gap-2 px-2 md:px-3 py-1 md:py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 hover:bg-[var(--bg-elevated)] transition-all group"
+            className="flex items-center gap-1.5 md:gap-2 px-2 md:px-2.5 py-1 md:py-1 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-subtle)] hover:border-[var(--accent-primary)]/50 hover:bg-[var(--bg-elevated)] transition-all group"
           >
             {tokenImage ? (
               <img
@@ -462,7 +462,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
 
       {/* Timeframe Selector - Only show for candlestick chart */}
       {chartType === "candlestick" && (
-        <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1.5 md:py-2 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
+        <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1 md:py-1 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
           {["1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
             <button
               key={tf}

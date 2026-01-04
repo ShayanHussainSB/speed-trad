@@ -41,15 +41,15 @@ const MIN_POINTS = 2;
 
 // Smoothing - VERY heavy smoothing for super curvy lines like speedtrading.exchange
 // This makes price changes appear as flowing curves, not sharp corners
-const PRICE_SMOOTHING = 0.05; // Very slow price interpolation = super smooth
-const Y_SMOOTHING = 0.08; // Very slow Y movement = flowing curves  
+const PRICE_SMOOTHING = 0.04; // Slower price interpolation = ultra fluid
+const Y_SMOOTHING = 0.06; // Slower Y movement = rounder curves  
 
 // Y-axis SMOOTH scaling (like speedtrading.exchange)
 // Scale UP aggressively when volatility is low - make small movements dramatic
 // Scale DOWN smoothly when volatility increases to fit price swings
-const MIN_PRICE_RANGE_PERCENT = 0.00003; // ULTRA tight 0.003% range = tiny moves fill screen
-const SCALE_PADDING = 0.08; // 8% padding - very tight to maximize amplification
-const SCALE_SMOOTHING = 0.05; // Smooth scale transitions
+const MIN_PRICE_RANGE_PERCENT = 0.00004; // ULTRA tight range = small moves look like big waves
+const SCALE_PADDING = 0.12; // 12% padding for better vertical 'breath'
+const SCALE_SMOOTHING = 0.04; // Even smoother scale transitions
 
 // Static padding values
 const PADDING_TOP = 20;
@@ -177,8 +177,8 @@ function generatePathFromPoints(points: LinePoint[]): string {
 
   let path = `M ${points[0].x} ${points[0].y}`;
 
-  // Higher tension for smooth organic curves (0.38 is safe for no loops)
-  const tension = 0.38;
+  // Higher tension for ultra-smooth organic curves (0.4 creates nice waves)
+  const tension = 0.4;
 
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[Math.max(0, i - 1)];
@@ -192,11 +192,17 @@ function generatePathFromPoints(points: LinePoint[]): string {
     let cp2x = p2.x - (p3.x - p1.x) * tension;
     let cp2y = p2.y - (p3.y - p1.y) * tension;
 
-    // Clamp control points to prevent loops and crossing artifacts
+    // MANDATORY: Clamp X coordinates to segment boundaries [p1.x, p2.x]
+    // This prevents the path from ever looping backwards in time
+    const segmentWidth = p2.x - p1.x;
+    cp1x = Math.max(p1.x, Math.min(p1.x + segmentWidth * 0.5, cp1x));
+    cp2x = Math.min(p2.x, Math.max(p2.x - segmentWidth * 0.5, cp2x));
+
+    // Clamp Y control points to prevent wild vertical loops during volatility
     const minY = Math.min(p1.y, p2.y);
     const maxY = Math.max(p1.y, p2.y);
-    const yRange = maxY - minY;
-    const maxOvershoot = Math.max(yRange * 0.2, 3); // Reduced overshoot prevents loops
+    const yRange = Math.abs(p2.y - p1.y);
+    const maxOvershoot = Math.max(yRange * 0.3, 5);
 
     cp1y = Math.max(minY - maxOvershoot, Math.min(maxY + maxOvershoot, cp1y));
     cp2y = Math.max(minY - maxOvershoot, Math.min(maxY + maxOvershoot, cp2y));
@@ -548,28 +554,32 @@ export function LiveLineChart({
       const deltaTime = timestamp - lastFrameTimeRef.current;
       lastFrameTimeRef.current = timestamp;
 
-      // Triple exponential smoothing for ultra-smooth organic curves
-      // Each layer makes the transitions more gradual and flowing
+      // Multi-layer exponential smoothing for ultra-fluid organic curves
+      // This eliminates angular 'steppy' jumps and creates gliding movements
       const dp1 = targetPriceRef.current - smoothedPriceRef.current;
-      smoothedPriceRef.current += dp1 * 0.12; // First smoothing layer
+      smoothedPriceRef.current += dp1 * 0.1; // Layer 1: Raw target tracking
 
       const dp2 = smoothedPriceRef.current - displayPriceRef.current;
-      displayPriceRef.current += dp2 * 0.08; // Second smoothing layer
+      displayPriceRef.current += dp2 * 0.06; // Layer 2: Transition smoothing
 
-      // Third layer: smooth the Y position even more (done when adding points)
+      // Layer 3: Micro-volatility injection (The 'Wavy' Secret)
+      // Adds a tiny, high-frequency wave to the display price to keep it organic 
+      // even when the price is static.
+      const waveFreq = timestamp * 0.002;
+      const microVolatility = Math.sin(waveFreq) * (targetPriceRef.current * 0.000002);
+      const wavyPrice = displayPriceRef.current + microVolatility;
 
       // Update React state for animated display (throttled)
-      if (timestamp - lastDisplayUpdateRef.current > 100) {
+      if (timestamp - lastDisplayUpdateRef.current > 60) {
         lastDisplayUpdateRef.current = timestamp;
-        setDisplayPrice(displayPriceRef.current);
+        setDisplayPrice(wavyPrice);
       }
 
       // SMOOTH RESCALE: Calculate target min/max and smoothly interpolate
-      // This creates nice curvy charts like speedtrading.exchange
+      // This creates nice curvy charts like reference sites
       if (pointsRef.current.length > 0) {
         const prices = pointsRef.current.map(p => p.price);
-        const currentPrice = displayPriceRef.current;
-        prices.push(currentPrice);
+        prices.push(wavyPrice);
 
         const dataMin = Math.min(...prices);
         const dataMax = Math.max(...prices);
@@ -621,12 +631,12 @@ export function LiveLineChart({
         }
       }
 
-      // Calculate target Y based on current scale
-      const targetY = priceToY(displayPriceRef.current, currentMinPriceRef.current, currentMaxPriceRef.current);
+      // Calculate target Y based on current wavy price and scale
+      const targetY = priceToY(wavyPrice, currentMinPriceRef.current, currentMaxPriceRef.current);
 
-      // Limit max Y change per frame to force ultra-smooth curves
+      // Transition the current Y to the target Y with low pass filtering
       const dy = targetY - currentYRef.current;
-      const maxYChangePerFrame = 1.5; // Very small = no sharp corners possible
+      const maxYChangePerFrame = 1.0; // Limit snap to force organic gliding
       const clampedDy = Math.max(-maxYChangePerFrame, Math.min(maxYChangePerFrame, dy * Y_SMOOTHING));
       currentYRef.current += clampedDy;
 
@@ -651,7 +661,7 @@ export function LiveLineChart({
         pointsRef.current.push({
           x: headX,
           y: currentYRef.current,
-          price: displayPriceRef.current,
+          price: wavyPrice, // Store the wavy position for the next path generation
         });
       }
 

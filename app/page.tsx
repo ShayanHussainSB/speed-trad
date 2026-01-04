@@ -211,7 +211,7 @@ export default function TradingPage() {
                         Positions ({positions.length})
                       </button>
                       <button onClick={() => setBottomPanelTab("history")} className={`text-xs font-black uppercase tracking-tighter ${bottomPanelTab === "history" ? "text-white" : "text-white/40"}`}>
-                        History
+                        History ({tradeHistory.length})
                       </button>
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export default function TradingPage() {
                   currentPrice={currentPrice}
                   activePosition={primaryPosition}
                   onReversePosition={openReverseModal}
-                  onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: `${selectedSymbol}/USD` })}
+                  onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: selectedSymbol })}
                   onResetDemo={resetDemo}
                   isDemoMode={true}
                 />

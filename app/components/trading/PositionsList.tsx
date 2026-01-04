@@ -128,17 +128,17 @@ export function PositionsList({
               const isProfit = position.pnl >= 0;
               const health = position.health ?? 1;
               const isNearLiquidation = position.isNearLiquidation ?? health < 0.4;
-              
+
               // Calculate position size in asset units
               const assetSymbol = position.symbol.split('-')[0] || position.symbol.split('/')[0] || position.symbol;
               const notionalUSD = position.notional || position.size * position.leverage;
               const positionSizeAsset = notionalUSD / position.entryPrice;
-              
+
               // Estimate liquidation price (70% loss)
-              const liqPrice = isLong 
+              const liqPrice = isLong
                 ? position.entryPrice * (1 - 0.70 / position.leverage)
                 : position.entryPrice * (1 + 0.70 / position.leverage);
-              
+
               // Estimate take profit (100% gain for demo)
               const takeProfitPrice = isLong
                 ? position.entryPrice * (1 + 1.0 / position.leverage)
@@ -150,12 +150,11 @@ export function PositionsList({
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <SolanaIcon />
-                      <span className="text-sm font-bold text-[var(--text-primary)]">{assetSymbol}-USDC</span>
-                      <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded ${
-                        isLong 
-                          ? "bg-[var(--color-long)]/20 text-[var(--color-long)]" 
+                      <span className="text-sm font-bold text-[var(--text-primary)]">{assetSymbol}/USDC</span>
+                      <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded ${isLong
+                          ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
                           : "bg-[var(--color-short)]/20 text-[var(--color-short)]"
-                      }`}>
+                        }`}>
                         {isLong ? "Long" : "Short"}
                       </span>
                       {isNearLiquidation && (
@@ -163,17 +162,17 @@ export function PositionsList({
                       )}
                     </div>
                   </td>
-                  
+
                   {/* Leverage */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-bold text-[var(--accent-primary)]">{position.leverage}x</span>
                   </td>
-                  
+
                   {/* Margin */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-semibold text-[var(--text-primary)]">${position.size.toFixed(0)}</span>
                   </td>
-                  
+
                   {/* Position Size (Notional) */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-semibold text-[var(--text-primary)]">
@@ -181,28 +180,28 @@ export function PositionsList({
                       <span className="text-[var(--text-muted)] font-medium"> ({positionSizeAsset.toFixed(2)} {assetSymbol})</span>
                     </span>
                   </td>
-                  
+
                   {/* Entry Price */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-semibold text-[var(--text-primary)]">
                       ${position.entryPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </td>
-                  
+
                   {/* Mark Price */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-semibold text-[var(--text-primary)]">
                       ${position.currentPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </td>
-                  
+
                   {/* Liq Price */}
                   <td className="px-4 py-3">
                     <span className={`text-sm font-mono font-semibold ${isNearLiquidation ? "text-[var(--color-short)] font-bold" : "text-[var(--text-primary)]"}`}>
                       ${liqPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </td>
-                  
+
                   {/* PnL */}
                   <td className="px-4 py-3">
                     <span className={`text-sm font-mono font-bold ${isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
@@ -210,14 +209,14 @@ export function PositionsList({
                       <span className="font-semibold"> ({isProfit ? "+" : ""}{position.pnlPercent.toFixed(2)}%)</span>
                     </span>
                   </td>
-                  
+
                   {/* Take Profit */}
                   <td className="px-4 py-3">
                     <span className="text-sm font-mono font-semibold text-[var(--color-long)]">
                       ${takeProfitPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
                     </span>
                   </td>
-                  
+
                   {/* Action */}
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
@@ -241,7 +240,7 @@ export function PositionsList({
           </tbody>
         </table>
       </div>
-      
+
       {/* View All Button */}
       {onViewAll && positions.length > maxVisible && (
         <div className="px-4 py-2 border-t border-[var(--border-subtle)]">
