@@ -233,7 +233,7 @@ export default function TradingPage() {
           <div className="w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 z-10 flex flex-col h-full">
             <div className="flex-1 bg-[var(--bg-card)] border border-white/[0.05] rounded-xl overflow-hidden backdrop-blur-2xl shadow-xl flex flex-col">
               {/* Tabs Section - Aligned with Left Toolbar Area */}
-              <div className={`shrink-0 border-b border-white/[0.05] flex flex-col justify-center ${!connected ? "h-[84px] pt-1" : "h-[52px]"}`}>
+              <div className="shrink-0 border-b border-white/[0.05] flex flex-col justify-center h-[50px]">
                 <TradingTabs
                   activeMode={tradingMode}
                   onModeChange={setTradingMode}
