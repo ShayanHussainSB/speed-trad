@@ -150,8 +150,8 @@ export default function TradingPage() {
           {/* Left Section: Toolbar + Analyzer */}
           <div className="flex-1 flex flex-col gap-0 min-w-0 z-10">
             {/* Analyzer Header / Left Toolbar */}
-            <div className={`shrink-0 flex items-center ${!connected ? "h-[84px] pt-1" : "h-[52px]"}`}>
-              <div className={`flex flex-col w-full ${connected ? "h-full justify-center" : "gap-1"}`}>
+            <div className="shrink-0 flex items-center h-[52px]">
+              <div className="flex items-center w-full h-full">
                 <div className="flex items-center gap-3 w-full">
                   {/* Sidebar Toggle */}
                   <button
@@ -172,33 +172,6 @@ export default function TradingPage() {
                     <PriceTicker selectedSymbol={selectedSymbol} onSelectCoin={setSelectedSymbol} />
                   </div>
                 </div>
-
-                {/* Account Status Row */}
-                {!connected && (
-                  <div className="flex items-center gap-1.5 max-w-[400px] ml-[48px]">
-                    <div className="flex-1 h-7 flex items-center justify-between px-3 bg-[#0D0D15]/40 backdrop-blur-2xl border border-white/[0.06] rounded-lg group shadow-xl">
-                      <div className="flex items-center gap-2">
-                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500/60 shadow-[0_0_8px_rgba(245,158,11,0.3)]" />
-                        <span className="text-[10px] font-bold text-white/40 uppercase tracking-[0.15em] transition-colors group-hover:text-white/60">
-                          Demo Account
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#96FF00]/10 border border-[#96FF00]/20">
-                        <div className="w-1 h-1 rounded-full bg-[#96FF00] shadow-[0_0_5px_#96FF00]" />
-                        <span className="text-[8px] font-black text-[#96FF00] uppercase tracking-wider">Live</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={resetDemo}
-                      className="h-7 px-3 rounded-lg bg-[#0D0D15]/40 backdrop-blur-2xl border border-white/[0.06] text-[10px] font-bold text-white/40 hover:text-white/80 uppercase tracking-[0.1em] transition-all flex items-center gap-1.5 shadow-xl hover:bg-white/[0.03]"
-                    >
-                      <RotateCcw className="w-3 h-3" />
-                      Reset
-                    </button>
-                  </div>
-                )}
               </div>
             </div>
 
