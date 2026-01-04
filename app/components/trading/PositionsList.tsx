@@ -134,15 +134,8 @@ export function PositionsList({
               const notionalUSD = position.notional || position.size * position.leverage;
               const positionSizeAsset = notionalUSD / position.entryPrice;
 
-              // Estimate liquidation price (70% loss)
-              const liqPrice = isLong
-                ? position.entryPrice * (1 - 0.70 / position.leverage)
-                : position.entryPrice * (1 + 0.70 / position.leverage);
-
-              // Estimate take profit (100% gain for demo)
-              const takeProfitPrice = isLong
-                ? position.entryPrice * (1 + 1.0 / position.leverage)
-                : position.entryPrice * (1 - 1.0 / position.leverage);
+              const liqPrice = position.liquidationPrice;
+              const takeProfitPrice = position.takeProfitPrice;
 
               return (
                 <tr key={position.id} className={`border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)] transition-colors ${isNearLiquidation ? "bg-[var(--color-short)]/5" : ""}`}>
@@ -152,8 +145,8 @@ export function PositionsList({
                       <SolanaIcon />
                       <span className="text-sm font-bold text-[var(--text-primary)]">{assetSymbol}/USDC</span>
                       <span className={`px-1.5 py-0.5 text-[11px] font-bold rounded ${isLong
-                          ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                          : "bg-[var(--color-short)]/20 text-[var(--color-short)]"
+                        ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
+                        : "bg-[var(--color-short)]/20 text-[var(--color-short)]"
                         }`}>
                         {isLong ? "Long" : "Short"}
                       </span>

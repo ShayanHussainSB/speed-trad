@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useState, useCallback, useRef, useEffect } from "react";
+import React, { FC, useState, useCallback, useRef, useEffect } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import {
   Zap,
@@ -18,6 +18,7 @@ import { useWalletBalance } from "@/app/hooks/useWalletBalance";
 import { getAccountUrl } from "@/app/config/network";
 import { ProfileEditModal } from "./ProfileEditModal";
 import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
+import { useSettings } from "@/app/hooks/useSettings";
 
 interface WalletSectionProps {
   onOpenModal: () => void;
@@ -44,6 +45,13 @@ export const WalletSection: FC<WalletSectionProps> = ({
   const [copied, setCopied] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const { soundEnabled, setSoundEnabled } = useSettings();
+  
+  // #region agent log
+  React.useEffect(() => {
+    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:48',message:'soundEnabled state changed',data:{soundEnabled,connected},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  }, [soundEnabled, connected]);
+  // #endregion
 
   const walletAddress = publicKey?.toBase58() || "";
   const truncatedAddress = walletAddress
@@ -173,6 +181,56 @@ export const WalletSection: FC<WalletSectionProps> = ({
             >
               <Settings className="w-4 h-4" />
               <span>Edit Profile</span>
+            </button>
+
+            {/* Sound Toggle */}
+            <button
+              onClick={(e) => {
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:182',message:'Button onClick fired',data:{soundEnabledBefore:soundEnabled,eventType:e.type,target:e.target.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
+                setSoundEnabled(!soundEnabled);
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:186',message:'Button onClick setSoundEnabled called',data:{newValue:!soundEnabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                // #endregion
+              }}
+              className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <Zap className="w-4 h-4" />
+                <span>Sound Effects</span>
+              </div>
+              <label 
+                className="relative inline-flex items-center cursor-pointer"
+                onClick={(e) => {
+                  // #region agent log
+                  fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:197',message:'Label onClick fired',data:{soundEnabledBefore:soundEnabled,eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+                  // #endregion
+                  e.stopPropagation();
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={soundEnabled}
+                  onChange={(e) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:203',message:'Checkbox onChange fired',data:{soundEnabledBefore:soundEnabled,checked:e.target.checked,eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                    setSoundEnabled(e.target.checked);
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:207',message:'Checkbox onChange setSoundEnabled called',data:{newValue:e.target.checked},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+                    // #endregion
+                  }}
+                  onClick={(e) => {
+                    // #region agent log
+                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:211',message:'Checkbox onClick fired',data:{soundEnabledBefore:soundEnabled,checked:(e.target as HTMLInputElement).checked},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+                    // #endregion
+                    e.stopPropagation();
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-11 h-6 bg-white/10 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[#FF006E]/50 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#FF006E]"></div>
+              </label>
             </button>
 
             <a

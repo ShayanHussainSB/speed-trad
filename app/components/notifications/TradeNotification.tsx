@@ -61,7 +61,8 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
   const isOpened = notification.type === "position_opened";
   const isClosed = notification.type === "position_closed";
   const isLiquidated = notification.type === "liquidated";
-  const isWin = isClosed && (notification.pnl ?? 0) > 0;
+  const isAutoClosedTP = notification.type === "auto_closed_tp";
+  const isWin = (isClosed || isAutoClosedTP) && (notification.pnl ?? 0) > 0;
   const isLoss = (isClosed || isLiquidated) && (notification.pnl ?? 0) <= 0;
   const isLong = notification.direction === "long";
 
@@ -102,8 +103,8 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
 
       {/* Content */}
       <div className="relative p-4 flex items-start gap-4">
-        {/* Avatar - Show for wins or liquidations */}
-        {(isWin || isLiquidated) && (
+        {/* Avatar - Show for wins, auto-closes, or liquidations */}
+        {(isWin || isAutoClosedTP || isLiquidated) && (
           <div
             className={`
               flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden
@@ -128,7 +129,7 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
           {/* Header */}
           <div className="flex items-center gap-2 mb-2">
             <span className="text-sm font-display font-bold tracking-wide text-white uppercase">
-              {isOpened ? "Position Opened" : isLiquidated ? "Liquidated" : "Position Closed"}
+              {isOpened ? "Position Opened" : isLiquidated ? "Liquidated" : isAutoClosedTP ? "Take Profit Reached" : "Position Closed"}
             </span>
             {isOpened && (
               <span
@@ -231,4 +232,5 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
 
 export const TradeNotification = memo(TradeNotificationComponent);
 export default TradeNotification;
+
 

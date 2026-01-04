@@ -6,16 +6,20 @@ import React, {
   useState,
   useCallback,
   useMemo,
+  useEffect,
 } from "react";
 import {
   playOpenSound,
-  playProfitSound,
-  playLossSound,
+  playCloseProfitSound,
+  playCloseLossSound,
   playLiquidationSound,
+  playAutoCloseTPSound,
+  setSoundEnabled,
 } from "@/app/utils/sounds";
+import { useSettings } from "@/app/hooks/useSettings";
 
 // Notification types
-export type NotificationType = "position_opened" | "position_closed" | "liquidated";
+export type NotificationType = "position_opened" | "position_closed" | "liquidated" | "auto_closed_tp";
 
 export interface TradeNotification {
   id: string;
@@ -51,6 +55,13 @@ interface NotificationContextValue {
     closePrice: number;
     pnl: number;
   }) => void;
+  showAutoCloseTP: (data: {
+    direction: "long" | "short";
+    symbol: string;
+    closePrice: number;
+    pnl: number;
+    pnlPercent: number;
+  }) => void;
   removeNotification: (id: string) => void;
 }
 
@@ -69,6 +80,12 @@ export function NotificationProvider({
   children: React.ReactNode;
 }) {
   const [notifications, setNotifications] = useState<TradeNotification[]>([]);
+  const { soundEnabled } = useSettings();
+
+  // Update global sound enabled state
+  useEffect(() => {
+    setSoundEnabled(soundEnabled);
+  }, [soundEnabled]);
 
   const removeNotification = useCallback((id: string) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
@@ -119,9 +136,9 @@ export function NotificationProvider({
     }) => {
       // Play profit or loss sound based on PnL
       if (data.pnl >= 0) {
-        playProfitSound();
+        playCloseProfitSound();
       } else {
-        playLossSound();
+        playCloseLossSound();
       }
       addNotification({
         type: "position_closed",
@@ -156,15 +173,37 @@ export function NotificationProvider({
     [addNotification]
   );
 
+  const showAutoCloseTP = useCallback(
+    (data: {
+      direction: "long" | "short";
+      symbol: string;
+      closePrice: number;
+      pnl: number;
+      pnlPercent: number;
+    }) => {
+      playAutoCloseTPSound();
+      addNotification({
+        type: "auto_closed_tp",
+        direction: data.direction,
+        symbol: data.symbol,
+        closePrice: data.closePrice,
+        pnl: data.pnl,
+        pnlPercent: data.pnlPercent,
+      });
+    },
+    [addNotification]
+  );
+
   const value = useMemo<NotificationContextValue>(
     () => ({
       notifications,
       showPositionOpened,
       showPositionClosed,
       showLiquidation,
+      showAutoCloseTP,
       removeNotification,
     }),
-    [notifications, showPositionOpened, showPositionClosed, showLiquidation, removeNotification]
+    [notifications, showPositionOpened, showPositionClosed, showLiquidation, showAutoCloseTP, removeNotification]
   );
 
   return (

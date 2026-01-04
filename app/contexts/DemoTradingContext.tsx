@@ -17,6 +17,7 @@ import {
   calculateLiquidationPrice,
   isPositionLiquidated,
   calculateMarginHealth,
+  calculateFundingFee,
 } from "@/app/config/demoTrading";
 
 // Types
@@ -77,12 +78,17 @@ interface DemoTradingContextValue {
   ) => { success: boolean; pnl?: number; fee?: number; error?: string };
 
   checkLiquidations: (prices: Record<AssetSymbol, number>) => void;
+  checkTakeProfit: (
+    prices: Record<AssetSymbol, number>,
+    onAutoClose?: (position: DemoPosition, currentPrice: number, pnl: number, pnlPercent: number) => void
+  ) => void;
 
   resetDemo: () => void;
 
   // Utilities
   getPositionPnL: (position: DemoPosition, currentPrice: number) => number;
   getPositionHealth: (position: DemoPosition, currentPrice: number) => number;
+  getPositionFundingFee: (position: DemoPosition) => number;
   getEstimatedCloseFee: (position: DemoPosition, currentPrice: number) => number;
 }
 
@@ -208,8 +214,11 @@ export function DemoTradingProvider({
         position.notional
       );
 
-      const fee = calculateCloseFee(position.notional, pnl);
-      const netPnl = pnl - fee;
+      const closeFee = calculateCloseFee(position.notional, pnl);
+      const fundingFee = calculateFundingFee(position.notional, position.openedAt);
+      const totalFee = closeFee + fundingFee;
+
+      const netPnl = pnl - totalFee;
       const returnAmount = position.margin + netPnl;
 
       const tradeRecord: TradeRecord = {
@@ -222,7 +231,7 @@ export function DemoTradingProvider({
         entryPrice: position.entryPrice,
         exitPrice: currentPrice,
         pnl: netPnl,
-        fee,
+        fee: totalFee,
         outcome: "closed",
         openedAt: position.openedAt,
         closedAt: new Date().toISOString(),
@@ -236,7 +245,7 @@ export function DemoTradingProvider({
         lastUpdated: new Date().toISOString(),
       }));
 
-      return { success: true, pnl: netPnl, fee };
+      return { success: true, pnl: netPnl, fee: totalFee };
     },
     [state.positions]
   );
@@ -273,7 +282,7 @@ export function DemoTradingProvider({
           entryPrice: position.entryPrice,
           exitPrice: prices[position.symbol],
           pnl: -position.margin * DEMO_CONFIG.LIQUIDATION_THRESHOLD, // Lost 70%
-          fee: 0, // No fee on liquidation
+          fee: calculateFundingFee(position.notional, position.openedAt), // Only funding fee on liquidation
           outcome: "liquidated" as const,
           openedAt: position.openedAt,
           closedAt: new Date().toISOString(),
@@ -292,6 +301,89 @@ export function DemoTradingProvider({
           tradeHistory: [...tradeRecords, ...prev.tradeHistory].slice(0, 100),
           lastUpdated: new Date().toISOString(),
         }));
+      }
+    },
+    [state.positions]
+  );
+
+  // Check and process take profit auto-closes
+  const checkTakeProfit = useCallback(
+    (
+      prices: Record<AssetSymbol, number>,
+      onAutoClose?: (position: DemoPosition, currentPrice: number, pnl: number, pnlPercent: number) => void
+    ) => {
+      const autoClosedPositions: DemoPosition[] = [];
+
+      state.positions.forEach((position) => {
+        const currentPrice = prices[position.symbol];
+        if (!currentPrice) return;
+
+        // Calculate take profit price (default 500% profit target)
+        const takeProfitMove = 5 / position.leverage; // 500% / leverage
+        const takeProfitPrice =
+          position.direction === "long"
+            ? position.entryPrice * (1 + takeProfitMove)
+            : position.entryPrice * (1 - takeProfitMove);
+
+        // Check if take profit is reached
+        const isTakeProfitReached =
+          position.direction === "long"
+            ? currentPrice >= takeProfitPrice
+            : currentPrice <= takeProfitPrice;
+
+        if (isTakeProfitReached) {
+          autoClosedPositions.push(position);
+        }
+      });
+
+      if (autoClosedPositions.length > 0) {
+        // Close positions that hit take profit
+        autoClosedPositions.forEach((position) => {
+          const currentPrice = prices[position.symbol];
+          const pnl = calculatePositionPnL(
+            position.direction,
+            position.entryPrice,
+            currentPrice,
+            position.notional
+          );
+
+          const closeFee = calculateCloseFee(position.notional, pnl);
+          const fundingFee = calculateFundingFee(position.notional, position.openedAt);
+          const totalFee = closeFee + fundingFee;
+
+          const netPnl = pnl - totalFee;
+          const returnAmount = position.margin + netPnl;
+          const pnlPercent = (netPnl / position.margin) * 100;
+
+          // Call callback before closing
+          if (onAutoClose) {
+            onAutoClose(position, currentPrice, netPnl, pnlPercent);
+          }
+
+          const tradeRecord: TradeRecord = {
+            id: generateId(),
+            symbol: position.symbol,
+            direction: position.direction,
+            margin: position.margin,
+            leverage: position.leverage,
+            notional: position.notional,
+            entryPrice: position.entryPrice,
+            exitPrice: currentPrice,
+            pnl: netPnl,
+            fee: totalFee,
+            outcome: "closed" as const,
+            openedAt: position.openedAt,
+            closedAt: new Date().toISOString(),
+          };
+
+          setState((prev) => ({
+            ...prev,
+            balance: prev.balance + Math.max(0, returnAmount),
+            positions: prev.positions.filter((p) => p.id !== position.id),
+            tradeHistory: [tradeRecord, ...prev.tradeHistory].slice(0, 100),
+            lastUpdated: new Date().toISOString(),
+          }));
+        });
       }
     },
     [state.positions]
@@ -332,6 +424,14 @@ export function DemoTradingProvider({
     []
   );
 
+  // Utility: Get current funding fee
+  const getPositionFundingFee = useCallback(
+    (position: DemoPosition) => {
+      return calculateFundingFee(position.notional, position.openedAt);
+    },
+    []
+  );
+
   // Utility: Get estimated close fee
   const getEstimatedCloseFee = useCallback(
     (position: DemoPosition, currentPrice: number) => {
@@ -341,7 +441,9 @@ export function DemoTradingProvider({
         currentPrice,
         position.notional
       );
-      return calculateCloseFee(position.notional, pnl);
+      const closeFee = calculateCloseFee(position.notional, pnl);
+      const fundingFee = calculateFundingFee(position.notional, position.openedAt);
+      return closeFee + fundingFee;
     },
     []
   );
@@ -355,9 +457,11 @@ export function DemoTradingProvider({
       openPosition,
       closePosition,
       checkLiquidations,
+      checkTakeProfit,
       resetDemo,
       getPositionPnL,
       getPositionHealth,
+      getPositionFundingFee,
       getEstimatedCloseFee,
     }),
     [
@@ -368,9 +472,11 @@ export function DemoTradingProvider({
       openPosition,
       closePosition,
       checkLiquidations,
+      checkTakeProfit,
       resetDemo,
       getPositionPnL,
       getPositionHealth,
+      getPositionFundingFee,
       getEstimatedCloseFee,
     ]
   );
@@ -391,4 +497,5 @@ export function useDemoTradingContext() {
   }
   return context;
 }
+
 

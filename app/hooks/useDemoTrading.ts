@@ -11,13 +11,15 @@ import {
   AssetSymbol,
   LeverageOption,
 } from "@/app/config/demoTrading";
+import { useNotifications } from "@/app/contexts/NotificationContext";
 
 export interface PositionWithLivePnL extends DemoPosition {
   currentPrice: number;
   pnl: number;
   pnlPercent: number;
-  health: number; // 0-1, where 0.3 = liquidation threshold
+  health: number;
   closeFee: number;
+  fundingFee: number;
   isNearLiquidation: boolean;
 }
 
@@ -51,10 +53,12 @@ interface UseDemoTradingReturn {
 
   // Price getters
   getCurrentPrice: (symbol: AssetSymbol) => number;
+  getPositionFundingFee: (position: DemoPosition) => number;
 }
 
 export function useDemoTrading(): UseDemoTradingReturn {
   const context = useDemoTradingContext();
+  const { showAutoCloseTP } = useNotifications();
   const {
     balance,
     positions: rawPositions,
@@ -63,9 +67,11 @@ export function useDemoTrading(): UseDemoTradingReturn {
     openPosition: contextOpenPosition,
     closePosition: contextClosePosition,
     checkLiquidations,
+    checkTakeProfit,
     resetDemo,
     getPositionPnL,
     getPositionHealth,
+    getPositionFundingFee: contextGetPositionFundingFee,
     getEstimatedCloseFee,
   } = context;
 
@@ -91,23 +97,37 @@ export function useDemoTrading(): UseDemoTradingReturn {
     [prices]
   );
 
-  // Check for liquidations on every price update
+  // Check for liquidations and take profit on every price update
   const lastCheckRef = useRef<number>(0);
   const lastPricesRef = useRef<string>("");
-  
+
   useEffect(() => {
-    if (rawPositions.length === 0) return;
-    
+    if (rawPositions.length === 0) {
+      return;
+    }
+
     const priceKey = JSON.stringify(prices);
     const now = Date.now();
-    
-    // Check liquidations when prices change or at least every 500ms
+
+    // Check liquidations and take profit when prices change or at least every 500ms
     if (priceKey !== lastPricesRef.current || now - lastCheckRef.current > 500) {
       lastCheckRef.current = now;
       lastPricesRef.current = priceKey;
+      
       checkLiquidations(prices);
+      
+      // Pass callback to checkTakeProfit to trigger notification
+      checkTakeProfit(prices, (position, currentPrice, pnl, pnlPercent) => {
+        showAutoCloseTP({
+          direction: position.direction,
+          symbol: position.symbol,
+          closePrice: currentPrice,
+          pnl,
+          pnlPercent,
+        });
+      });
     }
-  }, [prices, rawPositions.length, checkLiquidations]);
+  }, [prices, rawPositions.length, checkLiquidations, checkTakeProfit, showAutoCloseTP]);
 
   // Enhance positions with live PnL data
   const positions = useMemo<PositionWithLivePnL[]>(() => {
@@ -126,10 +146,11 @@ export function useDemoTrading(): UseDemoTradingReturn {
         pnlPercent,
         health,
         closeFee,
+        fundingFee: contextGetPositionFundingFee(position),
         isNearLiquidation,
       };
     });
-  }, [rawPositions, prices, getPositionPnL, getPositionHealth, getEstimatedCloseFee]);
+  }, [rawPositions, prices, getPositionPnL, getPositionHealth, getEstimatedCloseFee, contextGetPositionFundingFee]);
 
   // Computed values
   const totalPnL = useMemo(
@@ -207,6 +228,7 @@ export function useDemoTrading(): UseDemoTradingReturn {
     closePosition,
     resetDemo,
     getCurrentPrice,
+    getPositionFundingFee: contextGetPositionFundingFee,
   };
 }
 

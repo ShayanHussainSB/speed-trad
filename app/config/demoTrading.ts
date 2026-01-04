@@ -66,6 +66,17 @@ export function calculateCloseFee(notional: number, pnl: number): number {
 }
 
 /**
+ * Calculate funding fee based on workbook formula:
+ * Funding Fee = notional * hourly_rate * hours_held
+ */
+export function calculateFundingFee(notional: number, openedAt: string, closedAt: string | Date = new Date()): number {
+  const start = new Date(openedAt).getTime();
+  const end = closedAt instanceof Date ? closedAt.getTime() : new Date(closedAt).getTime();
+  const hoursHeld = (end - start) / (1000 * 60 * 60);
+  return notional * DEMO_CONFIG.FUNDING_RATE_HOURLY * hoursHeld;
+}
+
+/**
  * Calculate position PnL based on price movement
  */
 export function calculatePositionPnL(
@@ -117,4 +128,5 @@ export function calculateMarginHealth(margin: number, pnl: number): number {
   const marginRemaining = margin + pnl;
   return Math.max(0, marginRemaining / margin);
 }
+
 

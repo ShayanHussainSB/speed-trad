@@ -22,6 +22,7 @@ export interface Position {
   notional?: number;
   health?: number;
   closeFee?: number;
+  fundingFee?: number;
   isNearLiquidation?: boolean;
 }
 
@@ -52,6 +53,7 @@ function toDemoPosition(p: PositionWithLivePnL): Position {
     notional: p.notional,
     health: p.health,
     closeFee: p.closeFee,
+    fundingFee: p.fundingFee,
     isNearLiquidation: p.isNearLiquidation,
   };
 }
