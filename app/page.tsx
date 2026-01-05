@@ -144,7 +144,7 @@ export default function TradingPage() {
 
       <main className="relative z-10 pt-14 h-screen flex flex-col overflow-hidden">
         {/* Main Workspace Layout */}
-        <div className="flex-1 flex gap-3 px-3 pb-3 pt-2 overflow-hidden relative">
+        <div className="flex-1 flex gap-3 px-3 pb-6 pt-2 overflow-hidden relative">
           <div className="absolute inset-0 opacity-20 pointer-events-none horizon-grid" />
 
           {/* Left Section: Toolbar + Analyzer */}

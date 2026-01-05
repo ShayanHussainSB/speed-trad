@@ -700,7 +700,7 @@ export function TradingPanel({
       </div>
 
       {/* Action Section - Always Visible at Bottom */}
-      <div className="flex-shrink-0 p-3 lg:p-4 pb-20 md:pb-4 border-t border-[var(--border-subtle)] bg-[var(--bg-card)]">
+      <div className="flex-shrink-0 p-3 lg:p-4 pb-20 md:pb-6 border-t border-[var(--border-subtle)] bg-[var(--bg-card)]">
         {/* Demo mode allows trading without wallet connection */}
         {isPerpetuals && (isDemoMode || isConnected) ? (
           // Perpetuals trading buttons (demo mode or connected)
@@ -728,7 +728,7 @@ export function TradingPanel({
                 }}
                 className="flex-1 py-3 lg:py-4 rounded-lg bg-[var(--color-long)] text-black text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all"
               >
-                Long
+                Up
               </button>
               <button
                 onClick={() => {
@@ -737,7 +737,7 @@ export function TradingPanel({
                 }}
                 className="flex-1 py-3 lg:py-4 rounded-lg bg-[var(--color-short)] text-white text-sm font-bold uppercase tracking-wider hover:opacity-90 transition-all"
               >
-                Short
+                Down
               </button>
             </div>
           )

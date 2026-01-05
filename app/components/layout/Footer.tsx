@@ -7,7 +7,7 @@ export function Footer() {
   const { color, isConnected } = useConnectionStatus();
 
   return (
-    <footer className="fixed bottom-0 left-0 right-0 z-30 hidden md:block bg-[#0a0a0f]/90 backdrop-blur-sm border-t border-[var(--border-subtle)]/50">
+    <footer className="fixed bottom-0 left-0 right-0 z-30 hidden md:block bg-[var(--bg-primary)]/90 backdrop-blur-xl border-t border-white/[0.08]">
       <div className="flex items-center justify-between h-6 px-4 text-[10px]">
         {/* Left - Status */}
         <div className="flex items-center gap-3">
@@ -20,14 +20,14 @@ export function Footer() {
               {isConnected ? "WS" : "REST"}
             </span>
           </div>
-          <span className="text-[var(--border-subtle)]">|</span>
+          <span className="text-white/20">|</span>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[#9945FF] to-[#14F195] flex items-center justify-center">
-              <span className="text-[6px] font-bold text-white">S</span>
+            <div className="w-3 h-3 rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--accent-secondary)] flex items-center justify-center">
+              <span className="text-[6px] font-bold text-white">B</span>
             </div>
             <span className="text-[var(--text-muted)]">{NETWORK_FULL_NAME}</span>
             {!IS_PRODUCTION && (
-              <span className="px-1 rounded text-[8px] font-bold uppercase bg-[#FF6B00]/20 text-[#FF6B00]">
+              <span className="px-1 rounded text-[8px] font-bold uppercase bg-[var(--accent-primary)]/20 text-[var(--accent-primary)]">
                 DEV
               </span>
             )}

@@ -41,19 +41,17 @@ export function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#0a0a12]/95 backdrop-blur-md border-b border-white/[0.06]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[var(--bg-primary)]/95 backdrop-blur-xl border-b border-white/[0.08]">
         {/* Synthwave Theme Line */}
         <div className="h-[2px] w-full bg-gradient-to-r from-[var(--hot-pink)] via-[var(--electric-purple)] to-[var(--cyan-glow)] shadow-[0_0_10px_rgba(255,0,110,0.5)]" />
 
         <div className="flex items-center justify-between h-14 px-4 md:px-6 max-w-[1920px] mx-auto">
           {/* Logo */}
-          <div className="flex items-center gap-2.5 group cursor-pointer">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#FF006E] to-[#8338EC] flex items-center justify-center shadow-lg shadow-pink-500/20 group-hover:scale-105 transition-transform duration-300">
-              <Zap className="w-4 h-4 text-white" fill="currentColor" />
-            </div>
+          <div className="flex items-center group cursor-pointer">
             <div className="flex items-center">
-              <span className="text-lg font-bold tracking-tight text-white font-display">updn</span>
-              <span className="text-lg font-bold tracking-tight text-[#FF006E] font-display">.trade</span>
+              <span className="text-lg font-bold tracking-tight text-[var(--color-long)] font-display">up</span>
+              <span className="text-lg font-bold tracking-tight text-[var(--color-short)] font-display">dn</span>
+              <span className="text-lg font-bold tracking-tight text-[var(--text-primary)] font-display">.trade</span>
             </div>
           </div>
 

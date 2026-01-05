@@ -14,7 +14,7 @@ export const NETWORK = IS_PRODUCTION ? "mainnet-beta" : "devnet";
 export const NETWORK_DISPLAY_NAME = IS_PRODUCTION ? "Mainnet" : "Devnet";
 
 // Full display name
-export const NETWORK_FULL_NAME = IS_PRODUCTION ? "Solana Mainnet" : "Solana Devnet";
+export const NETWORK_FULL_NAME = IS_PRODUCTION ? "Bulk Mainnet" : "Bulk Devnet";
 
 // Get the RPC endpoint
 export function getRpcEndpoint(): string {
