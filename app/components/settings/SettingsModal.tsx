@@ -75,3 +75,4 @@ export const SettingsModal: FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   );
 };
 
+

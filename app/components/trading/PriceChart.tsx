@@ -78,7 +78,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
   const hasMoreHistoryRef = useRef<boolean>(true);
 
   const [chartType, setChartType] = useState<ChartType>("live");
-  const [timeframe, setTimeframe] = useState("5m");
+  const [timeframe, setTimeframe] = useState("10s");
   const [isTokenSelectorOpen, setIsTokenSelectorOpen] = useState(false);
 
   // Initialize token from symbol prop
@@ -196,7 +196,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
       timeScale: {
         borderColor: "rgba(255, 255, 255, 0.06)",
         timeVisible: true,
-        secondsVisible: false,
+        secondsVisible: timeframe.includes("s"), // Show seconds for second-level timeframes
       },
       handleScale: {
         mouseWheel: true,
@@ -292,6 +292,15 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
       initialDataLoadedRef.current = false;
     };
   }, [chartType, fetchOlderCandles]);
+
+  // Update time scale to show seconds for second-level timeframes
+  useEffect(() => {
+    if (chartType !== "candlestick" || !chartRef.current) return;
+    
+    chartRef.current.timeScale().applyOptions({
+      secondsVisible: timeframe.includes("s"),
+    });
+  }, [chartType, timeframe]);
 
   // Update chart data when candles change
   useEffect(() => {
@@ -463,7 +472,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
       {/* Timeframe Selector - Only show for candlestick chart */}
       {chartType === "candlestick" && (
         <div className="flex items-center gap-0.5 md:gap-1 px-2 md:px-4 py-1 md:py-1 border-b border-[var(--border-subtle)] overflow-x-auto scrollbar-hide">
-          {["1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
+          {["1s", "5s", "10s", "30s", "1m", "5m", "15m", "1H", "4H", "1D"].map((tf) => (
             <button
               key={tf}
               onClick={() => setTimeframe(tf)}
@@ -488,9 +497,21 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
           <LiveLineChart
             livePrice={livePrice}
             symbol={bulkSymbol}
-            tokenImage={tokenImage}
-            tokenColor={tokenIcon}
-            tokenSymbol={selectedToken.symbol}
+            tokenImage={activePosition ? (() => {
+              // Use token info from position's symbol if position exists
+              const positionToken = getTokenFromSymbol(activePosition.symbol);
+              return positionToken.image || tokenImage;
+            })() : tokenImage}
+            tokenColor={activePosition ? (() => {
+              // Use token info from position's symbol if position exists
+              const positionToken = getTokenFromSymbol(activePosition.symbol);
+              return positionToken.icon || tokenIcon;
+            })() : tokenIcon}
+            tokenSymbol={activePosition ? (() => {
+              // Use token info from position's symbol if position exists
+              const positionToken = getTokenFromSymbol(activePosition.symbol);
+              return positionToken.symbol || selectedToken.symbol;
+            })() : selectedToken.symbol}
             entryPrice={activePosition?.entryPrice}
             liquidationPrice={activePosition?.liquidationPrice}
             takeProfitPrice={activePosition?.takeProfitPrice}

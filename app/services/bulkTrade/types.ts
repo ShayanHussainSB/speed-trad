@@ -48,7 +48,7 @@ export type WsSubscriptionType =
   | "l2Delta"
   | "risk";
 
-export type CandleInterval = "10s" | "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
+export type CandleInterval = "1s" | "5s" | "10s" | "30s" | "1m" | "5m" | "15m" | "1h" | "4h" | "1d";
 
 export interface WsSubscription {
   type: WsSubscriptionType;

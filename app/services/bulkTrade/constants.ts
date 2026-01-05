@@ -1,9 +1,13 @@
 export const BULK_API_BASE_URL = "https://exchange-api2.bulk.trade/api/v1";
 export const BULK_WS_URL = "wss://exchange-wss.bulk.trade";
 
-export const CANDLE_INTERVALS = ["10s", "1m", "5m", "15m", "1h", "4h", "1d"] as const;
+export const CANDLE_INTERVALS = ["1s", "5s", "10s", "30s", "1m", "5m", "15m", "1h", "4h", "1d"] as const;
 
 export const TIMEFRAME_MAP: Record<string, string> = {
+  "1s": "1s",
+  "5s": "5s",
+  "10s": "10s",
+  "30s": "30s",
   "1m": "1m",
   "5m": "5m",
   "15m": "15m",

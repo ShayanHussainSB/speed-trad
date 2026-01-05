@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import React, { useEffect, useRef, useState, useCallback } from "react";
 
 interface HistoricalPrice {
   time: number;
@@ -41,8 +41,8 @@ const MIN_POINTS = 2;
 
 // Smoothing - VERY heavy smoothing for super curvy lines like speedtrading.exchange
 // This makes price changes appear as flowing curves, not sharp corners
-const PRICE_SMOOTHING = 0.04; // Slower price interpolation = ultra fluid
-const Y_SMOOTHING = 0.06; // Slower Y movement = rounder curves  
+const PRICE_SMOOTHING = 0.03; // Even slower price interpolation = ultra fluid (reduced from 0.04)
+const Y_SMOOTHING = 0.05; // Slower Y movement = rounder curves (reduced from 0.06)  
 
 // Y-axis SMOOTH scaling (like speedtrading.exchange)
 // Scale UP aggressively when volatility is low - make small movements dramatic
@@ -57,8 +57,16 @@ const PADDING_BOTTOM = 40;
 const PADDING_LEFT = 10;
 const RIGHT_GAP_PERCENT = 0.25;
 
-// Grid constants - match reference site which shows ~7 grid levels
-const GRID_LABEL_COUNT = 7;
+// Grid constants - 10x10 grid (10 horizontal bands, 10 vertical divisions)
+const GRID_LABEL_COUNT = 10;
+const VERTICAL_GRID_DIVISIONS = 10;
+
+// Safe zone constants - keep price within 6 grid bands (lines 2-7, 0-indexed)
+// Top 2 bands (lines 0-1) and bottom 2 bands (lines 8-9) are reserved buffers - price cannot reach
+const SAFE_ZONE_TOP_LINE = 2; // 3rd grid line (0-indexed) - top border of safe zone
+const SAFE_ZONE_BOTTOM_LINE = 7; // 8th grid line (0-indexed) - bottom border of safe zone (can reach border of 9th grid)
+const WARNING_TOP_LINE = 1; // 2nd grid line - price should not go above this
+const WARNING_BOTTOM_LINE = 8; // 9th grid line - price should not go below this
 
 // Color constants
 const LINE_COLOR = "#00F5A0";
@@ -177,8 +185,8 @@ function generatePathFromPoints(points: LinePoint[]): string {
 
   let path = `M ${points[0].x} ${points[0].y}`;
 
-  // Higher tension for ultra-smooth organic curves (0.4 creates nice waves)
-  const tension = 0.4;
+  // Higher tension for ultra-smooth organic curves (0.5 creates smoother, more flowing curves)
+  const tension = 0.5;
 
   for (let i = 0; i < points.length - 1; i++) {
     const p0 = points[Math.max(0, i - 1)];
@@ -314,6 +322,7 @@ export function LiveLineChart({
   const currentMaxPriceRef = useRef<number>(0);
   const targetMinPriceRef = useRef<number>(0);
   const targetMaxPriceRef = useRef<number>(0);
+  const lastPriceRef = useRef<number>(0); // Track last price to detect drastic changes
 
   // For smooth price display updates
   const lastDisplayUpdateRef = useRef<number>(0);
@@ -557,16 +566,16 @@ export function LiveLineChart({
       // Multi-layer exponential smoothing for ultra-fluid organic curves
       // This eliminates angular 'steppy' jumps and creates gliding movements
       const dp1 = targetPriceRef.current - smoothedPriceRef.current;
-      smoothedPriceRef.current += dp1 * 0.1; // Layer 1: Raw target tracking
+      smoothedPriceRef.current += dp1 * 0.08; // Layer 1: Raw target tracking (reduced from 0.1 for smoother)
 
       const dp2 = smoothedPriceRef.current - displayPriceRef.current;
-      displayPriceRef.current += dp2 * 0.06; // Layer 2: Transition smoothing
+      displayPriceRef.current += dp2 * 0.05; // Layer 2: Transition smoothing (reduced from 0.06 for smoother)
 
       // Layer 3: Micro-volatility injection (The 'Wavy' Secret)
       // Adds a tiny, high-frequency wave to the display price to keep it organic 
       // even when the price is static.
-      const waveFreq = timestamp * 0.002;
-      const microVolatility = Math.sin(waveFreq) * (targetPriceRef.current * 0.000002);
+      const waveFreq = timestamp * 0.0015; // Slower wave frequency for smoother motion
+      const microVolatility = Math.sin(waveFreq) * (targetPriceRef.current * 0.0000015); // Reduced amplitude
       const wavyPrice = displayPriceRef.current + microVolatility;
 
       // Update React state for animated display (throttled)
@@ -577,23 +586,102 @@ export function LiveLineChart({
 
       // SMOOTH RESCALE: Calculate target min/max and smoothly interpolate
       // This creates nice curvy charts like reference sites
+      // IMPORTANT: Calculate bounds BEFORE displaying price to prevent spikes from going outside
       if (pointsRef.current.length > 0) {
-        const prices = pointsRef.current.map(p => p.price);
-        prices.push(wavyPrice);
+        // Get ALL visible prices (including historical points)
+        const allPrices = pointsRef.current.map(p => p.price);
+        allPrices.push(wavyPrice); // Include current price
 
-        const dataMin = Math.min(...prices);
-        const dataMax = Math.max(...prices);
+        const dataMin = Math.min(...allPrices);
+        const dataMax = Math.max(...allPrices);
         const dataRange = dataMax - dataMin;
 
-        // Calculate target scale bounds with padding
-        // Use tighter range when volatility is low for nice curves
+        // Calculate safe zone dimensions
+        const horizontalSpacing = height / GRID_LABEL_COUNT;
+        const safeZoneTopY = PADDING_TOP + SAFE_ZONE_TOP_LINE * horizontalSpacing;
+        const safeZoneBottomY = PADDING_TOP + SAFE_ZONE_BOTTOM_LINE * horizontalSpacing;
+        const safeZoneHeight = safeZoneBottomY - safeZoneTopY;
+        const chartHeightForCalc = height - PADDING_TOP - PADDING_BOTTOM;
+
+        // RULE 1: ALL visible prices (including past) must be within 6 grid bands (lines 2-7)
+        // RULE 2: Top 2 bands (lines 0-1) and bottom 2 bands (lines 8-9) cannot be reached
+        // RULE 3: If price movement is high, scale down (widen range) to fit within safe zone
+        // RULE 4: If price is not volatile, scale up (tighten range) to show movements more dynamically
+        
+        // The safe zone is 6 grid bands (lines 2-7), which is 60% of chart height
+        const safeZoneRatio = safeZoneHeight / chartHeightForCalc;
+        
+        // Calculate minimum range needed to fit all data within safe zone
         const minRange = dataMax * MIN_PRICE_RANGE_PERCENT;
         const actualRange = Math.max(dataRange, minRange);
-        const padding = actualRange * SCALE_PADDING;
+        
+        // Determine if we should scale up (low volatility) or scale down (high volatility)
+        // Scale up: When volatility is low, tighten range to make movements more dynamic
+        // Scale down: When volatility is high, widen range to fit everything
+        
+        // Calculate the price range needed to fit ALL data within the safe zone
+        const requiredRangeForFit = actualRange / safeZoneRatio;
+        
+        // For low volatility: scale up (tighten) to make movements more dynamic
+        // Use a tighter range when volatility is low, but still respect safe zone
+        const volatilityRatio = dataRange / (dataMax * 0.01); // Compare to 1% of price
+        const isLowVolatility = volatilityRatio < 0.5; // Low volatility threshold
+        
+        let finalRange: number;
+        if (isLowVolatility && actualRange < requiredRangeForFit) {
+          // Low volatility: scale up (tighten range) but ensure it fits in safe zone
+          // Use a tighter range that's still within safe zone bounds
+          const tightRange = actualRange * 1.5; // Scale up by 1.5x for more dynamic view
+          finalRange = Math.max(tightRange, minRange);
+          // Ensure it doesn't exceed what fits in safe zone
+          finalRange = Math.min(finalRange, requiredRangeForFit);
+        } else {
+          // High volatility or normal: scale down (widen range) to fit everything
+          finalRange = Math.max(requiredRangeForFit, minRange);
+        }
+        
+        // Center the range around the data center to ensure all prices fit
+        const dataCenter = (dataMin + dataMax) / 2;
+        
+        // Set target bounds to fit ALL prices within safe zone
+        targetMinPriceRef.current = dataCenter - finalRange / 2;
+        targetMaxPriceRef.current = dataCenter + finalRange / 2;
 
-        // Set target bounds (what we want to smoothly move toward)
-        targetMinPriceRef.current = dataMin - padding;
-        targetMaxPriceRef.current = dataMax + padding;
+        // Verify ALL prices are within safe zone - check min and max prices
+        // This ensures we resize BEFORE showing the price tick
+        const pricePerPixel = finalRange / chartHeightForCalc;
+        
+        const minPriceY = priceToY(dataMin, targetMinPriceRef.current, targetMaxPriceRef.current);
+        const maxPriceY = priceToY(dataMax, targetMinPriceRef.current, targetMaxPriceRef.current);
+        const currentPriceY = priceToY(wavyPrice, targetMinPriceRef.current, targetMaxPriceRef.current);
+
+        // If any price is outside safe zone, adjust bounds to fit everything
+        let needsAdjustment = false;
+        let adjustment = 0;
+
+        // Check if max price (highest point) is above safe zone top
+        if (maxPriceY < safeZoneTopY) {
+          const excessY = safeZoneTopY - maxPriceY;
+          const excessPrice = excessY * pricePerPixel;
+          adjustment = Math.max(adjustment, excessPrice);
+          needsAdjustment = true;
+        }
+
+        // Check if min price (lowest point) is below safe zone bottom
+        if (minPriceY > safeZoneBottomY) {
+          const excessY = minPriceY - safeZoneBottomY;
+          const excessPrice = excessY * pricePerPixel;
+          adjustment = Math.max(adjustment, excessPrice);
+          needsAdjustment = true;
+        }
+
+        // If adjustment needed, widen the range further to fit everything
+        // This happens BEFORE we display the price, preventing spikes from going outside
+        if (needsAdjustment) {
+          const adjustedRange = finalRange + (adjustment * 2); // Add padding on both sides
+          targetMinPriceRef.current = dataCenter - adjustedRange / 2;
+          targetMaxPriceRef.current = dataCenter + adjustedRange / 2;
+        }
 
         // Initialize current bounds if not set
         if (currentMinPriceRef.current === 0 || currentMaxPriceRef.current === 0) {
@@ -601,13 +689,40 @@ export function LiveLineChart({
           currentMaxPriceRef.current = targetMaxPriceRef.current;
         }
 
-        // Smoothly interpolate current bounds toward target (creates smooth scale transitions)
-        // Lower SCALE_SMOOTHING = slower/smoother transitions (~1 second)
-        const minDiff = targetMinPriceRef.current - currentMinPriceRef.current;
-        const maxDiff = targetMaxPriceRef.current - currentMaxPriceRef.current;
+        // Detect drastic price changes - if price moved significantly, instantly rescale
+        const priceChangePercent = lastPriceRef.current > 0 
+          ? Math.abs((wavyPrice - lastPriceRef.current) / lastPriceRef.current)
+          : 0;
+        const isDrasticChange = priceChangePercent > 0.01; // 1% change threshold for drastic movement
 
-        currentMinPriceRef.current += minDiff * SCALE_SMOOTHING;
-        currentMaxPriceRef.current += maxDiff * SCALE_SMOOTHING;
+        // Check if current price would be outside safe zone with current bounds
+        const currentPriceYWithCurrentBounds = priceToY(wavyPrice, currentMinPriceRef.current, currentMaxPriceRef.current);
+        const wouldBeOutside = currentPriceYWithCurrentBounds < safeZoneTopY || currentPriceYWithCurrentBounds > safeZoneBottomY;
+
+        // If drastic change OR price would be outside safe zone, instantly rescale (no smoothing)
+        if (isDrasticChange || wouldBeOutside) {
+          // Instantly apply target bounds for drastic changes
+          currentMinPriceRef.current = targetMinPriceRef.current;
+          currentMaxPriceRef.current = targetMaxPriceRef.current;
+        } else {
+          // Smoothly interpolate current bounds toward target (creates smooth scale transitions)
+          // Lower SCALE_SMOOTHING = slower/smoother transitions (~1 second)
+          // IMPORTANT: Apply bounds BEFORE calculating Y positions to prevent spikes from going outside
+          const minDiff = targetMinPriceRef.current - currentMinPriceRef.current;
+          const maxDiff = targetMaxPriceRef.current - currentMaxPriceRef.current;
+
+          currentMinPriceRef.current += minDiff * SCALE_SMOOTHING;
+          currentMaxPriceRef.current += maxDiff * SCALE_SMOOTHING;
+        }
+        
+        // Final safety check: Ensure bounds are valid before using them
+        if (currentMinPriceRef.current >= currentMaxPriceRef.current) {
+          currentMinPriceRef.current = targetMinPriceRef.current;
+          currentMaxPriceRef.current = targetMaxPriceRef.current;
+        }
+
+        // Update last price for next frame's drastic change detection
+        lastPriceRef.current = wavyPrice;
 
         // Update grid levels - throttle to prevent excessive re-renders
         const timeSinceGridUpdate = timestamp - lastGridUpdateRef.current;
@@ -636,7 +751,7 @@ export function LiveLineChart({
 
       // Transition the current Y to the target Y with low pass filtering
       const dy = targetY - currentYRef.current;
-      const maxYChangePerFrame = 1.0; // Limit snap to force organic gliding
+      const maxYChangePerFrame = 0.8; // Reduced from 1.0 for smoother, more controlled movement
       const clampedDy = Math.max(-maxYChangePerFrame, Math.min(maxYChangePerFrame, dy * Y_SMOOTHING));
       currentYRef.current += clampedDy;
 
@@ -784,36 +899,102 @@ export function LiveLineChart({
           </clipPath>
         </defs>
 
-        {/* Dynamic Grid - recalculated based on visible price range */}
+        {/* 10x10 Grid - Always 10 horizontal lines + 10 vertical lines, evenly spaced, covering ENTIRE SVG area */}
         <g ref={gridGroupRef}>
-          {gridLevels.map((price, i) => {
-            const y = priceToY(price, currentMinPriceRef.current, currentMaxPriceRef.current);
-            const isVisible = y >= PADDING_TOP && y <= height - PADDING_BOTTOM;
-
-            if (!isVisible) return null;
-
-            return (
-              <g key={i}>
+          {/* Horizontal grid lines (always 10, evenly spaced by height - covers full SVG height) */}
+          {(() => {
+            // Grid covers ENTIRE SVG area from 0 to width, 0 to height
+            const horizontalSpacing = height / GRID_LABEL_COUNT;
+            const horizontalLines: React.ReactElement[] = [];
+            
+            // Generate 11 lines (0 to 10) to create 10 bands covering full SVG height
+            for (let i = 0; i <= GRID_LABEL_COUNT; i++) {
+              const y = i * horizontalSpacing;
+              
+              horizontalLines.push(
                 <line
-                  x1={PADDING_LEFT}
+                  key={`h-${i}`}
+                  x1={0}
                   y1={y}
-                  x2={width - 75}
+                  x2={width}
                   y2={y}
                   stroke="rgba(255,255,255,0.06)"
                   strokeWidth="1"
                 />
+              );
+            }
+            
+            return horizontalLines;
+          })()}
+          
+          {/* Vertical grid lines (always 10, evenly spaced by width - covers full SVG width) */}
+          {(() => {
+            // Grid covers ENTIRE SVG area from 0 to width
+            const verticalSpacing = width / VERTICAL_GRID_DIVISIONS;
+            const verticalLines: React.ReactElement[] = [];
+            
+            // Generate 11 lines (0 to 10) to create 10 bands covering full SVG width
+            for (let i = 0; i <= VERTICAL_GRID_DIVISIONS; i++) {
+              const x = i * verticalSpacing;
+              verticalLines.push(
+                <line
+                  key={`v-${i}`}
+                  x1={x}
+                  y1={0}
+                  x2={x}
+                  y2={height}
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="1"
+                />
+              );
+            }
+            
+            return verticalLines;
+          })()}
+        </g>
+
+        {/* Price labels - Independent of grid, scale with price movement, positioned on right Y-axis */}
+        {/* Labels are outside clipPath so they're always visible */}
+        <g>
+          {(() => {
+            const minPrice = currentMinPriceRef.current;
+            const maxPrice = currentMaxPriceRef.current;
+            
+            if (minPrice <= 0 || maxPrice <= minPrice || gridLevels.length === 0) {
+              return null;
+            }
+            
+            // Position labels on the right edge of SVG, with small margin
+            const labelX = width - 10;
+            
+            // Use gridLevels for price labels (these are calculated based on price range)
+            return gridLevels.map((price, i) => {
+              const y = priceToY(price, minPrice, maxPrice);
+              // Show labels that are within the SVG bounds
+              if (!isFinite(y) || y < -50 || y > height + 50) return null;
+              
+              return (
                 <text
-                  x={width - 65}
+                  key={`price-${i}`}
+                  x={labelX}
                   y={y + 4}
-                  fill="#5A5A5A"
+                  fill="rgba(255, 255, 255, 0.6)"
                   fontSize="11"
                   fontFamily="ui-monospace, monospace"
+                  textAnchor="end"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
                 >
-                  {price.toFixed(3)}
+                  {price >= 1000 
+                    ? price.toFixed(2)
+                    : price >= 100
+                    ? price.toFixed(3)
+                    : price >= 1
+                    ? price.toFixed(4)
+                    : price.toFixed(6)}
                 </text>
-              </g>
-            );
-          })}
+              );
+            });
+          })()}
         </g>
 
         {/* Chart content - clipped to chart area */}
@@ -877,7 +1058,7 @@ export function LiveLineChart({
         }}
       >
         {hasPosition ? (
-          /* Position open: show PnL badge with animated numbers */
+          /* Position open: show PnL badge with animated numbers and asset icon */
           <div
             className="flex items-center gap-2 px-3 py-1.5 rounded-full"
             style={{
@@ -887,6 +1068,23 @@ export function LiveLineChart({
                 : "0 0 15px rgba(255, 59, 105, 0.5)",
             }}
           >
+            {/* Asset icon for the position */}
+            {tokenImage ? (
+              <img
+                src={tokenImage}
+                alt={tokenSymbol || "Token"}
+                className="w-4 h-4 rounded-full object-cover"
+              />
+            ) : tokenColor ? (
+              <div
+                className="w-4 h-4 rounded-full flex items-center justify-center"
+                style={{ background: tokenColor }}
+              >
+                <span className="text-[7px] font-bold text-white">{tokenSymbol?.[0] || "?"}</span>
+              </div>
+            ) : (
+              <SolanaLogo className="w-4 h-4" />
+            )}
             <span className="text-lg font-black font-mono tabular-nums text-[#0A0A0A]">
               {isPositiveChange ? "+" : ""}{pnlPercent.toFixed(2)}%
             </span>
