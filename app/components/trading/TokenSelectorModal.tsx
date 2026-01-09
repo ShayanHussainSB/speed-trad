@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import {
   Search,
@@ -239,8 +240,11 @@ export function TokenSelectorModal({
     { value: "name", label: "Name" },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[10vh]">
+  // Use portal to render modal at document.body level to escape any parent overflow constraints
+  const modalContent = (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
@@ -249,8 +253,11 @@ export function TokenSelectorModal({
 
       {/* Modal */}
       <div
-        className="relative w-full max-w-2xl mx-4 bg-[var(--bg-card)] rounded-2xl border border-[var(--accent-primary)]/30 overflow-hidden animate-scale-in"
-        style={{ boxShadow: "var(--shadow-modal)", maxHeight: "80vh" }}
+        className="relative w-full max-w-2xl bg-[var(--bg-card)] rounded-2xl border border-[var(--accent-primary)]/30 overflow-hidden animate-scale-in flex flex-col"
+        style={{
+          boxShadow: "var(--shadow-modal)",
+          maxHeight: "min(700px, calc(100vh - 32px))"
+        }}
       >
         {/* Search Header - Enhanced Design */}
         <div className="px-4 pt-4 pb-3 space-y-3">
@@ -343,7 +350,7 @@ export function TokenSelectorModal({
         )}
 
         {/* Scrollable Content */}
-        <div ref={listRef} className="overflow-y-auto" style={{ maxHeight: "calc(80vh - 140px)" }}>
+        <div ref={listRef} className="overflow-y-auto flex-1 min-h-0">
           {/* Recent Tokens */}
           {recentTokensList.length > 0 && !searchQuery && (
             <div className="px-4 py-3 border-b border-[var(--border-subtle)]">
@@ -435,8 +442,8 @@ export function TokenSelectorModal({
           {/* Virtualized Token List */}
           <div
             ref={virtualListRef}
-            className="overflow-y-auto px-4"
-            style={{ height: "300px" }}
+            className="overflow-y-auto px-4 pt-2 pb-2 flex-1"
+            style={{ minHeight: "300px" }}
           >
             {filteredTokens.length > 0 ? (
               <div
@@ -488,7 +495,7 @@ export function TokenSelectorModal({
         </div>
 
         {/* Footer Tip */}
-        <div className="px-4 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50">
+        <div className="px-4 py-2 border-t border-[var(--border-subtle)] bg-[var(--bg-secondary)]/50 flex-shrink-0">
           <div className="flex items-center gap-2 text-[10px] text-[var(--text-tertiary)]">
             <Sparkles className="w-3 h-3" />
             <span>
@@ -501,6 +508,13 @@ export function TokenSelectorModal({
       </div>
     </div>
   );
+
+  // Render via portal to escape parent overflow constraints
+  if (typeof document !== 'undefined') {
+    return createPortal(modalContent, document.body);
+  }
+
+  return modalContent;
 }
 
 // Token Row Component

@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { createChart, CandlestickSeries, CandlestickData, Time, ColorType } from "lightweight-charts";
 import { CandlestickChart, ChevronDown, Activity, Command, Loader2 } from "lucide-react";
-import { LiveLineChart } from "./LiveLineChart";
+// import { LiveLineChart } from "./LiveLineChart";
+import { LiveLineChartV2 as LiveLineChart } from "./LiveLineChartV2";
 import { TokenSelectorModal, Token } from "./TokenSelectorModal";
 import { SpeedGauge } from "./SpeedGauge";
 import { Position } from "@/app/hooks/usePositions";
@@ -456,7 +457,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
                 className={`
                 p-1.5 md:p-2 rounded-md transition-all
                 ${chartType === "candlestick"
-                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
+                    ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
                     : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
                   }
               `}
