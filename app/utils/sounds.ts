@@ -28,6 +28,7 @@ const SOUND_PATHS = {
   "close-loss": "/sounds/close-loss.mp3",
   liquidation: "/sounds/liquidation.mp3",
   "auto-close-tp": "/sounds/auto-close-tp.mp3",
+  reverse: "/sounds/reverse.mp3",
 };
 
 // Voice line themes
@@ -53,23 +54,59 @@ function playAudioFile(path: string, volume: number = SOUND_VOLUME, cache: Recor
   try {
     // Reuse cached audio element or create new one
     if (!cache[path]) {
-      cache[path] = new Audio(path);
+      const audio = new Audio(path);
+      
+      // Add error handler to detect missing files
+      audio.addEventListener("error", (e) => {
+        console.warn(`[Sounds] Failed to load audio file: ${path}`, e);
+        // Remove from cache if it fails to load
+        delete cache[path];
+      });
+      
+      // Add loaded handler to verify file exists
+      audio.addEventListener("loadeddata", () => {
+        console.log(`[Sounds] Audio file loaded successfully: ${path}`);
+      });
+      
+      // Preload the audio
+      audio.preload = "auto";
+      cache[path] = audio;
     }
+    
     const audio = cache[path];
-    audio.volume = volume;
-    audio.currentTime = 0; // Reset to start
-    audio.play().catch(() => {
-      // Silently fail if autoplay is blocked
-    });
-  } catch {
-    // Silently fail if audio fails
+    
+    // Check if audio is ready to play
+    if (audio.readyState >= 2) { // HAVE_CURRENT_DATA or higher
+      audio.volume = volume;
+      audio.currentTime = 0; // Reset to start
+      audio.play().catch((error) => {
+        // Log autoplay or other playback errors
+        console.warn(`[Sounds] Failed to play audio: ${path}`, error);
+        console.warn(`[Sounds] Audio readyState: ${audio.readyState}, error: ${audio.error?.message || 'unknown'}`);
+      });
+    } else {
+      // Wait for audio to load, then play
+      audio.addEventListener("canplaythrough", () => {
+        audio.volume = volume;
+        audio.currentTime = 0;
+        audio.play().catch((error) => {
+          console.warn(`[Sounds] Failed to play audio after load: ${path}`, error);
+        });
+      }, { once: true });
+      
+      // Start loading if not already
+      audio.load();
+    }
+  } catch (error) {
+    console.error(`[Sounds] Error creating/playing audio: ${path}`, error);
   }
 }
 
-// Play voice line
+// Play voice line (only if file exists, fails silently if missing)
 function playVoiceLine(event: keyof typeof SOUND_PATHS) {
   const theme = getRandomVoiceTheme();
   const path = getVoicePath(event, theme);
+  // Voice lines are optional - play if available, fail silently if not
   playAudioFile(path, VOICE_VOLUME, voiceCache);
 }
 
@@ -162,10 +199,15 @@ export function playOpenSound() {
 
 // Position closed with profit
 export function playCloseProfitSound() {
-  if (!isSoundEnabled()) return;
+  if (!isSoundEnabled()) {
+    console.log("[Sounds] Sounds are disabled");
+    return;
+  }
   
   if (USE_CUSTOM_SOUNDS) {
+    console.log("[Sounds] Playing close-profit sound:", SOUND_PATHS["close-profit"]);
     playAudioFile(SOUND_PATHS["close-profit"]);
+    // Voice line is optional - will fail silently if missing
     playVoiceLine("close-profit");
     return;
   }
@@ -181,10 +223,15 @@ export function playCloseProfitSound() {
 
 // Position closed with loss
 export function playCloseLossSound() {
-  if (!isSoundEnabled()) return;
+  if (!isSoundEnabled()) {
+    console.log("[Sounds] Sounds are disabled");
+    return;
+  }
   
   if (USE_CUSTOM_SOUNDS) {
+    console.log("[Sounds] Playing close-loss sound:", SOUND_PATHS["close-loss"]);
     playAudioFile(SOUND_PATHS["close-loss"]);
+    // Voice line is optional - will fail silently if missing
     playVoiceLine("close-loss");
     return;
   }
@@ -231,6 +278,27 @@ export function playAutoCloseTPSound() {
   setTimeout(() => {
     playTone({ frequency: 784, duration: 0.2, type: "sine", volume: 0.25 });
   }, 160);
+}
+
+// Position reversed (close + open opposite in one action)
+export function playReverseSound() {
+  if (!isSoundEnabled()) {
+    console.log("[Sounds] Sounds are disabled");
+    return;
+  }
+  
+  if (USE_CUSTOM_SOUNDS) {
+    console.log("[Sounds] Playing reverse sound:", SOUND_PATHS.reverse);
+    playAudioFile(SOUND_PATHS.reverse);
+    // Voice line is optional - will fail silently if missing
+    playVoiceLine("reverse");
+    return;
+  }
+  // Fallback: Quick transition sound (two tones)
+  playTone({ frequency: 440, duration: 0.1, type: "sine", volume: 0.25 });
+  setTimeout(() => {
+    playTone({ frequency: 523, duration: 0.15, type: "sine", volume: 0.25 });
+  }, 100);
 }
 
 // Legacy function names for backward compatibility

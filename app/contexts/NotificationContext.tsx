@@ -17,6 +17,7 @@ import {
   setSoundEnabled,
 } from "@/app/utils/sounds";
 import { useSettings } from "@/app/hooks/useSettings";
+import { triggerWinConfetti, triggerBigWinConfetti } from "@/app/utils/confetti";
 
 // Notification types
 export type NotificationType = "position_opened" | "position_closed" | "liquidated" | "auto_closed_tp";
@@ -40,7 +41,7 @@ interface NotificationContextValue {
     direction: "long" | "short";
     symbol: string;
     entryPrice: number;
-  }) => void;
+  }, suppressSound?: boolean) => void;
   showPositionClosed: (data: {
     direction: "long" | "short";
     symbol: string;
@@ -48,7 +49,7 @@ interface NotificationContextValue {
     pnl: number;
     pnlPercent: number;
     avatarId?: string;
-  }) => void;
+  }, suppressSound?: boolean) => void;
   showLiquidation: (data: {
     direction: "long" | "short";
     symbol: string;
@@ -113,8 +114,10 @@ export function NotificationProvider({
   );
 
   const showPositionOpened = useCallback(
-    (data: { direction: "long" | "short"; symbol: string; entryPrice: number }) => {
-      playOpenSound();
+    (data: { direction: "long" | "short"; symbol: string; entryPrice: number }, suppressSound = false) => {
+      if (!suppressSound) {
+        playOpenSound();
+      }
       addNotification({
         type: "position_opened",
         direction: data.direction,
@@ -133,12 +136,14 @@ export function NotificationProvider({
       pnl: number;
       pnlPercent: number;
       avatarId?: string;
-    }) => {
-      // Play profit or loss sound based on PnL
-      if (data.pnl >= 0) {
-        playCloseProfitSound();
-      } else {
-        playCloseLossSound();
+    }, suppressSound = false) => {
+      // Play profit or loss sound based on PnL (unless suppressed)
+      if (!suppressSound) {
+        if (data.pnl >= 0) {
+          playCloseProfitSound();
+        } else {
+          playCloseLossSound();
+        }
       }
       addNotification({
         type: "position_closed",
@@ -182,6 +187,15 @@ export function NotificationProvider({
       pnlPercent: number;
     }) => {
       playAutoCloseTPSound();
+      
+      // Trigger confetti for take profit wins (always profitable)
+      if (data.pnl > 0) {
+        if (data.pnlPercent >= 100) {
+          triggerBigWinConfetti();
+        } else {
+          triggerWinConfetti();
+        }
+      }
       addNotification({
         type: "auto_closed_tp",
         direction: data.direction,

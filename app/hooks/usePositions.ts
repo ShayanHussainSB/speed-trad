@@ -4,6 +4,8 @@ import { useState, useCallback, useMemo } from "react";
 import { useDemoTrading, PositionWithLivePnL } from "./useDemoTrading";
 import { AssetSymbol, LeverageOption } from "@/app/config/demoTrading";
 import { useNotifications } from "@/app/contexts/NotificationContext";
+import { triggerWinConfetti, triggerBigWinConfetti } from "@/app/utils/confetti";
+import { playReverseSound } from "@/app/utils/sounds";
 
 export interface Position {
   id: string;
@@ -167,6 +169,16 @@ export function usePositions() {
           pnl,
           pnlPercent,
         });
+
+        // Trigger confetti for winning trades
+        if (pnl > 0) {
+          // Big win confetti for 100%+ profit
+          if (pnlPercent >= 100) {
+            triggerBigWinConfetti();
+          } else {
+            triggerWinConfetti();
+          }
+        }
       }
 
       return result;
@@ -210,17 +222,6 @@ export function usePositions() {
         return { success: false, error: closeResult.error };
       }
 
-      // Show close notification
-      const closePnl = closeResult.pnl ?? 0;
-      const closePnlPercent = (closePnl / position.size) * 100;
-      showPositionClosed({
-        direction: position.direction,
-        symbol: position.symbol.split("/")[0],
-        closePrice: position.currentPrice,
-        pnl: closePnl,
-        pnlPercent: closePnlPercent,
-      });
-
       // Extract asset symbol
       const assetSymbol = position.symbol.split("/")[0] as AssetSymbol;
       const newDirection = position.direction === "long" ? "short" : "long";
@@ -234,13 +235,37 @@ export function usePositions() {
       );
 
       if (openResult.success) {
-        // Show open notification for the new position
+        // Play reverse sound (single sound for the bundled action)
+        // Don't play close/open sounds separately
+        playReverseSound();
+
+        // Show close notification (suppress sound, since we play reverse sound)
+        const closePnl = closeResult.pnl ?? 0;
+        const closePnlPercent = (closePnl / position.size) * 100;
+        showPositionClosed({
+          direction: position.direction,
+          symbol: position.symbol.split("/")[0],
+          closePrice: position.currentPrice,
+          pnl: closePnl,
+          pnlPercent: closePnlPercent,
+        }, true); // suppressSound = true
+
+        // Show open notification for the new position (suppress sound)
         const currentPrice = demo.getCurrentPrice(assetSymbol);
         showPositionOpened({
           direction: newDirection,
           symbol: assetSymbol,
           entryPrice: currentPrice,
-        });
+        }, true); // suppressSound = true
+
+        // Trigger confetti for winning reverse trades
+        if (closePnl > 0) {
+          if (closePnlPercent >= 100) {
+            triggerBigWinConfetti();
+          } else {
+            triggerWinConfetti();
+          }
+        }
       }
 
       setIsProcessing(false);
