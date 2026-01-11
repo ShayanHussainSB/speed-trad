@@ -41,6 +41,7 @@ export default function TradingPage() {
   const [isLeftPanelHidden, setIsLeftPanelHidden] = useState(true);
   const [bottomPanelHeight, setBottomPanelHeight] = useState(280);
   const [isResizing, setIsResizing] = useState(false);
+  const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
 
   // Live market data
   const { volume24h, marketCap } = useMarketTicker(`${selectedSymbol}-USD`);
@@ -253,32 +254,60 @@ export default function TradingPage() {
           </div>
 
           {/* Right Section: Integrated Trading Side Panel */}
-          <div className="w-[280px] lg:w-[320px] xl:w-[380px] shrink-0 z-10 flex flex-col h-full">
+          <div className={`${isRightPanelCollapsed ? "w-[50px]" : "w-[260px] lg:w-[300px] xl:w-[350px]"} shrink-0 z-10 flex flex-col h-full transition-all duration-300`}>
             <div className="flex-1 bg-[var(--bg-card)] border border-white/[0.05] rounded-xl overflow-hidden backdrop-blur-2xl shadow-xl flex flex-col">
-              {/* Tabs Section - Aligned with Left Toolbar Area */}
-              <div className="shrink-0 border-b border-white/[0.05] flex flex-col justify-center h-[50px]">
-                <TradingTabs
-                  activeMode={tradingMode}
-                  onModeChange={setTradingMode}
-                />
-              </div>
+              {isRightPanelCollapsed ? (
+                // Collapsed State
+                <div className="flex-1 flex flex-col items-center py-4 bg-white/[0.02]">
+                  <button
+                    onClick={() => setIsRightPanelCollapsed(false)}
+                    className="w-8 h-8 rounded-lg bg-[var(--accent-primary)]/10 text-[var(--accent-primary)] hover:bg-[var(--accent-primary)]/20 flex items-center justify-center transition-colors mb-4"
+                  >
+                    <Layout className="w-4 h-4 rotate-180" />
+                  </button>
+                  <div className="flex-1 w-full flex flex-col items-center gap-4">
+                    {/* Vertical Text or Icons could go here */}
+                    <div className="writing-vertical-lr text-xs font-bold text-white/30 uppercase tracking-widest rotate-180">
+                      Trading Panel
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // Expanded State
+                <>
+                  {/* Tabs Section - Aligned with Left Toolbar Area */}
+                  <div className="shrink-0 border-b border-white/[0.05] flex flex-col justify-center h-[50px] relative">
+                    <TradingTabs
+                      activeMode={tradingMode}
+                      onModeChange={setTradingMode}
+                    />
+                    {/* Minimize Button */}
+                    <button
+                      onClick={() => setIsRightPanelCollapsed(true)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md hover:bg-white/5 text-white/30 hover:text-white/60 flex items-center justify-center transition-colors z-20"
+                    >
+                      <Layout className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
 
-              {/* Action Panel Content */}
-              <div className="flex-1 overflow-hidden">
-                <TradingPanel
-                  mode={tradingMode}
-                  isConnected={connected}
-                  onConnectWallet={() => setIsWalletModalOpen(true)}
-                  balance={balance}
-                  demoBalance={demoBalance}
-                  currentPrice={currentPrice}
-                  activePosition={primaryPosition}
-                  onReversePosition={openReverseModal}
-                  onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: selectedSymbol })}
-                  onResetDemo={resetDemo}
-                  isDemoMode={true}
-                />
-              </div>
+                  {/* Action Panel Content */}
+                  <div className="flex-1 overflow-hidden">
+                    <TradingPanel
+                      mode={tradingMode}
+                      isConnected={connected}
+                      onConnectWallet={() => setIsWalletModalOpen(true)}
+                      balance={balance}
+                      demoBalance={demoBalance}
+                      currentPrice={currentPrice}
+                      activePosition={primaryPosition}
+                      onReversePosition={openReverseModal}
+                      onOpenPosition={(direction, amount, leverage) => openPosition({ direction, size: amount, leverage, symbol: selectedSymbol })}
+                      onResetDemo={resetDemo}
+                      isDemoMode={true}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </div>
