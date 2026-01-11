@@ -1,12 +1,22 @@
 "use client";
 
 import { memo, useEffect, useState } from "react";
-import { X } from "lucide-react";
+import { X, Trophy, TrendingUp, TrendingDown, Zap, Skull, AppWindow } from "lucide-react";
 import { TradeNotification as NotificationType, useNotifications } from "@/app/contexts/NotificationContext";
-import { AvatarIcon } from "@/app/components/avatars/AvatarIcon";
 
 interface TradeNotificationProps {
   notification: NotificationType;
+}
+
+// Asset logo mapping - using CoinGecko CDN images (matching Modal)
+const ASSET_LOGOS: Record<string, string> = {
+  SOL: "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
+  BTC: "https://assets.coingecko.com/coins/images/1/standard/bitcoin.png",
+  ETH: "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
+};
+
+function extractBaseSymbol(symbol: string): string {
+  return symbol.split(/[-\/]/)[0].toUpperCase();
 }
 
 // Format time from ISO string to HH:MM:SS
@@ -28,16 +38,6 @@ function formatPrice(price: number): string {
   return `$${price.toFixed(3)}`;
 }
 
-// Format PnL with sign and color
-function formatPnL(pnl: number, pnlPercent: number): { text: string; isPositive: boolean } {
-  const sign = pnl >= 0 ? "+" : "";
-  const percentSign = pnlPercent >= 0 ? "+" : "";
-  return {
-    text: `${sign}$${Math.abs(pnl).toFixed(2)} (${percentSign}${pnlPercent.toFixed(2)}%)`,
-    isPositive: pnl >= 0,
-  };
-}
-
 function TradeNotificationComponent({ notification }: TradeNotificationProps) {
   const { removeNotification } = useNotifications();
   const [isExiting, setIsExiting] = useState(false);
@@ -45,7 +45,6 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
 
   // Entrance animation
   useEffect(() => {
-    // Small delay for smoother entrance
     const timer = setTimeout(() => setIsVisible(true), 50);
     return () => clearTimeout(timer);
   }, []);
@@ -63,167 +62,162 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
   const isLiquidated = notification.type === "liquidated";
   const isAutoClosedTP = notification.type === "auto_closed_tp";
   const isWin = (isClosed || isAutoClosedTP) && (notification.pnl ?? 0) > 0;
-  const isLoss = (isClosed || isLiquidated) && (notification.pnl ?? 0) <= 0;
   const isLong = notification.direction === "long";
 
-  // Determine border glow color
-  const getBorderColor = () => {
-    if (isOpened) return isLong ? "var(--color-long)" : "var(--color-short)";
-    if (isWin) return "var(--color-long)";
-    return "var(--color-short)";
+  const assetSymbol = extractBaseSymbol(notification.symbol);
+  const assetLogo = ASSET_LOGOS[assetSymbol] || ASSET_LOGOS.SOL;
+
+  // Determine theme colors and icon based on state
+  const getTheme = () => {
+    if (isOpened) return {
+      color: "var(--color-long)",
+      bg: "bg-[var(--color-long)]",
+      icon: <Zap className="w-5 h-5 text-black" />,
+      label: "POSITION ENTRY",
+    };
+    if (isWin) return {
+      color: "var(--warm-yellow)",
+      bg: "bg-[var(--warm-yellow)]",
+      icon: <Trophy className="w-5 h-5 text-black" />,
+      label: "VICTORY",
+    };
+    if (isLiquidated) return {
+      color: "var(--color-short)",
+      bg: "bg-[var(--color-short)]",
+      icon: <Skull className="w-5 h-5 text-white" />,
+      label: "LIQUIDATED",
+    };
+    return { // Loss
+      color: "var(--color-short)",
+      bg: "bg-[var(--color-short)]",
+      icon: <TrendingDown className="w-5 h-5 text-white" />,
+      label: "TRADE CLOSED",
+    };
   };
 
-  const borderColor = getBorderColor();
+  const theme = getTheme();
 
   return (
     <div
       className={`
-        relative overflow-hidden rounded-2xl
-        backdrop-blur-xl bg-[rgba(10,0,20,0.95)]
-        border-2 transition-all duration-300 ease-out
-        ${isVisible && !isExiting ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-4 scale-95"}
+        relative overflow-hidden rounded-xl w-[340px]
+        backdrop-blur-xl bg-[#050010] 
+        border border-[var(--border-subtle)]
+        transition-all duration-300 ease-out transform group
+        ${isVisible && !isExiting ? "opacity-100 translate-x-0" : "opacity-0 translate-x-12"}
+        hover:scale-[1.02]
       `}
       style={{
-        borderColor: borderColor,
-        boxShadow: `
-          0 0 20px ${borderColor}40,
-          0 0 40px ${borderColor}20,
-          0 8px 32px rgba(0, 0, 0, 0.5)
-        `,
-        width: "320px",
+        boxShadow: "0 8px 32px rgba(0, 0, 0, 0.8)",
       }}
     >
-      {/* Glow effect overlay */}
+      {/* Dynamic left border/glow bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${theme.bg}`} />
+
+      {/* Background radial glow */}
       <div
-        className="absolute inset-0 pointer-events-none opacity-20"
-        style={{
-          background: `radial-gradient(ellipse at top left, ${borderColor}40, transparent 60%)`,
-        }}
+        className={`absolute -left-10 -top-10 w-40 h-40 blur-[60px] opacity-20 pointer-events-none rounded-full ${theme.bg}`}
       />
 
-      {/* Content */}
-      <div className="relative p-4 flex items-start gap-4">
-        {/* Avatar - Show for wins, auto-closes, or liquidations */}
-        {(isWin || isAutoClosedTP || isLiquidated) && (
-          <div
-            className={`
-              flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden
-              flex items-center justify-center
-              ${isWin ? "bg-[var(--color-long)]/10" : "bg-[var(--color-short)]/10"}
-            `}
-            style={{
-              boxShadow: isWin
-                ? "0 0 20px rgba(255, 190, 11, 0.3)"
-                : "0 0 20px rgba(255, 0, 110, 0.3)",
-            }}
-          >
-            <AvatarIcon
-              avatarId={notification.avatarId || (isWin ? "rocket" : "skull")}
-              size={56}
-            />
-          </div>
-        )}
+      {/* Grid texture overlay if available, otherwise just noise */}
+      <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#ffffff_1px,transparent_1px)] [background-size:16px_16px]" />
 
-        {/* Text Content */}
-        <div className="flex-1 min-w-0">
-          {/* Header */}
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-display font-bold tracking-wide text-white uppercase">
-              {isOpened ? "Position Opened" : isLiquidated ? "Liquidated" : isAutoClosedTP ? "Take Profit Reached" : "Position Closed"}
-            </span>
-            {isOpened && (
-              <span
-                className={`
-                  px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider
-                  ${isLong ? "bg-[var(--color-long)] text-black" : "bg-[var(--color-short)] text-white"}
-                `}
-              >
-                {isLong ? "Long" : "Short"}
+      {/* Content Container */}
+      <div className="relative p-4">
+        {/* Header Row */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <div className={`
+              flex items-center justify-center w-8 h-8 rounded-lg 
+              ${theme.bg} shadow-lg shadow-black/40
+            `}>
+              {theme.icon}
+            </div>
+            <div>
+              <div className="text-[10px] font-black tracking-widest uppercase text-[var(--text-tertiary)] font-display">
+                {theme.label}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {/* Fallback to simple circle if image fails or generic handling */}
+                <img src={assetLogo} alt={assetSymbol} className="w-3 h-3 rounded-full object-cover" />
+                <span className="text-sm font-bold text-white leading-none">
+                  {assetSymbol}-USDC
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleDismiss}
+            className="p-1 rounded-md text-[var(--text-tertiary)] hover:bg-white/10 hover:text-white transition-colors"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Main Stats Row */}
+        <div className="flex items-end justify-between bg-white/5 rounded-lg p-3 border border-white/5 relative overflow-hidden">
+          {/* Status Badge watermark */}
+          <div className="absolute top-0 right-0 p-1.5 opacity-5 pointer-events-none">
+            {isLong ? <TrendingUp className="w-12 h-12" /> : <TrendingDown className="w-12 h-12" />}
+          </div>
+
+          <div>
+            <div className="text-[10px] grid grid-cols-[auto_1fr] gap-1.5 font-bold tracking-wider text-[var(--text-tertiary)] uppercase mb-1">
+              <span className={isLong ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}>
+                {isLong ? "LONG" : "SHORT"}
               </span>
+            </div>
+
+            {/* Show PnL for closed trades, Entry for open */}
+            {isOpened ? (
+              <div className="text-xl font-black font-mono text-white tracking-tight">
+                {formatPrice(notification.entryPrice ?? 0)}
+              </div>
+            ) : (
+              <div className={`text-xl font-black font-mono tracking-tight ${isWin ? "text-[var(--warm-yellow)] drop-shadow-[0_0_5px_rgba(255,190,11,0.5)]" : "text-[var(--color-short)]"
+                }`}>
+                {isWin ? "+" : ""}${Math.abs(notification.pnl ?? 0).toFixed(2)}
+              </div>
             )}
           </div>
 
-          {/* Details */}
-          <div className="space-y-1">
-            {/* Position Opened: Show entry price and time */}
-            {isOpened && (
+          {/* Secondary Stat (Time or %) */}
+          <div className="text-right z-10">
+            {isOpened ? (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-tertiary)]">Open Price</span>
-                  <span className="text-sm font-mono font-semibold text-white">
-                    {formatPrice(notification.entryPrice ?? 0)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-tertiary)]">Time Executed</span>
-                  <span className="text-sm font-mono font-semibold text-[var(--text-secondary)]">
-                    {formatTime(notification.timestamp)}
-                  </span>
+                <div className="text-[9px] text-[var(--text-tertiary)] uppercase font-bold mb-0.5">Time</div>
+                <div className="text-xs font-mono text-[var(--text-secondary)]">
+                  {formatTime(notification.timestamp)}
                 </div>
               </>
-            )}
-
-            {/* Position Closed: Show PnL and close price */}
-            {(isClosed || isLiquidated) && (
+            ) : (
               <>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-tertiary)]">PNL</span>
-                  {(() => {
-                    const { text, isPositive } = formatPnL(
-                      notification.pnl ?? 0,
-                      notification.pnlPercent ?? 0
-                    );
-                    return (
-                      <span
-                        className={`text-sm font-mono font-bold ${
-                          isPositive ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-                        }`}
-                      >
-                        {text}
-                      </span>
-                    );
-                  })()}
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[var(--text-tertiary)]">Close Price</span>
-                  <span className="text-sm font-mono font-semibold text-white">
-                    {formatPrice(notification.closePrice ?? 0)}
-                  </span>
+                <div className="text-[9px] text-[var(--text-tertiary)] uppercase font-bold mb-0.5">Return</div>
+                <div className={`text-sm font-black font-mono ${isWin ? "text-[var(--warm-yellow)]" : "text-[var(--color-short)]"
+                  }`}>
+                  {isWin ? "+" : ""}{notification.pnlPercent?.toFixed(2)}%
                 </div>
               </>
             )}
           </div>
         </div>
-
-        {/* Dismiss button */}
-        <button
-          onClick={handleDismiss}
-          className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[var(--text-muted)] hover:text-white hover:bg-white/10 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
 
-      {/* Progress bar for auto-dismiss */}
-      <div className="h-0.5 bg-white/10 overflow-hidden">
+      {/* Progress bar */}
+      <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-white/5">
         <div
-          className="h-full transition-all ease-linear"
+          className={`h-full ${theme.bg} shadow-[0_0_10px_currentColor]`}
           style={{
-            backgroundColor: borderColor,
             animation: "shrinkWidth 4.5s linear forwards",
           }}
         />
       </div>
 
-      {/* CSS for progress animation */}
       <style jsx>{`
         @keyframes shrinkWidth {
-          from {
-            width: 100%;
-          }
-          to {
-            width: 0%;
-          }
+          from { width: 100%; }
+          to { width: 0%; }
         }
       `}</style>
     </div>
@@ -232,5 +226,3 @@ function TradeNotificationComponent({ notification }: TradeNotificationProps) {
 
 export const TradeNotification = memo(TradeNotificationComponent);
 export default TradeNotification;
-
-

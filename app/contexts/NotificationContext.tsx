@@ -49,7 +49,7 @@ interface NotificationContextValue {
     pnl: number;
     pnlPercent: number;
     avatarId?: string;
-  }, suppressSound?: boolean) => void;
+  }, suppressSound?: boolean, onClosed?: () => void) => void;
   showLiquidation: (data: {
     direction: "long" | "short";
     symbol: string;
@@ -62,8 +62,9 @@ interface NotificationContextValue {
     closePrice: number;
     pnl: number;
     pnlPercent: number;
-  }) => void;
+  }, onClosed?: () => void) => void;
   removeNotification: (id: string) => void;
+  setOnPositionClosed: (callback: (() => void) | null) => void;
 }
 
 const NotificationContext = createContext<NotificationContextValue | null>(null);
@@ -81,6 +82,7 @@ export function NotificationProvider({
   children: React.ReactNode;
 }) {
   const [notifications, setNotifications] = useState<TradeNotification[]>([]);
+  const [onPositionClosedCallback, setOnPositionClosedCallback] = useState<(() => void) | null>(null);
   const { soundEnabled } = useSettings();
 
   // Update global sound enabled state
@@ -136,7 +138,7 @@ export function NotificationProvider({
       pnl: number;
       pnlPercent: number;
       avatarId?: string;
-    }, suppressSound = false) => {
+    }, suppressSound = false, onClosed?: () => void) => {
       // Play profit or loss sound based on PnL (unless suppressed)
       if (!suppressSound) {
         if (data.pnl >= 0) {
@@ -145,6 +147,7 @@ export function NotificationProvider({
           playCloseLossSound();
         }
       }
+      /* Notification disabled since we show the modal window now
       addNotification({
         type: "position_closed",
         direction: data.direction,
@@ -154,8 +157,17 @@ export function NotificationProvider({
         pnlPercent: data.pnlPercent,
         avatarId: data.avatarId,
       });
+      */
+
+      // Call the onClosed callback to open history tab/modal
+      const callback = onClosed || onPositionClosedCallback;
+      if (callback) {
+        setTimeout(() => {
+          callback();
+        }, 300);
+      }
     },
-    [addNotification]
+    [addNotification, onPositionClosedCallback]
   );
 
   const showLiquidation = useCallback(
@@ -185,9 +197,9 @@ export function NotificationProvider({
       closePrice: number;
       pnl: number;
       pnlPercent: number;
-    }) => {
+    }, onClosed?: () => void) => {
       playAutoCloseTPSound();
-      
+
       // Trigger confetti for take profit wins (always profitable)
       if (data.pnl > 0) {
         if (data.pnlPercent >= 100) {
@@ -196,6 +208,7 @@ export function NotificationProvider({
           triggerWinConfetti();
         }
       }
+      /* Notification disabled since we show the modal window now
       addNotification({
         type: "auto_closed_tp",
         direction: data.direction,
@@ -204,9 +217,22 @@ export function NotificationProvider({
         pnl: data.pnl,
         pnlPercent: data.pnlPercent,
       });
+      */
+
+      // Call the onClosed callback to open history tab/modal
+      const callback = onClosed || onPositionClosedCallback;
+      if (callback) {
+        setTimeout(() => {
+          callback();
+        }, 300);
+      }
     },
-    [addNotification]
+    [addNotification, onPositionClosedCallback]
   );
+
+  const setOnPositionClosed = useCallback((callback: (() => void) | null) => {
+    setOnPositionClosedCallback(callback);
+  }, []);
 
   const value = useMemo<NotificationContextValue>(
     () => ({
@@ -216,8 +242,9 @@ export function NotificationProvider({
       showLiquidation,
       showAutoCloseTP,
       removeNotification,
+      setOnPositionClosed,
     }),
-    [notifications, showPositionOpened, showPositionClosed, showLiquidation, showAutoCloseTP, removeNotification]
+    [notifications, showPositionOpened, showPositionClosed, showLiquidation, showAutoCloseTP, removeNotification, setOnPositionClosed]
   );
 
   return (

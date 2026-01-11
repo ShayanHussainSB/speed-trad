@@ -145,7 +145,7 @@ export function usePositions() {
 
   // Close a position
   const closePosition = useCallback(
-    (positionId: string) => {
+    (positionId: string, onClosed?: () => void) => {
       // Get position data before closing for notification
       const position = positions.find((p) => p.id === positionId);
 
@@ -178,6 +178,14 @@ export function usePositions() {
           } else {
             triggerWinConfetti();
           }
+        }
+
+        // Call the onClosed callback to open history tab/modal
+        if (onClosed) {
+          // Small delay to ensure notification is shown first
+          setTimeout(() => {
+            onClosed();
+          }, 300);
         }
       }
 

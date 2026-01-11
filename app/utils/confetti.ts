@@ -5,7 +5,7 @@ import confetti from "canvas-confetti";
  * Triggers a celebratory but tasteful confetti animation
  */
 export function triggerWinConfetti() {
-  const duration = 3000; // 3 seconds
+  const duration = 7000; // 7 seconds
   const animationEnd = Date.now() + duration;
   const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 9999 };
 
@@ -56,7 +56,7 @@ export function triggerWinConfetti() {
  * Enhanced confetti for big wins (100%+ profit)
  */
 export function triggerBigWinConfetti() {
-  const duration = 4000; // 4 seconds
+  const duration = 7000; // 7 seconds
   const animationEnd = Date.now() + duration;
   const defaults = { startVelocity: 40, spread: 360, ticks: 60, zIndex: 9999 };
 

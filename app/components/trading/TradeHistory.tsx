@@ -30,22 +30,37 @@ interface TradeHistoryProps {
   onViewAll?: () => void;
 }
 
-// Solana icon
-const SolanaIcon = () => (
-  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="solGradientHist" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#00FFA3" />
-        <stop offset="50%" stopColor="#03E1FF" />
-        <stop offset="100%" stopColor="#DC1FFF" />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="10" fill="url(#solGradientHist)" />
-    <path d="M7.5 14.5L10.5 11.5H16.5L13.5 14.5H7.5Z" fill="white" />
-    <path d="M7.5 9.5L10.5 6.5H16.5L13.5 9.5H7.5Z" fill="white" />
-    <path d="M16.5 12L13.5 15H7.5L10.5 12H16.5Z" fill="white" opacity="0.7" />
-  </svg>
-);
+// Asset logo mapping - using CoinGecko CDN images
+const ASSET_LOGOS: Record<string, string> = {
+  SOL: "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
+  BTC: "https://assets.coingecko.com/coins/images/1/standard/bitcoin.png",
+  ETH: "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
+};
+
+// Extract base symbol from trade symbol (e.g., "SOL/USDC" -> "SOL", "BTC" -> "BTC")
+function extractBaseSymbol(symbol: string): string {
+  // Handle formats like "SOL/USDC", "SOL-USDC", "SOL", etc.
+  const base = symbol.split(/[-\/]/)[0].toUpperCase();
+  return base;
+}
+
+// Get asset logo URL for a given symbol
+function getAssetLogo(symbol: string): string {
+  const baseSymbol = extractBaseSymbol(symbol);
+  return ASSET_LOGOS[baseSymbol] || ASSET_LOGOS.SOL; // Default to SOL if not found
+}
+
+// Asset icon component
+const AssetIcon = ({ symbol }: { symbol: string }) => {
+  const logoUrl = getAssetLogo(symbol);
+  return (
+    <img
+      src={logoUrl}
+      alt={extractBaseSymbol(symbol)}
+      className="w-4 h-4 flex-shrink-0 rounded-full object-cover"
+    />
+  );
+};
 
 // Format date like "03.01.2026"
 function formatDate(dateStr: string): string {
@@ -122,7 +137,7 @@ export function TradeHistory({ isConnected, trades = [], isLoading = false, onVi
                   {/* Market */}
                   <td className="px-4 py-4">
                     <div className="flex items-center gap-2">
-                      <SolanaIcon />
+                      <AssetIcon symbol={assetSymbol} />
                       <span className="text-[13px] font-semibold text-[var(--text-primary)]">{assetSymbol}/USDC</span>
                     </div>
                   </td>

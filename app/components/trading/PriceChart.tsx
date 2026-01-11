@@ -169,8 +169,8 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
         fontFamily: "system-ui, -apple-system, sans-serif",
       },
       grid: {
-        vertLines: { color: "rgba(255, 255, 255, 0.03)" },
-        horzLines: { color: "rgba(255, 255, 255, 0.03)" },
+        vertLines: { color: "rgba(131, 56, 236, 0.08)" },
+        horzLines: { color: "rgba(131, 56, 236, 0.08)" },
       },
       crosshair: {
         mode: 1,
@@ -297,7 +297,7 @@ export function PriceChart({ symbol = "SOL/USD", onSymbolChange, activePosition,
   // Update time scale to show seconds for second-level timeframes
   useEffect(() => {
     if (chartType !== "candlestick" || !chartRef.current) return;
-    
+
     chartRef.current.timeScale().applyOptions({
       secondsVisible: timeframe.includes("s"),
     });

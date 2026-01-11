@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useWallet } from "@solana/wallet-adapter-react";
 import { Layout, FlaskConical, ChevronDown, RotateCcw } from "lucide-react";
 import { Header } from "./components/layout/Header";
@@ -23,6 +23,7 @@ import { useUserProfile } from "./hooks/useUserProfile";
 import { usePositions } from "./hooks/usePositions";
 import { useLivePrice } from "./hooks/useLivePrice";
 import { useMarketTicker } from "./hooks/useMarketTicker";
+import { useNotifications } from "./contexts/NotificationContext";
 
 type TradingMode = "perpetuals" | "spot";
 type MobileTab = "perpetuals" | "spot" | "positions" | "activity" | "account";
@@ -51,6 +52,9 @@ export default function TradingPage() {
   const { balance, balanceUSD } = useWalletBalance();
   const { profile } = useUserProfile();
   const walletAddress = publicKey?.toBase58() || "";
+  
+  // Notifications
+  const { setOnPositionClosed } = useNotifications();
 
   // Positions
   const {
@@ -92,6 +96,25 @@ export default function TradingPage() {
   const handleReverseConfirm = () => {
     if (selectedPosition) reversePosition(selectedPosition, balanceUSD);
   };
+
+  // Handle position close - open modal with trade details (keep positions tab active)
+  const openHistoryOnPositionClose = useCallback(() => {
+    // Just open the history modal for full details
+    // Don't switch tabs - keep positions tab active since we're showing the modal
+    setIsHistoryModalOpen(true);
+  }, []);
+
+  const handlePositionClose = useCallback((positionId: string) => {
+    closePosition(positionId, openHistoryOnPositionClose);
+  }, [closePosition, openHistoryOnPositionClose]);
+
+  // Set global callback for auto-close-tp and other position closes
+  useEffect(() => {
+    setOnPositionClosed(openHistoryOnPositionClose);
+    return () => {
+      setOnPositionClosed(null);
+    };
+  }, [setOnPositionClosed, openHistoryOnPositionClose]);
 
   const handleMobileTabChange = (tab: MobileTab) => {
     setMobileTab(tab);
@@ -218,7 +241,7 @@ export default function TradingPage() {
                   {isBottomPanelExpanded && (
                     <div className="flex-1 overflow-auto">
                       {bottomPanelTab === "positions" ? (
-                        <PositionsList isConnected={true} positions={positions} totalPnL={totalPnL} longCount={longCount} shortCount={shortCount} onViewAll={() => setIsPositionsModalOpen(true)} onClosePosition={closePosition} onReversePosition={openReverseModal} maxVisible={10} />
+                        <PositionsList isConnected={true} positions={positions} totalPnL={totalPnL} longCount={longCount} shortCount={shortCount} onViewAll={() => setIsPositionsModalOpen(true)} onClosePosition={handlePositionClose} onReversePosition={openReverseModal} maxVisible={10} />
                       ) : (
                         <TradeHistory isConnected={true} trades={formattedTradeHistory} onViewAll={() => setIsHistoryModalOpen(true)} />
                       )}
@@ -264,7 +287,7 @@ export default function TradingPage() {
       <Footer />
       <MobileNav activeTab={mobileTab} onTabChange={handleMobileTabChange} />
       <WalletModal isOpen={isWalletModalOpen} onClose={closeWalletModal} />
-      <PositionsModal isOpen={isPositionsModalOpen} onClose={() => setIsPositionsModalOpen(false)} positions={positions} onClosePosition={closePosition} onReversePosition={openReverseModal} />
+      <PositionsModal isOpen={isPositionsModalOpen} onClose={() => setIsPositionsModalOpen(false)} positions={positions} onClosePosition={handlePositionClose} onReversePosition={openReverseModal} />
       <TradeHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} trades={formattedTradeHistory} />
       <ReversePositionModal isOpen={isReverseModalOpen} onClose={closeReverseModal} position={selectedPosition} availableBalance={balanceUSD} onConfirm={handleReverseConfirm} onDeposit={openWalletModal} isProcessing={isProcessing} calculateRequirements={calculateReverseRequirements} />
       <NotificationContainer />

@@ -207,7 +207,7 @@ export function LiveLineChartV2({
 
   const animFrameRef = useRef<number>(0);
   const lastFrameRef = useRef<number>(0);
-  
+
   // Store points with timestamps for time-based positioning
   const pointsRef = useRef<Point[]>([]);
   const lastPointTimeRef = useRef<number>(0);
@@ -221,7 +221,7 @@ export function LiveLineChartV2({
   const scaleMaxRef = useRef<number>(0);
   const targetScaleMinRef = useRef<number>(0);
   const targetScaleMaxRef = useRef<number>(0);
-  
+
   // Track when scale was last updated to batch updates
   const lastScaleUpdateRef = useRef<number>(0);
 
@@ -375,7 +375,7 @@ export function LiveLineChartV2({
           price: p.price,
           time: p.time,
         }));
-        
+
         lastPointTimeRef.current = recentPrices[recentPrices.length - 1].time;
       }
     }
@@ -487,7 +487,7 @@ export function LiveLineChartV2({
       // 6. Calculate positions for all points using current time and scale
       // This is the key change: positions are calculated fresh each frame based on TIME
       const renderPoints: Point[] = [];
-      
+
       for (const p of pointsRef.current) {
         const x = timeToX(p.time, now);
         // Only include points that are visible or just about to enter
@@ -499,7 +499,7 @@ export function LiveLineChartV2({
 
       // Add current head position
       const currentY = priceToY(displayPriceRef.current, scaleMinRef.current, scaleMaxRef.current);
-      
+
       // Ensure head point exists
       if (renderPoints.length === 0 || renderPoints[renderPoints.length - 1].time < now - POINT_INTERVAL_MS / 2) {
         renderPoints.push({
@@ -554,7 +554,7 @@ export function LiveLineChartV2({
   const initialY = height / 2;
 
   return (
-    <div ref={containerRef} className="w-full h-full relative bg-[#0a0a0a] overflow-hidden">
+    <div ref={containerRef} className="w-full h-full relative bg-[var(--bg-primary)] overflow-hidden">
       <svg width={width} height={height} className="absolute inset-0">
         <defs>
           <filter id="glowV3" x="-50%" y="-50%" width="200%" height="200%">
@@ -580,7 +580,7 @@ export function LiveLineChartV2({
         </defs>
 
         {/* Grid */}
-        <g opacity="0.08">
+        <g>
           {Array.from({ length: GRID_BANDS + 1 }).map((_, i) => (
             <line
               key={`h-${i}`}
@@ -588,7 +588,8 @@ export function LiveLineChartV2({
               y1={(height / GRID_BANDS) * i}
               x2={width}
               y2={(height / GRID_BANDS) * i}
-              stroke="white"
+              stroke="var(--electric-purple)"
+              strokeOpacity="0.1"
               strokeWidth="1"
             />
           ))}
@@ -599,7 +600,8 @@ export function LiveLineChartV2({
               y1={0}
               x2={(width / GRID_BANDS) * i}
               y2={height}
-              stroke="white"
+              stroke="var(--electric-purple)"
+              strokeOpacity="0.1"
               strokeWidth="1"
             />
           ))}

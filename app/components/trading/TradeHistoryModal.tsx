@@ -1,48 +1,50 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import {
   X,
+  Trophy,
   TrendingUp,
   TrendingDown,
-  ChevronLeft,
-  ChevronRight,
-  HelpCircle,
-  Calendar,
-  Trophy,
-  Skull,
+  Zap,
+  Star,
+  Award,
+  Target,
+  Flame,
 } from "lucide-react";
 import type { Trade } from "./TradeHistory";
 
-const ITEMS_PER_PAGE = 10;
+// Asset logo mapping - using CoinGecko CDN images
+const ASSET_LOGOS: Record<string, string> = {
+  SOL: "https://assets.coingecko.com/coins/images/4128/standard/solana.png",
+  BTC: "https://assets.coingecko.com/coins/images/1/standard/bitcoin.png",
+  ETH: "https://assets.coingecko.com/coins/images/279/standard/ethereum.png",
+};
 
-type TradeFilter = "all" | "wins" | "losses";
-
-// Solana icon
-const SolanaIcon = () => (
-  <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24" fill="none">
-    <defs>
-      <linearGradient id="solGradientModal" x1="0%" y1="0%" x2="100%" y2="100%">
-        <stop offset="0%" stopColor="#00FFA3" />
-        <stop offset="50%" stopColor="#03E1FF" />
-        <stop offset="100%" stopColor="#DC1FFF" />
-      </linearGradient>
-    </defs>
-    <circle cx="12" cy="12" r="10" fill="url(#solGradientModal)" />
-    <path d="M7.5 14.5L10.5 11.5H16.5L13.5 14.5H7.5Z" fill="white" />
-    <path d="M7.5 9.5L10.5 6.5H16.5L13.5 9.5H7.5Z" fill="white" />
-    <path d="M16.5 12L13.5 15H7.5L10.5 12H16.5Z" fill="white" opacity="0.7" />
-  </svg>
-);
-
-// Format date like "03.01.2026"
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr);
-  const day = date.getDate().toString().padStart(2, '0');
-  const month = (date.getMonth() + 1).toString().padStart(2, '0');
-  const year = date.getFullYear();
-  return `${day}.${month}.${year}`;
+// Extract base symbol from trade symbol (e.g., "SOL/USDC" -> "SOL", "BTC" -> "BTC")
+function extractBaseSymbol(symbol: string): string {
+  // Handle formats like "SOL/USDC", "SOL-USDC", "SOL", etc.
+  const base = symbol.split(/[-\/]/)[0].toUpperCase();
+  return base;
 }
+
+// Get asset logo URL for a given symbol
+function getAssetLogo(symbol: string): string {
+  const baseSymbol = extractBaseSymbol(symbol);
+  return ASSET_LOGOS[baseSymbol] || ASSET_LOGOS.SOL; // Default to SOL if not found
+}
+
+// Asset icon component
+const AssetIcon = ({ symbol }: { symbol: string }) => {
+  const logoUrl = getAssetLogo(symbol);
+  return (
+    <img
+      src={logoUrl}
+      alt={extractBaseSymbol(symbol)}
+      className="w-6 h-6 flex-shrink-0 rounded-full object-cover"
+    />
+  );
+};
 
 interface TradeHistoryModalProps {
   isOpen: boolean;
@@ -50,324 +52,339 @@ interface TradeHistoryModalProps {
   trades?: Trade[];
 }
 
+type TradeAchievement = {
+  type: "best_profit" | "best_percentage" | "big_win" | "perfect_timing" | "high_leverage";
+  label: string;
+  icon: React.ReactNode;
+};
+
 export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistoryModalProps) {
-  const [filter, setFilter] = useState<TradeFilter>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  // Get the most recent trade (first in array since trades are sorted by closedAt desc)
+  const latestTrade = trades[0] || null;
 
-  // Filter trades
-  const filteredTrades = useMemo(() => {
-    return trades.filter((t) => {
-      if (filter === "all") return true;
-      if (filter === "wins") return t.pnl >= 0;
-      return t.pnl < 0;
-    });
-  }, [trades, filter]);
+  // Calculate overall stats
+  const stats = useMemo(() => {
+    if (trades.length === 0) {
+      return {
+        totalPnL: 0,
+        totalTrades: 0,
+        winRate: 0,
+        winningTrades: 0,
+        losingTrades: 0,
+        bestProfit: 0,
+        bestPercentage: 0,
+      };
+    }
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filteredTrades.length / ITEMS_PER_PAGE));
-  const paginatedTrades = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredTrades.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredTrades, currentPage]);
+    const totalPnL = trades.reduce((sum, t) => sum + t.pnl, 0);
+    const winningTrades = trades.filter((t) => t.pnl > 0).length;
+    const losingTrades = trades.filter((t) => t.pnl < 0).length;
+    const winRate = (winningTrades / trades.length) * 100;
 
-  // Stats
-  const totalPnL = trades.reduce((sum, t) => sum + t.pnl, 0);
-  const totalFees = trades.reduce((sum, t) => sum + t.fee, 0);
-  const winningTrades = trades.filter((t) => t.pnl > 0).length;
-  const losingTrades = trades.filter((t) => t.pnl < 0).length;
-  const winRate = trades.length > 0 ? (winningTrades / trades.length) * 100 : 0;
+    // Find best profit and best percentage
+    const bestProfit = Math.max(...trades.map((t) => t.pnl));
+    const bestPercentage = Math.max(
+      ...trades.map((t) => (t.pnl / t.margin) * 100)
+    );
 
-  // Reset to page 1 when filter changes
-  const handleFilterChange = (newFilter: TradeFilter) => {
-    setFilter(newFilter);
-    setCurrentPage(1);
-  };
+    return {
+      totalPnL,
+      totalTrades: trades.length,
+      winRate,
+      winningTrades,
+      losingTrades,
+      bestProfit,
+      bestPercentage,
+    };
+  }, [trades]);
+
+  // Determine if this is one of the best trades (only for profitable trades)
+  const achievements = useMemo<TradeAchievement[]>(() => {
+    if (!latestTrade || latestTrade.pnl <= 0) return []; // Only profitable trades can be "best"
+
+    const achievements: TradeAchievement[] = [];
+    const pnlPercent = (latestTrade.pnl / latestTrade.margin) * 100;
+
+    // Best profit ever (only compare with other profitable trades)
+    const profitableTrades = trades.filter(t => t.pnl > 0);
+    const bestProfitAmongWins = profitableTrades.length > 0
+      ? Math.max(...profitableTrades.map((t) => t.pnl))
+      : 0;
+
+    if (latestTrade.pnl >= bestProfitAmongWins && profitableTrades.length > 1) {
+      achievements.push({
+        type: "best_profit",
+        label: "Best Profit",
+        icon: <Trophy className="w-4 h-4" />,
+      });
+    }
+
+    // Best percentage ever (only compare with other profitable trades)
+    const bestPercentageAmongWins = profitableTrades.length > 0
+      ? Math.max(...profitableTrades.map((t) => (t.pnl / t.margin) * 100))
+      : 0;
+
+    if (pnlPercent >= bestPercentageAmongWins && profitableTrades.length > 1) {
+      achievements.push({
+        type: "best_percentage",
+        label: "New Best %",
+        icon: <Star className="w-4 h-4" />,
+      });
+    }
+
+    // Big win (100%+ profit)
+    if (pnlPercent >= 100) {
+      achievements.push({
+        type: "big_win",
+        label: "Big Win!",
+        icon: <Flame className="w-4 h-4" />,
+      });
+    }
+
+    // High leverage (50x+)
+    if (latestTrade.leverage >= 50) {
+      achievements.push({
+        type: "high_leverage",
+        label: "High Roller",
+        icon: <Zap className="w-4 h-4" />,
+      });
+    }
+
+    // Perfect timing (very high % on reasonable leverage)
+    if (pnlPercent >= 50 && latestTrade.leverage <= 20) {
+      achievements.push({
+        type: "perfect_timing",
+        label: "Sniper Entry",
+        icon: <Target className="w-4 h-4" />,
+      });
+    }
+
+    return achievements;
+  }, [latestTrade, stats, trades]);
 
   if (!isOpen) return null;
 
+  // If no trades, show empty state
+  if (!latestTrade) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div
+          className="absolute inset-0 bg-black/90 backdrop-blur-md"
+          onClick={onClose}
+        />
+        <div className="relative w-full max-w-sm bg-[var(--bg-card)] rounded-2xl border border-[var(--border-subtle)] overflow-hidden shadow-[var(--shadow-glow-orange)]">
+          <div className="p-8 text-center">
+            <Trophy className="w-16 h-16 text-[var(--text-tertiary)] mx-auto mb-4 opacity-50" />
+            <h2 className="text-2xl font-black text-white mb-2 font-display uppercase tracking-wider">
+              Ready Player One?
+            </h2>
+            <p className="text-[var(--text-tertiary)] mb-6 text-sm">
+              Complete your first trade to unlock your trading stats and achievements.
+            </p>
+            <button
+              onClick={onClose}
+              className="w-full py-3 rounded-xl bg-gradient-to-r from-[var(--warm-yellow)] to-[var(--sunset-orange)] text-black font-black uppercase tracking-wider hover:opacity-90 transition-all shadow-[0_0_20px_rgba(255,107,53,0.4)]"
+            >
+              Start Trading
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isProfit = latestTrade.pnl >= 0;
+  const isLong = latestTrade.direction === "long";
+  const pnlPercent = (latestTrade.pnl / latestTrade.margin) * 100;
+  const assetSymbol = latestTrade.symbol;
+
+  // Determine performance rating
+  const getPerformanceRating = () => {
+    if (pnlPercent >= 200) return { label: "GODLIKE", color: "text-[var(--warm-yellow)] drop-shadow-[0_0_10px_rgba(255,190,11,0.8)]" };
+    if (pnlPercent >= 100) return { label: "LEGENDARY", color: "text-[var(--warm-yellow)] drop-shadow-[0_0_8px_rgba(255,190,11,0.6)]" };
+    if (pnlPercent >= 50) return { label: "EPIC", color: "text-[var(--hot-pink)] drop-shadow-[0_0_8px_rgba(255,0,110,0.6)]" };
+    if (pnlPercent >= 20) return { label: "EXCELLENT", color: "text-[var(--color-long)]" };
+    if (pnlPercent >= 0) return { label: "GOOD", color: "text-[var(--color-long)]" };
+    if (pnlPercent >= -20) return { label: "OKAY", color: "text-[var(--text-secondary)]" };
+    return { label: "WASTED", color: "text-[var(--color-short)] drop-shadow-[0_0_8px_rgba(255,0,110,0.4)]" };
+  };
+
+  const performance = getPerformanceRating();
+  const isBestTrade = achievements.length > 0;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop with intense blur */}
       <div
-        className="absolute inset-0 bg-black/80 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/90 backdrop-blur-xl animate-in fade-in duration-300"
         onClick={onClose}
       />
 
-      {/* Modal */}
-      <div className="relative w-full max-w-5xl max-h-[90vh] mx-4 bg-[var(--bg-primary)] rounded-xl border border-[var(--border-subtle)] overflow-hidden shadow-2xl">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-elevated)]">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <h2 className="text-lg font-bold text-[var(--text-primary)]">Trade History</h2>
-              <span className="px-2 py-0.5 rounded bg-[var(--accent-primary)]/20 text-[var(--accent-primary)] text-[10px] font-bold">
-                DEMO
-              </span>
-            </div>
+      {/* Modal - Gamified Finish Screen */}
+      <div className="relative w-full max-w-lg bg-[var(--bg-card)] rounded-3xl border border-[var(--border-accent)] overflow-hidden shadow-[var(--shadow-modal)] flex flex-col animate-in zoom-in-95 duration-300">
 
-            {/* Filter Tabs */}
-            <div className="flex items-center gap-1 p-0.5 rounded-lg bg-[var(--bg-tertiary)]">
-              <button
-                onClick={() => handleFilterChange("all")}
-                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  filter === "all"
-                    ? "bg-[var(--bg-elevated)] text-[var(--text-primary)] shadow-sm"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
-                }`}
-              >
-                All ({trades.length})
-              </button>
-              <button
-                onClick={() => handleFilterChange("wins")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  filter === "wins"
-                    ? "bg-[var(--color-long)]/20 text-[var(--color-long)]"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--color-long)]"
-                }`}
-              >
-                <TrendingUp className="w-3 h-3" />
-                Wins ({winningTrades})
-              </button>
-              <button
-                onClick={() => handleFilterChange("losses")}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-md text-xs font-semibold transition-all ${
-                  filter === "losses"
-                    ? "bg-[var(--color-short)]/20 text-[var(--color-short)]"
-                    : "text-[var(--text-tertiary)] hover:text-[var(--color-short)]"
-                }`}
-              >
-                <TrendingDown className="w-3 h-3" />
-                Losses ({losingTrades})
-              </button>
-            </div>
-          </div>
+        {/* Top Glow Bar */}
+        <div className={`h-1 w-full bg-gradient-to-r ${isProfit ? 'from-[var(--warm-yellow)] via-[var(--sunset-orange)] to-[var(--hot-pink)]' : 'from-[var(--deep-purple)] via-[var(--color-short)] to-[var(--deep-purple)]'}`} />
 
+        {/* Header with YELLOW Close Button */}
+        <div className="absolute top-4 right-4 z-20">
           <button
             onClick={onClose}
-            className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-colors"
+            className="group flex items-center justify-center w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-[var(--warm-yellow)]/20 text-[var(--warm-yellow)] hover:bg-[var(--warm-yellow)] hover:text-black transition-all duration-300 shadow-[0_0_15px_rgba(255,190,11,0.1)] hover:shadow-[0_0_20px_rgba(255,190,11,0.6)]"
           >
-            <X className="w-5 h-5" />
+            <X className="w-5 h-5 group-hover:rotate-90 transition-transform duration-300" />
           </button>
         </div>
 
-        {/* Stats Bar */}
-        <div className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-tertiary)]">
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Total PnL</p>
-            <p className={`text-xl font-bold font-mono ${
-              totalPnL >= 0 ? "text-[var(--color-long)]" : "text-[var(--color-short)]"
-            }`}>
-              {totalPnL >= 0 ? "+" : ""}${totalPnL.toFixed(2)}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Win Rate</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
-              {winRate.toFixed(1)}%
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Total Trades</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-primary)]">
-              {trades.length}
-            </p>
-          </div>
-          <div className="text-center">
-            <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1">Total Fees</p>
-            <p className="text-xl font-bold font-mono text-[var(--text-secondary)]">
-              ${totalFees.toFixed(2)}
-            </p>
-          </div>
-        </div>
+        {/* Confetti / Particle Effects (CSS only for now) */}
+        {isProfit && (
+          <div className="absolute inset-0 pointer-events-none opacity-20 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-repeat" />
+        )}
 
-        {/* Table */}
-        <div className="overflow-x-auto max-h-[50vh]">
-          {paginatedTrades.length > 0 ? (
-            <table className="w-full min-w-[800px]">
-              <thead className="sticky top-0 bg-[var(--bg-primary)]">
-                <tr className="border-b border-[var(--border-subtle)]">
-                  <th className="px-4 py-3 text-left text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Time</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Market</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Side</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Leverage</th>
-                  <th className="px-4 py-3 text-left text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Price</th>
-                  <th className="px-4 py-3 text-right text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Size</th>
-                  <th className="px-4 py-3 text-right text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">
-                    <span className="inline-flex items-center gap-1">
-                      Total PnL
-                      <HelpCircle className="w-3 h-3 text-[var(--text-tertiary)]" />
-                    </span>
-                  </th>
-                  <th className="px-4 py-3 text-right text-[11px] font-medium text-[var(--text-tertiary)] uppercase tracking-wider">Fee</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paginatedTrades.map((trade) => {
-                  const isProfit = trade.pnl >= 0;
-                  const isLong = trade.direction === "long";
-                  const isLiquidated = trade.outcome === "liquidated";
-                  const pnlPercent = (trade.pnl / trade.margin) * 100;
-                  const assetSymbol = trade.symbol;
+        {/* Main Content */}
+        <div className="relative z-10 flex-1 overflow-y-auto px-6 pt-10 pb-6">
 
-                  return (
-                    <tr key={trade.id} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-elevated)] transition-colors">
-                      {/* Time */}
-                      <td className="px-4 py-4">
-                        <span className="text-[13px] font-mono text-[var(--text-secondary)]">{formatDate(trade.closedAt)}</span>
-                      </td>
-                      
-                      {/* Market */}
-                      <td className="px-4 py-4">
-                        <div className="flex items-center gap-2">
-                          <SolanaIcon />
-                          <span className="text-[13px] font-semibold text-[var(--text-primary)]">{assetSymbol}-USDC</span>
-                        </div>
-                      </td>
-                      
-                      {/* Side */}
-                      <td className="px-4 py-4">
-                        <span className={`text-[13px] font-semibold ${isLiquidated ? "text-[var(--color-short)]" : isLong ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
-                          {isLiquidated ? "Liquidated" : `Close ${isLong ? "Long" : "Short"}`}
-                        </span>
-                      </td>
-                      
-                      {/* Leverage */}
-                      <td className="px-4 py-4">
-                        <span className="text-[13px] font-mono font-bold text-[var(--accent-primary)]">{trade.leverage}x</span>
-                      </td>
-                      
-                      {/* Price */}
-                      <td className="px-4 py-4">
-                        <span className="text-[13px] font-mono text-[var(--text-secondary)]">
-                          {trade.exitPrice.toLocaleString(undefined, { minimumFractionDigits: 3, maximumFractionDigits: 3 })}
-                        </span>
-                      </td>
-                      
-                      {/* Size */}
-                      <td className="px-4 py-4 text-right">
-                        <span className="text-[13px] font-mono text-[var(--text-primary)]">
-                          ${trade.margin.toLocaleString(undefined, { minimumFractionDigits: 4, maximumFractionDigits: 4 })}
-                        </span>
-                      </td>
-                      
-                      {/* Total PnL */}
-                      <td className="px-4 py-4 text-right">
-                        <span className={`text-[13px] font-mono font-bold ${isProfit ? "text-[var(--color-long)]" : "text-[var(--color-short)]"}`}>
-                          {isProfit ? "+" : ""}${trade.pnl.toFixed(2)}
-                          <span className="opacity-70"> ({isProfit ? "+" : ""}{pnlPercent.toFixed(2)}%)</span>
-                        </span>
-                      </td>
-                      
-                      {/* Fee */}
-                      <td className="px-4 py-4 text-right">
-                        <span className="text-[13px] font-mono text-[var(--text-tertiary)]">
-                          {trade.fee > 0 ? `$${trade.fee.toFixed(2)}` : "-"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          ) : (
-            /* Empty State */
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="relative mb-6">
-                <div className="relative w-24 h-24 rounded-2xl bg-[var(--bg-tertiary)] border border-[var(--border-subtle)] flex items-center justify-center">
-                  <Calendar className="w-10 h-10 text-[var(--text-tertiary)]" />
+          {/* Result Title */}
+          <div className="text-center mb-8 relative">
+            <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-4 font-mono text-xs font-bold uppercase tracking-widest shadow-lg ${isProfit
+                ? 'bg-[var(--warm-yellow)]/10 text-[var(--warm-yellow)] border-[var(--warm-yellow)]/30 shadow-[0_0_10px_rgba(255,190,11,0.2)]'
+                : 'bg-[var(--color-short)]/10 text-[var(--color-short)] border-[var(--color-short)]/30 shadow-[0_0_10px_rgba(255,0,110,0.2)]'
+              }`}>
+              {isProfit ? <Trophy className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+              {isProfit ? "Trade Won" : "Trade Lost"}
+            </div>
+
+            <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+              <span className={`bg-clip-text text-transparent bg-gradient-to-b ${isProfit
+                  ? 'from-white via-[var(--warm-yellow)] to-[var(--sunset-orange)]'
+                  : 'from-white via-[var(--text-tertiary)] to-[var(--text-disabled)]'
+                }`}>
+                {isProfit ? "VICTORY" : "DEFEAT"}
+              </span>
+            </h1>
+
+            <p className={`text-xl font-bold tracking-widest uppercase ${performance.color}`} style={{ fontFamily: 'var(--font-display)' }}>
+              {performance.label}
+            </p>
+          </div>
+
+          {/* Main Card - Hero Stats */}
+          <div className="relative mb-6 group">
+            <div className={`absolute inset-0 rounded-2xl blur-xl opacity-20 transition-opacity duration-1000 ${isProfit ? 'bg-[var(--warm-yellow)]' : 'bg-[var(--hot-pink)]'
+              }`} />
+
+            <div className={`relative rounded-2xl p-6 border overflow-hidden backdrop-blur-xl ${isProfit
+                ? 'bg-gradient-to-br from-[var(--warm-yellow)]/10 via-[var(--bg-elevated)] to-[var(--bg-elevated)] border-[var(--warm-yellow)]/30'
+                : 'bg-gradient-to-br from-[var(--hot-pink)]/10 via-[var(--bg-elevated)] to-[var(--bg-elevated)] border-[var(--hot-pink)]/30'
+              }`}>
+              {/* Card Header: Asset & Direction */}
+              <div className="flex items-center justify-between mb-6 pb-4 border-b border-[var(--border-subtle)]">
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className={`absolute inset-0 rounded-full blur-md opacity-40 ${isLong ? 'bg-[var(--color-long)]' : 'bg-[var(--color-short)]'}`} />
+                    <AssetIcon symbol={assetSymbol} />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-white tracking-wide">{assetSymbol}-USDC</span>
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded border ${isLong
+                          ? 'text-[var(--color-long)] border-[var(--color-long)]/30 bg-[var(--color-long)]/10'
+                          : 'text-[var(--color-short)] border-[var(--color-short)]/30 bg-[var(--color-short)]/10'
+                        }`}>
+                        {latestTrade.leverage}x
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="absolute -top-2 -right-2 w-7 h-7 rounded-full bg-[var(--color-long)] flex items-center justify-center">
-                  <Trophy className="w-3.5 h-3.5 text-black" />
-                </div>
-                <div className="absolute -bottom-1 -left-1 w-5 h-5 rounded-full bg-[var(--color-short)] flex items-center justify-center">
-                  <Skull className="w-2.5 h-2.5 text-white" />
+
+                <div className={`text-right flex items-center gap-2 font-black italic text-lg ${isLong ? 'text-[var(--color-long)]' : 'text-[var(--color-short)]'}`}>
+                  {isLong ? "LONG" : "SHORT"}
+                  {isLong ? <TrendingUp className="w-5 h-5" /> : <TrendingDown className="w-5 h-5" />}
                 </div>
               </div>
 
-              <h3 className="text-xl font-bold text-[var(--text-primary)] mb-2">
-                {filter === "all"
-                  ? "No History Yet"
-                  : filter === "wins"
-                    ? "No Wins Yet"
-                    : "No Losses Yet"
-                }
-              </h3>
-              <p className="text-sm text-[var(--text-tertiary)] mb-4 max-w-xs">
-                {filter === "all"
-                  ? "Your trades will appear here once you close a position."
-                  : filter === "wins"
-                    ? "No winning trades recorded yet."
-                    : "No losing trades yet. Keep it up!"
-                }
-              </p>
+              {/* PnL Display */}
+              <div className="text-center py-2">
+                <div className={`text-5xl md:text-6xl font-black tracking-tight mb-1 font-mono ${isProfit
+                    ? 'text-[var(--warm-yellow)] drop-shadow-[0_0_15px_rgba(255,190,11,0.4)]'
+                    : 'text-[var(--hot-pink)] drop-shadow-[0_0_15px_rgba(255,0,110,0.4)]'
+                  }`}>
+                  {isProfit ? "+" : "-"}${Math.abs(latestTrade.pnl).toFixed(2)}
+                </div>
+                <div className={`text-xl font-bold font-mono ${isProfit ? 'text-[var(--warm-yellow)]/80' : 'text-[var(--hot-pink)]/80'}`}>
+                  {isProfit ? "+" : ""}{pnlPercent.toFixed(2)}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Secondary Stats Grid */}
+          <div className="grid grid-cols-2 gap-3 mb-6">
+            <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+              <p className="text-[10px] uppercase text-[var(--text-tertiary)] font-bold tracking-wider mb-1">Entry Price</p>
+              <p className="text-sm font-mono text-white">${latestTrade.entryPrice.toFixed(4)}</p>
+            </div>
+            <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
+              <p className="text-[10px] uppercase text-[var(--text-tertiary)] font-bold tracking-wider mb-1">Exit Price</p>
+              <p className="text-sm font-mono text-white">${latestTrade.exitPrice.toFixed(4)}</p>
+            </div>
+          </div>
+
+          {/* Achievements Ribbon */}
+          {achievements.length > 0 && (
+            <div className="mb-8">
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                {achievements.map((achievement, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-[var(--warm-yellow)]/20 to-[var(--sunset-orange)]/20 border border-[var(--warm-yellow)]/40 shadow-[0_0_10px_rgba(255,190,11,0.1)]"
+                  >
+                    <div className="text-[var(--warm-yellow)]">{achievement.icon}</div>
+                    <span className="text-xs font-bold text-[var(--warm-yellow)] uppercase tracking-wide">
+                      {achievement.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
-        </div>
 
-        {/* Pagination */}
-        {filteredTrades.length > ITEMS_PER_PAGE && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border-subtle)]">
-            <p className="text-sm text-[var(--text-tertiary)]">
-              Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} - {Math.min(currentPage * ITEMS_PER_PAGE, filteredTrades.length)} of {filteredTrades.length}
-            </p>
-
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  currentPage === 1
-                    ? "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] cursor-not-allowed"
-                    : "bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                Prev
-              </button>
-
-              <div className="flex items-center gap-1">
-                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                  let page = i + 1;
-                  if (totalPages > 5) {
-                    if (currentPage > 3) {
-                      page = currentPage - 2 + i;
-                    }
-                    if (currentPage > totalPages - 2) {
-                      page = totalPages - 4 + i;
-                    }
-                  }
-                  if (page > totalPages) return null;
-                  return (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-8 h-8 rounded-lg text-xs font-semibold transition-all ${
-                        currentPage === page
-                          ? "bg-[var(--accent-primary)] text-black"
-                          : "bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-                      }`}
-                    >
-                      {page}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                  currentPage === totalPages
-                    ? "bg-[var(--bg-tertiary)] text-[var(--text-tertiary)] cursor-not-allowed"
-                    : "bg-[var(--bg-elevated)] text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)]"
-                }`}
-              >
-                Next
-                <ChevronRight className="w-4 h-4" />
-              </button>
+          {/* Lifetime Stats Mini-Bar */}
+          <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-black/40 border border-white/5 mb-4">
+            <div className="text-center">
+              <p className="text-[10px] text-[var(--text-tertiary)]">Total Wins</p>
+              <p className="text-sm font-bold text-white">{stats.winningTrades}</p>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <p className="text-[10px] text-[var(--text-tertiary)]">Win Rate</p>
+              <p className={`text-sm font-bold ${stats.winRate > 50 ? 'text-[var(--color-long)]' : 'text-[var(--text-secondary)]'}`}>
+                {stats.winRate.toFixed(0)}%
+              </p>
+            </div>
+            <div className="w-px h-8 bg-white/10" />
+            <div className="text-center">
+              <p className="text-[10px] text-[var(--text-tertiary)]">Total PnL</p>
+              <p className={`text-sm font-bold ${stats.totalPnL >= 0 ? 'text-[var(--color-long)]' : 'text-[var(--color-short)]'}`}>
+                ${stats.totalPnL.toFixed(0)}
+              </p>
             </div>
           </div>
-        )}
+
+        </div>
+
+        {/* Footer / Action */}
+        <div className="p-6 bg-[var(--bg-elevated)] border-t border-[var(--border-subtle)]">
+          <button
+            onClick={onClose}
+            className="group w-full relative overflow-hidden px-8 py-4 rounded-xl bg-[var(--accent-primary)] text-black font-black text-lg uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,107,53,0.4)] hover:shadow-[0_0_50px_rgba(255,107,53,0.6)]"
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            <span className="relative flex items-center justify-center gap-2">
+              Continue Trading <TrendingUp className="w-5 h-5" />
+            </span>
+          </button>
+        </div>
       </div>
     </div>
   );
