@@ -46,12 +46,8 @@ export const WalletSection: FC<WalletSectionProps> = ({
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const { soundEnabled, setSoundEnabled } = useSettings();
-  
-  // #region agent log
-  React.useEffect(() => {
-    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:48',message:'soundEnabled state changed',data:{soundEnabled,connected},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-  }, [soundEnabled, connected]);
-  // #endregion
+
+
 
   const walletAddress = publicKey?.toBase58() || "";
   const truncatedAddress = walletAddress
@@ -114,12 +110,12 @@ export const WalletSection: FC<WalletSectionProps> = ({
       >
         {/* Gradient status dot */}
         <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#00F5A0] to-[#00D9F5] shadow-[0_0_6px_rgba(0,245,160,0.5)]" />
-        
+
         {/* Address */}
         <span className="text-sm font-mono text-white">
           {truncatedAddress}
         </span>
-        
+
         <ChevronDown className={`w-3.5 h-3.5 text-white/40 transition-transform ${showDropdown ? "rotate-180" : ""}`} />
       </button>
 
@@ -186,13 +182,9 @@ export const WalletSection: FC<WalletSectionProps> = ({
             {/* Sound Toggle */}
             <button
               onClick={(e) => {
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:182',message:'Button onClick fired',data:{soundEnabledBefore:soundEnabled,eventType:e.type,target:e.target.tagName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
+
                 setSoundEnabled(!soundEnabled);
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:186',message:'Button onClick setSoundEnabled called',data:{newValue:!soundEnabled},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                // #endregion
+
               }}
               className="w-full flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl text-sm text-white/70 hover:text-white hover:bg-white/5 transition-colors"
             >
@@ -200,12 +192,10 @@ export const WalletSection: FC<WalletSectionProps> = ({
                 <Zap className="w-4 h-4" />
                 <span>Sound Effects</span>
               </div>
-              <label 
+              <label
                 className="relative inline-flex items-center cursor-pointer"
                 onClick={(e) => {
-                  // #region agent log
-                  fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:197',message:'Label onClick fired',data:{soundEnabledBefore:soundEnabled,eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-                  // #endregion
+
                   e.stopPropagation();
                 }}
               >
@@ -213,18 +203,12 @@ export const WalletSection: FC<WalletSectionProps> = ({
                   type="checkbox"
                   checked={soundEnabled}
                   onChange={(e) => {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:203',message:'Checkbox onChange fired',data:{soundEnabledBefore:soundEnabled,checked:e.target.checked,eventType:e.type},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                    // #endregion
+
                     setSoundEnabled(e.target.checked);
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:207',message:'Checkbox onChange setSoundEnabled called',data:{newValue:e.target.checked},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-                    // #endregion
+
                   }}
                   onClick={(e) => {
-                    // #region agent log
-                    fetch('http://127.0.0.1:7242/ingest/cd4ad0f0-173d-40d3-9819-10ee8b1f7173',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'WalletSection.tsx:211',message:'Checkbox onClick fired',data:{soundEnabledBefore:soundEnabled,checked:(e.target as HTMLInputElement).checked},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-                    // #endregion
+
                     e.stopPropagation();
                   }}
                   className="sr-only peer"

@@ -52,7 +52,7 @@ export default function TradingPage() {
   const { balance, balanceUSD } = useWalletBalance();
   const { profile } = useUserProfile();
   const walletAddress = publicKey?.toBase58() || "";
-  
+
   // Notifications
   const { setOnPositionClosed } = useNotifications();
 
@@ -288,7 +288,7 @@ export default function TradingPage() {
       <MobileNav activeTab={mobileTab} onTabChange={handleMobileTabChange} />
       <WalletModal isOpen={isWalletModalOpen} onClose={closeWalletModal} />
       <PositionsModal isOpen={isPositionsModalOpen} onClose={() => setIsPositionsModalOpen(false)} positions={positions} onClosePosition={handlePositionClose} onReversePosition={openReverseModal} />
-      <TradeHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} trades={formattedTradeHistory} />
+      <TradeHistoryModal isOpen={isHistoryModalOpen} onClose={() => setIsHistoryModalOpen(false)} trades={tradeHistory} />
       <ReversePositionModal isOpen={isReverseModalOpen} onClose={closeReverseModal} position={selectedPosition} availableBalance={balanceUSD} onConfirm={handleReverseConfirm} onDeposit={openWalletModal} isProcessing={isProcessing} calculateRequirements={calculateReverseRequirements} />
       <NotificationContainer />
     </div >

@@ -113,9 +113,12 @@ export function useDemoTrading(): UseDemoTradingReturn {
     if (priceKey !== lastPricesRef.current || now - lastCheckRef.current > 500) {
       lastCheckRef.current = now;
       lastPricesRef.current = priceKey;
-      
+
       checkLiquidations(prices);
-      
+
+      // Update price history for replay
+      context.updatePriceHistory(prices);
+
       // Pass callback to checkTakeProfit to trigger notification
       checkTakeProfit(prices, (position, currentPrice, pnl, pnlPercent) => {
         showAutoCloseTP({

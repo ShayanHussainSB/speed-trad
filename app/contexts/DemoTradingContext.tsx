@@ -47,6 +47,7 @@ export interface TradeRecord {
   outcome: "closed" | "liquidated";
   openedAt: string;
   closedAt: string;
+  priceHistory?: { time: number; price: number }[];
 }
 
 interface DemoTradingState {
@@ -90,6 +91,7 @@ interface DemoTradingContextValue {
   getPositionHealth: (position: DemoPosition, currentPrice: number) => number;
   getPositionFundingFee: (position: DemoPosition) => number;
   getEstimatedCloseFee: (position: DemoPosition, currentPrice: number) => number;
+  updatePriceHistory: (prices: Record<AssetSymbol, number>) => void;
 }
 
 const DemoTradingContext = createContext<DemoTradingContextValue | null>(null);
@@ -113,6 +115,10 @@ export function DemoTradingProvider({
 }) {
   const [state, setState] = useState<DemoTradingState>(DEFAULT_STATE);
   const [isHydrated, setIsHydrated] = useState(false);
+
+  // Store price history for active positions in a ref to avoid re-renders
+  // Map key is position ID, value is array of {time, price}
+  const priceHistoryRef = React.useRef<Map<string, { time: number; price: number }[]>>(new Map());
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -235,7 +241,11 @@ export function DemoTradingProvider({
         outcome: "closed",
         openedAt: position.openedAt,
         closedAt: new Date().toISOString(),
+        priceHistory: priceHistoryRef.current.get(positionId) || [],
       };
+
+      // Clean up history
+      priceHistoryRef.current.delete(positionId);
 
       setState((prev) => ({
         ...prev,
@@ -448,6 +458,27 @@ export function DemoTradingProvider({
     []
   );
 
+  // Update price history for active positions
+  const updatePriceHistory = useCallback((prices: Record<AssetSymbol, number>) => {
+    const now = Date.now();
+    state.positions.forEach(position => {
+      const currentPrice = prices[position.symbol];
+      if (!currentPrice) return;
+
+      if (!priceHistoryRef.current.has(position.id)) {
+        priceHistoryRef.current.set(position.id, []);
+      }
+
+      const history = priceHistoryRef.current.get(position.id)!;
+      history.push({ time: now, price: currentPrice });
+
+      // Keep last 1000 points to prevent memory issues
+      if (history.length > 1000) {
+        history.shift();
+      }
+    });
+  }, [state.positions]);
+
   const value = useMemo<DemoTradingContextValue>(
     () => ({
       balance: state.balance,
@@ -463,6 +494,7 @@ export function DemoTradingProvider({
       getPositionHealth,
       getPositionFundingFee,
       getEstimatedCloseFee,
+      updatePriceHistory,
     }),
     [
       state.balance,
@@ -477,7 +509,9 @@ export function DemoTradingProvider({
       getPositionPnL,
       getPositionHealth,
       getPositionFundingFee,
+      getPositionFundingFee,
       getEstimatedCloseFee,
+      updatePriceHistory,
     ]
   );
 
