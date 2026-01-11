@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import { ReplayChart } from "./ReplayChart";
 import { TradeRecord } from "@/app/contexts/DemoTradingContext";
-
+import { toPng } from "html-to-image";
+import { ShareCard } from "./ShareCard";
+import { useRef } from "react";
+import { Share2, Download } from "lucide-react";
 
 // Asset logo mapping - using CoinGecko CDN images
 const ASSET_LOGOS: Record<string, string> = {
@@ -62,6 +65,37 @@ type TradeAchievement = {
 
 export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistoryModalProps) {
   const [view, setView] = useState<"summary" | "replay">("summary");
+  const [isSharing, setIsSharing] = useState(false);
+  const shareRef = useRef<HTMLDivElement>(null);
+
+  // Get the most recent trade (first in array since trades are sorted by closedAt desc)
+  const latestTrade = trades[0] || null;
+
+  // Handle Share / Download Image
+  const handleShare = async () => {
+    if (!shareRef.current || !latestTrade) return;
+
+    setIsSharing(true);
+    try {
+      // Wait for fonts/images to be ready
+      // Generate PNG
+      const dataUrl = await toPng(shareRef.current, {
+        cacheBust: true,
+        pixelRatio: 2, // High quality
+      });
+
+      // Trigger download
+      const link = document.createElement('a');
+      link.download = `updn-trade-${latestTrade.symbol}-${latestTrade.id.slice(0, 6)}.png`;
+      link.href = dataUrl;
+      link.click();
+
+    } catch (err) {
+      console.error("Failed to generate image", err);
+    } finally {
+      setIsSharing(false);
+    }
+  };
 
   // Reset view when modal opens
   useEffect(() => {
@@ -69,9 +103,6 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
       setView("summary");
     }
   }, [isOpen]);
-
-  // Get the most recent trade (first in array since trades are sorted by closedAt desc)
-  const latestTrade = trades[0] || null;
 
   // Calculate overall stats
   const stats = useMemo(() => {
@@ -265,7 +296,20 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
             <div className={`h-1 w-full bg-gradient-to-r ${isProfit ? 'from-[var(--warm-yellow)] via-[var(--sunset-orange)] to-[var(--hot-pink)]' : 'from-[var(--deep-purple)] via-[var(--color-short)] to-[var(--deep-purple)]'}`} />
 
             {/* Header with YELLOW Close Button */}
-            <div className="absolute top-4 right-4 z-20">
+            <div className="absolute top-4 right-4 z-20 flex gap-2">
+              <button
+                onClick={handleShare}
+                disabled={isSharing}
+                className="group flex items-center justify-center w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-white/10 transition-all duration-300 pointer-events-auto cursor-pointer"
+                title="Download Replay Card"
+              >
+                {isSharing ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Share2 className="w-4 h-4" />
+                )}
+              </button>
+
               <button
                 onClick={onClose}
                 className="group flex items-center justify-center w-10 h-10 rounded-xl bg-black/40 backdrop-blur-md border border-[var(--warm-yellow)]/20 text-[var(--warm-yellow)] hover:bg-[var(--warm-yellow)] hover:text-black transition-all duration-300 shadow-[0_0_15px_rgba(255,190,11,0.1)] hover:shadow-[0_0_20px_rgba(255,190,11,0.6)]"
@@ -433,6 +477,13 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
             </div>
           </>
         )}
+      </div>
+
+      {/* Hidden Container for Sharing - Rendered out of view */}
+      <div className="fixed left-[-9999px] top-[-9999px]">
+        <div ref={shareRef}>
+          {latestTrade && <ShareCard trade={latestTrade} />}
+        </div>
       </div>
     </div>
   );

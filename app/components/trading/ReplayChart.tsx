@@ -30,7 +30,7 @@ const DURATION_MS = 5000; // Target replay duration: 5 seconds
 const PADDING_TOP = 10;
 const PADDING_BOTTOM = 10;
 const GRID_BANDS = 10;
-const SAFE_ZONE_TOP_BAND = 2;
+const SAFE_ZONE_TOP_BAND = 4;
 const SAFE_ZONE_BOTTOM_BAND = 7;
 
 // Visual
