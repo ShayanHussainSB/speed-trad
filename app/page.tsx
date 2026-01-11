@@ -265,9 +265,9 @@ export default function TradingPage() {
                   >
                     <Layout className="w-4 h-4 rotate-180" />
                   </button>
-                  <div className="flex-1 w-full flex flex-col items-center gap-4">
-                    {/* Vertical Text or Icons could go here */}
-                    <div className="writing-vertical-lr text-xs font-bold text-white/30 uppercase tracking-widest rotate-180">
+                  <div className="flex-1 w-full flex flex-col items-center justify-center gap-4">
+                    {/* Vertical Text */}
+                    <div className="[writing-mode:vertical-rl] text-xs font-bold text-white/30 uppercase tracking-widest rotate-180 whitespace-nowrap select-none">
                       Trading Panel
                     </div>
                   </div>
