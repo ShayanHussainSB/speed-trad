@@ -200,6 +200,12 @@ export function DemoTradingProvider({
         lastUpdated: new Date().toISOString(),
       }));
 
+      // Initialize price history with entry price
+      priceHistoryRef.current.set(newPosition.id, [{
+        time: Date.now(),
+        price: entryPrice
+      }]);
+
       return { success: true, position: newPosition };
     },
     [state.balance]
@@ -227,6 +233,17 @@ export function DemoTradingProvider({
       const netPnl = pnl - totalFee;
       const returnAmount = position.margin + netPnl;
 
+      // Finalize price history
+      const history = priceHistoryRef.current.get(positionId) || [];
+
+      // Ensure we have at least start point
+      if (history.length === 0) {
+        history.push({ time: new Date(position.openedAt).getTime(), price: position.entryPrice });
+      }
+
+      // Always append the exit price as the final point
+      history.push({ time: Date.now(), price: currentPrice });
+
       const tradeRecord: TradeRecord = {
         id: generateId(),
         symbol: position.symbol,
@@ -241,7 +258,7 @@ export function DemoTradingProvider({
         outcome: "closed",
         openedAt: position.openedAt,
         closedAt: new Date().toISOString(),
-        priceHistory: priceHistoryRef.current.get(positionId) || [],
+        priceHistory: history,
       };
 
       // Clean up history

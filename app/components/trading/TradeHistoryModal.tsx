@@ -280,10 +280,9 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
             )}
 
             {/* Main Content */}
-            <div className="relative z-10 flex-1 overflow-y-auto px-6 pt-10 pb-6">
+            <div className="relative z-10 flex-1 overflow-y-auto px-5 pt-6 pb-6">
 
-              {/* Result Title */}
-              <div className="text-center mb-8 relative">
+              <div className="text-center mb-4 relative">
                 <div className={`inline-flex items-center gap-2 px-4 py-1.5 rounded-full border mb-4 font-mono text-xs font-bold uppercase tracking-widest shadow-lg ${isProfit
                   ? 'bg-[var(--warm-yellow)]/10 text-[var(--warm-yellow)] border-[var(--warm-yellow)]/30 shadow-[0_0_10px_rgba(255,190,11,0.2)]'
                   : 'bg-[var(--color-short)]/10 text-[var(--color-short)] border-[var(--color-short)]/30 shadow-[0_0_10px_rgba(255,0,110,0.2)]'
@@ -292,7 +291,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
                   {isProfit ? "Trade Won" : "Trade Lost"}
                 </div>
 
-                <h1 className="text-5xl md:text-6xl font-black italic tracking-tighter mb-2" style={{ fontFamily: 'var(--font-display)' }}>
+                <h1 className="text-4xl md:text-5xl font-black italic tracking-tighter mb-2" style={{ fontFamily: 'var(--font-display)' }}>
                   <span className={`bg-clip-text text-transparent bg-gradient-to-b ${isProfit
                     ? 'from-white via-[var(--warm-yellow)] to-[var(--sunset-orange)]'
                     : 'from-white via-[var(--text-tertiary)] to-[var(--text-disabled)]'
@@ -307,11 +306,11 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
               </div>
 
               {/* Main Card - Hero Stats */}
-              <div className="relative mb-6 group">
+              <div className="relative mb-4 group">
                 <div className={`absolute inset-0 rounded-2xl blur-xl opacity-20 transition-opacity duration-1000 ${isProfit ? 'bg-[var(--warm-yellow)]' : 'bg-[var(--hot-pink)]'
                   }`} />
 
-                <div className={`relative rounded-2xl p-6 border overflow-hidden backdrop-blur-xl ${isProfit
+                <div className={`relative rounded-2xl p-4 border overflow-hidden backdrop-blur-xl ${isProfit
                   ? 'bg-gradient-to-br from-[var(--warm-yellow)]/10 via-[var(--bg-elevated)] to-[var(--bg-elevated)] border-[var(--warm-yellow)]/30'
                   : 'bg-gradient-to-br from-[var(--hot-pink)]/10 via-[var(--bg-elevated)] to-[var(--bg-elevated)] border-[var(--hot-pink)]/30'
                   }`}>
@@ -357,7 +356,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
               </div>
 
               {/* Secondary Stats Grid */}
-              <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="grid grid-cols-2 gap-3 mb-4">
                 <div className="p-3 rounded-xl bg-[var(--bg-elevated)] border border-[var(--border-subtle)]">
                   <p className="text-[10px] uppercase text-[var(--text-tertiary)] font-bold tracking-wider mb-1">Entry Price</p>
                   <p className="text-sm font-mono text-white">${latestTrade.entryPrice.toFixed(4)}</p>
@@ -412,7 +411,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
             </div>
 
             {/* Footer / Action */}
-            <div className="p-6 bg-[var(--bg-elevated)] border-t border-[var(--border-subtle)] flex flex-col gap-3">
+            <div className="p-4 bg-[var(--bg-elevated)] border-t border-[var(--border-subtle)] flex flex-col gap-3">
               {latestTrade?.priceHistory && latestTrade.priceHistory.length > 0 && (
                 <button
                   onClick={() => setView("replay")}
@@ -424,7 +423,7 @@ export function TradeHistoryModal({ isOpen, onClose, trades = [] }: TradeHistory
 
               <button
                 onClick={onClose}
-                className="group w-full relative overflow-hidden px-8 py-4 rounded-xl bg-[var(--accent-primary)] text-black font-black text-lg uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,107,53,0.4)] hover:shadow-[0_0_50px_rgba(255,107,53,0.6)]"
+                className="group w-full relative overflow-hidden px-8 py-3 rounded-xl bg-[var(--accent-primary)] text-black font-black text-lg uppercase tracking-wider hover:scale-[1.02] active:scale-[0.98] transition-all shadow-[0_0_30px_rgba(255,107,53,0.4)] hover:shadow-[0_0_50px_rgba(255,107,53,0.6)]"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                 <span className="relative flex items-center justify-center gap-2">

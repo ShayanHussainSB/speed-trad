@@ -123,7 +123,7 @@ export function ReplayChart({
 
     // Animation Loop
     useEffect(() => {
-        if (!isPlaying || data.length < 2) return;
+        if (!isPlaying || data.length === 0) return;
 
         // Reset start time if just started
         if (startTimeRef.current === 0) {
